@@ -12,14 +12,24 @@ const Hero: React.FC = () => {
     const subtitle = subtitleRef.current;
     const cta = ctaRef.current;
 
-    if (title) title.classList.add('animate-fade-up');
+    // Pre-show the elements to prevent flash
+    if (title) {
+      title.style.opacity = '1';
+      title.classList.add('animate-fade-up');
+    }
     
     setTimeout(() => {
-      if (subtitle) subtitle.classList.add('animate-fade-up');
+      if (subtitle) {
+        subtitle.style.opacity = '1';
+        subtitle.classList.add('animate-fade-up');
+      }
     }, 200);
     
     setTimeout(() => {
-      if (cta) cta.classList.add('animate-fade-up');
+      if (cta) {
+        cta.style.opacity = '1';
+        cta.classList.add('animate-fade-up');
+      }
     }, 400);
   }, []);
 
@@ -42,7 +52,7 @@ const Hero: React.FC = () => {
         <div className="space-y-8">
           <h1 
             ref={titleRef}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold opacity-0 text-tech-gray"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-tech-gray opacity-100"
           >
             <span className="block">Expertos en tecnología</span>
             <span className="text-gradient mt-2 block">Para tu negocio o hogar</span>
@@ -50,12 +60,12 @@ const Hero: React.FC = () => {
           
           <p 
             ref={subtitleRef}
-            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto opacity-0"
+            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto opacity-100"
           >
             Servicios técnicos profesionales y equipos de calidad con garantía de satisfacción
           </p>
           
-          <div ref={ctaRef} className="flex flex-col sm:flex-row justify-center gap-4 pt-6 opacity-0">
+          <div ref={ctaRef} className="flex flex-col sm:flex-row justify-center gap-4 pt-6 opacity-100">
             <a href="/servicios" className="btn-primary">
               Ver servicios
             </a>

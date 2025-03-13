@@ -19,7 +19,8 @@ const Productos: React.FC = () => {
     { id: 'components', name: 'Componentes' },
     { id: 'accessories', name: 'Accesorios' },
     { id: 'printers', name: 'Impresoras' },
-    { id: 'network', name: 'Redes' }
+    { id: 'network', name: 'Redes' },
+    { id: 'consumables', name: 'Consumibles' }
   ];
 
   const products = [
@@ -138,6 +139,32 @@ const Productos: React.FC = () => {
         'Puertos: HDMI, 3x DisplayPort',
         'Ray Tracing',
         'DLSS 2.0'
+      ]
+    },
+    {
+      id: 10,
+      name: 'Cartucho de Tinta HP 664 Negro',
+      price: '$349 MXN',
+      category: 'consumables',
+      image: 'https://images.unsplash.com/photo-1625895197185-efcec01cffe0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      specs: [
+        'Original HP',
+        'Compatible con DeskJet 1000, 2000',
+        'Rendimiento 120 páginas',
+        'Color Negro'
+      ]
+    },
+    {
+      id: 11,
+      name: 'Tóner Brother TN-450',
+      price: '$1,199 MXN',
+      category: 'consumables',
+      image: 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      specs: [
+        'Original Brother',
+        'Compatible con HL-2240/2270',
+        'Rendimiento 2,600 páginas',
+        'Color Negro'
       ]
     }
   ];
