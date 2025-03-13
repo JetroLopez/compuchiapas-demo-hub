@@ -8,9 +8,10 @@ interface CategoryCardProps {
   image: string;
   slug: string;
   className?: string;
+  style?: React.CSSProperties; // Add style prop
 }
 
-const CategoryCard: React.FC<CategoryCardProps> = ({ title, image, slug, className }) => {
+const CategoryCard: React.FC<CategoryCardProps> = ({ title, image, slug, className, style }) => {
   const navigate = useNavigate();
   
   return (
@@ -20,6 +21,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ title, image, slug, classNa
         "transform transition-all duration-500 hover:shadow-xl",
         className
       )}
+      style={style}
       onClick={() => navigate(`/productos/${slug}`)}
     >
       {/* Background Image */}

@@ -1,11 +1,10 @@
-
 import React, { useEffect } from 'react';
 import Layout from '../components/Layout';
 import Hero from '../components/Hero';
 import FeaturedServices from '../components/FeaturedServices';
 import ProductCategories from '../components/ProductCategories';
 import TestimonialCard from '../components/TestimonialCard';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
 
 const Index: React.FC = () => {
   useEffect(() => {

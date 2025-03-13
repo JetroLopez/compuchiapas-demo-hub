@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import ProductCard from '../components/ProductCard';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, MessageCircle } from 'lucide-react';
 
 const Productos: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('all');

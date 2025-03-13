@@ -4,7 +4,8 @@ import Layout from '../components/Layout';
 import ServiceCard from '../components/ServiceCard';
 import { 
   Laptop, Printer, Network, Database, Wifi, Monitor, 
-  Settings, Shield, Clock, Server, Download, Cpu
+  Settings, Shield, Clock, Server, Download, Cpu,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
