@@ -41,8 +41,8 @@ const NavBar: React.FC = () => {
       <div className="container-padding mx-auto">
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-tech-blue">
-              Compuchiapas<span className="text-sm align-text-top">.com.mx</span>
+            <span className="text-2xl font-bold text-tech-blue flex items-baseline">
+              Compuchiapas<span className="text-sm ml-0.5">.com.mx</span>
             </span>
           </Link>
 
