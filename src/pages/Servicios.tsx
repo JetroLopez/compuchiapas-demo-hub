@@ -3,9 +3,9 @@ import React, { useEffect } from 'react';
 import Layout from '../components/Layout';
 import ServiceCard from '../components/ServiceCard';
 import { 
-  Laptop, Printer, Network, Database, Wifi, Monitor, 
-  Settings, Shield, Clock, Server, Download, Cpu,
-  MessageCircle
+  Laptop, Printer, Database, Monitor, 
+  Settings, Shield, Clock, Download, Cpu,
+  MessageCircle, Camera
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,14 +32,29 @@ const Servicios: React.FC = () => {
       icon: <Database size={32} />
     },
     {
-      title: 'Configuración de Redes',
-      description: 'Instalación y optimización de redes WiFi para hogares y negocios.',
-      icon: <Wifi size={32} />
-    },
-    {
       title: 'Ensamble de PCs',
       description: 'Creamos computadoras a medida según tus necesidades y presupuesto.',
       icon: <Monitor size={32} />
+    },
+    {
+      title: 'Instalación de Cámaras CCTV',
+      description: 'Sistemas de vigilancia y seguridad para hogares y negocios con monitoreo remoto.',
+      icon: <Camera size={32} />
+    },
+    {
+      title: 'Instalación de Puntos de Venta',
+      description: 'Configuración completa de sistemas POS para comercios y restaurantes.',
+      icon: <Monitor size={32} />
+    },
+    {
+      title: 'Actualización de Componentes',
+      description: 'Mejoramos el rendimiento de tu equipo con hardware de última generación.',
+      icon: <Settings size={32} />
+    },
+    {
+      title: 'Instalación de Programas',
+      description: 'Configuración de software especializado y sistemas operativos con licencias originales.',
+      icon: <Download size={32} />
     },
     {
       title: 'Mantenimiento Preventivo',
@@ -57,24 +72,9 @@ const Servicios: React.FC = () => {
       icon: <Clock size={32} />
     },
     {
-      title: 'Instalación de Servidores',
-      description: 'Configuración profesional de servidores para pequeñas y medianas empresas.',
-      icon: <Server size={32} />
-    },
-    {
-      title: 'Actualización de Sistemas',
-      description: 'Mejoramos el rendimiento de tu equipo con las últimas actualizaciones.',
-      icon: <Download size={32} />
-    },
-    {
       title: 'Diagnóstico Especializado',
       description: 'Análisis detallado para identificar problemas complejos en tus equipos.',
       icon: <Cpu size={32} />
-    },
-    {
-      title: 'Redes Estructuradas',
-      description: 'Diseño e implementación de infraestructura de red para empresas.',
-      icon: <Network size={32} />
     }
   ];
 
@@ -287,8 +287,11 @@ const Servicios: React.FC = () => {
                       <option value="repair">Reparación de equipo</option>
                       <option value="maintenance">Mantenimiento preventivo</option>
                       <option value="recovery">Recuperación de datos</option>
-                      <option value="network">Redes y conectividad</option>
                       <option value="assembly">Ensamble de PC</option>
+                      <option value="cctv">Instalación de cámaras CCTV</option>
+                      <option value="pos">Instalación de punto de venta</option>
+                      <option value="update">Actualización de componentes</option>
+                      <option value="software">Instalación de programas</option>
                       <option value="other">Otro</option>
                     </select>
                   </div>
@@ -307,7 +310,8 @@ const Servicios: React.FC = () => {
                       <option value="desktop">Computadora de escritorio</option>
                       <option value="printer">Impresora</option>
                       <option value="server">Servidor</option>
-                      <option value="network">Equipo de red</option>
+                      <option value="cctv">Cámaras CCTV</option>
+                      <option value="pos">Punto de venta</option>
                       <option value="other">Otro</option>
                     </select>
                   </div>
