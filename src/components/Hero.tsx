@@ -60,7 +60,7 @@ const Hero: React.FC = () => {
           
           <p 
             ref={subtitleRef}
-            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto mt-6 opacity-100"
+            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto mt-12 opacity-100"
           >
             Servicios técnicos profesionales y equipos de calidad con garantía de satisfacción
           </p>

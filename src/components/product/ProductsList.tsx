@@ -36,6 +36,13 @@ const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
       throw new Error(error.message);
     }
     
+    console.log('Products data from Supabase:', data);
+    
+    if (!data || data.length === 0) {
+      console.log('No products found in Supabase');
+      return [];
+    }
+    
     // Map Supabase data to our ProductSpec interface
     const mappedProducts = data.map((item, index) => {
       // Generate a placeholder price (this would typically come from your database)
@@ -70,6 +77,7 @@ const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
       };
     });
     
+    console.log('Mapped products:', mappedProducts);
     return mappedProducts;
   } catch (error) {
     console.error('Failed to fetch products:', error);
@@ -91,6 +99,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activ
     enabled: true,
   });
   
+  console.log('Query state:', { isLoading, error, productCount: supabaseProducts?.length || 0 });
+  
   // Use Supabase products if available, otherwise use the props.products as fallback
   const displayProducts = supabaseProducts || products;
   
@@ -108,6 +118,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activ
     return categoryMatch && searchMatch;
   });
 
+  console.log('Filtered products:', filteredProducts.length);
+
   if (isLoading) {
     return (
       <div className="col-span-full text-center py-16">
@@ -121,6 +133,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activ
     return (
       <div className="col-span-full text-center py-16 text-red-600">
         <p>Ocurrió un error al cargar los productos. Por favor, intente nuevamente.</p>
+        <p className="text-sm mt-2">Error: {error.message}</p>
       </div>
     );
   }
@@ -129,6 +142,9 @@ const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activ
     return (
       <div className="col-span-full text-center py-16">
         <p className="text-xl text-gray-600">No se encontraron productos que coincidan con tu búsqueda.</p>
+        {displayProducts.length === 0 && (
+          <p className="text-sm mt-2 text-gray-500">No hay productos disponibles en la base de datos.</p>
+        )}
       </div>
     );
   }

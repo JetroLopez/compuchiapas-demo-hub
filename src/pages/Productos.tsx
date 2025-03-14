@@ -13,15 +13,23 @@ import { supabase } from '@/integrations/supabase/client';
 const Productos: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Define predefined categories matching the LINEA ACT from Supabase
   const [categories, setCategories] = useState([
     { id: 'all', name: 'Todos' },
+    { id: 'accesorios', name: 'Accesorios' },
+    { id: 'almacenamiento', name: 'Almacenamiento' },
+    { id: 'cargadores', name: 'Cargadores' },
+    { id: 'computadoras', name: 'Computadoras' },
+    { id: 'consumibles', name: 'Consumibles' },
+    { id: 'digitales', name: 'Digitales' },
+    { id: 'energia', name: 'Energía' },
+    { id: 'impresoras', name: 'Impresoras' },
     { id: 'laptops', name: 'Laptops' },
-    { id: 'desktops', name: 'Computadoras' },
-    { id: 'components', name: 'Componentes' },
-    { id: 'accessories', name: 'Accesorios' },
-    { id: 'printers', name: 'Impresoras' },
-    { id: 'network', name: 'Redes' },
-    { id: 'consumables', name: 'Consumibles' }
+    { id: 'mobiliario', name: 'Mobiliario' },
+    { id: 'monitores', name: 'Monitores' },
+    { id: 'punto de venta', name: 'Punto de venta' },
+    { id: 'redes', name: 'Redes' }
   ]);
   
   // Empty products array as a fallback
@@ -37,10 +45,17 @@ const Productos: React.FC = () => {
           .select('*')
           .order('LINEA ACT');
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching categories:', error);
+          throw error;
+        }
+        
+        console.log('Categories data from Supabase:', data);
         
         // Get unique categories
         const uniqueCategories = Array.from(new Set(data.map(item => item["LINEA ACT"])));
+        
+        console.log('Unique categories:', uniqueCategories);
         
         // Map to category objects
         const categoryObjects = uniqueCategories.map(category => ({
@@ -54,7 +69,13 @@ const Productos: React.FC = () => {
           ...categoryObjects
         ];
         
-        setCategories(allCategories);
+        console.log('All categories:', allCategories);
+        
+        // Only update categories if we found some
+        if (categoryObjects.length > 0) {
+          setCategories(allCategories);
+        }
+        
         return allCategories;
       } catch (error) {
         console.error('Error fetching categories:', error);
