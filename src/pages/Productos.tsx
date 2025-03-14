@@ -34,13 +34,13 @@ const Productos: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('Productos')
-          .select('LINEA_ACT')
-          .order('LINEA_ACT');
+          .select('*')
+          .order('LINEA ACT');
           
         if (error) throw error;
         
         // Get unique categories
-        const uniqueCategories = Array.from(new Set(data.map(item => item.LINEA_ACT)));
+        const uniqueCategories = Array.from(new Set(data.map(item => item["LINEA ACT"])));
         
         // Map to category objects
         const categoryObjects = uniqueCategories.map(category => ({

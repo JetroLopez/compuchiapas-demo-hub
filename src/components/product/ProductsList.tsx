@@ -29,7 +29,7 @@ const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
   try {
     const { data, error } = await supabase
       .from('Productos')
-      .select('Clave, Descripcion, LINEA_ACT, Linea, Existencias');
+      .select('*');
       
     if (error) {
       console.error('Error fetching products:', error);
@@ -62,7 +62,7 @@ const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
         id: index + 1,
         name: item.Descripcion,
         price: price,
-        category: item.LINEA_ACT.toLowerCase(),
+        category: item["LINEA ACT"].toLowerCase(),
         image: randomImage,
         specs: specs,
         sku: item.Clave,
