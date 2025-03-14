@@ -55,12 +55,12 @@ const Hero: React.FC = () => {
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-tech-gray opacity-100"
           >
             <span className="block">Expertos en tecnología</span>
-            <span className="text-gradient mt-2 block">Para tu negocio o hogar</span>
+            <span className="text-gradient mt-2 block">Para tu negocio y hogar</span>
           </h1>
           
           <p 
             ref={subtitleRef}
-            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto opacity-100"
+            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto mt-6 opacity-100"
           >
             Servicios técnicos profesionales y equipos de calidad con garantía de satisfacción
           </p>

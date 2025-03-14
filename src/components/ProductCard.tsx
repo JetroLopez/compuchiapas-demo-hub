@@ -7,13 +7,17 @@ interface ProductCardProps {
   price: string;
   image: string;
   specs: string[];
+  sku?: string;
+  stock?: number;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
   name, 
   price, 
   image, 
-  specs 
+  specs,
+  sku,
+  stock
 }) => {
   const whatsappNumber = "+529612345678"; // Ejemplo - cambiar por número real
   const whatsappMessage = `Hola, me interesa el producto ${name} con precio ${price}. ¿Podrían darme más información?`;
@@ -34,8 +38,21 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
       
       <div className="p-6">
-        <h3 className="text-xl font-semibold mb-2">{name}</h3>
-        <p className="text-tech-blue font-bold text-xl mb-4">{price}</p>
+        <h3 className="text-xl font-semibold mb-1">{name}</h3>
+        {sku && (
+          <p className="text-gray-400 text-sm mb-2">SKU: {sku}</p>
+        )}
+        <p className="text-tech-blue font-bold text-xl mb-2">{price}</p>
+        
+        {stock !== undefined && (
+          <p className="text-sm font-medium mb-3">
+            {stock >= 1 ? (
+              <span className="text-green-600">Disponible</span>
+            ) : (
+              <span className="text-red-600">No disponible</span>
+            )}
+          </p>
+        )}
         
         <div className="space-y-2 mb-6">
           {specs.map((spec, index) => (
@@ -49,6 +66,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <button 
           onClick={handleWhatsAppClick}
           className="w-full btn-primary flex items-center justify-center gap-2"
+          disabled={stock !== undefined && stock < 1}
         >
           <MessageCircle size={18} />
           Consultar por WhatsApp

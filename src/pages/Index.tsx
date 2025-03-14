@@ -1,9 +1,11 @@
+
 import React, { useEffect } from 'react';
 import Layout from '../components/Layout';
 import Hero from '../components/Hero';
 import FeaturedServices from '../components/FeaturedServices';
 import ProductCategories from '../components/ProductCategories';
 import TestimonialCard from '../components/TestimonialCard';
+import OfferPopup from '../components/OfferPopup';
 import { ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
 
 const Index: React.FC = () => {
@@ -11,6 +13,10 @@ const Index: React.FC = () => {
     // Para el SEO
     document.title = "Compuchiapas | Servicios Técnicos y Venta de Equipo de Cómputo";
   }, []);
+
+  const scrollToContact = () => {
+    document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const testimonials = [
     {
@@ -36,6 +42,7 @@ const Index: React.FC = () => {
       
       <FeaturedServices />
       
+      {/* Special Feature Section */}
       <section className="section-padding">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="glass-card rounded-2xl overflow-hidden">
@@ -252,24 +259,13 @@ const Index: React.FC = () => {
         </div>
       </section>
       
-      {/* Popup offer */}
-      <div className="fixed bottom-24 left-6 z-30 max-w-sm animate-fade-up">
-        <div className="bg-white rounded-lg shadow-xl p-6 border border-gray-100">
-          <h3 className="text-lg font-bold mb-2">¡Oferta especial!</h3>
-          <p className="text-gray-600 mb-4">
-            10% de descuento en tu primer servicio técnico.
-            Menciona esta promoción al contactarnos.
-          </p>
-          <div className="flex justify-end">
-            <button 
-              className="text-tech-blue font-medium hover:underline"
-              onClick={() => document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              ¡Aprovecha ahora!
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Popup offer with close button that minimizes to bottom */}
+      <OfferPopup
+        title="¡Oferta especial!"
+        description="10% de descuento en tu primer servicio técnico. Menciona esta promoción al contactarnos."
+        ctaText="¡Aprovecha ahora!"
+        onCtaClick={scrollToContact}
+      />
     </Layout>
   );
 };
