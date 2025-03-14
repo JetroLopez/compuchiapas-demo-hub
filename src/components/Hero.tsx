@@ -52,15 +52,15 @@ const Hero: React.FC = () => {
         <div className="space-y-8">
           <h1 
             ref={titleRef}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-tech-gray opacity-100"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-tech-gray opacity-100 pt-10"
           >
-            <span className="block">Expertos en tecnología</span>
-            <span className="text-gradient mt-2 block">Para tu negocio y hogar</span>
+            <span className="block mb-2">Expertos en tecnología</span>
+            <span className="text-gradient block">Para tu negocio y hogar</span>
           </h1>
           
           <p 
             ref={subtitleRef}
-            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto mt-12 opacity-100"
+            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto mt-6 opacity-100"
           >
             Servicios técnicos profesionales y equipos de calidad con garantía de satisfacción
           </p>

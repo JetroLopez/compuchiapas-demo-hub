@@ -19,7 +19,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   sku,
   stock
 }) => {
-  const whatsappNumber = "+529612345678"; // Ejemplo - cambiar por número real
+  const whatsappNumber = "+529622148546"; // Updated WhatsApp number
   const whatsappMessage = `Hola, me interesa el producto ${name} con precio ${price}. ¿Podrían darme más información?`;
   
   const handleWhatsAppClick = () => {

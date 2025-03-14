@@ -145,7 +145,7 @@ const Index: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold">Teléfono</h3>
-                      <p className="text-gray-600">+52 (961) 234-5678</p>
+                      <p className="text-gray-600">+52 (962) 214-8546</p>
                     </div>
                   </div>
                   
@@ -166,7 +166,9 @@ const Index: React.FC = () => {
                     <div>
                       <h3 className="text-lg font-semibold">Ubicación</h3>
                       <p className="text-gray-600">
-                        Av. Central Norte #456, Tuxtla Gutiérrez, Chiapas, México
+                        <a href="https://maps.app.goo.gl/pCvE2nMgBWeqsqjv9" target="_blank" rel="noopener noreferrer" className="hover:text-tech-blue">
+                          Boulevard Belisario Domínguez 2090, 29000 Tuxtla Gutiérrez, Chis., México
+                        </a>
                       </p>
                     </div>
                   </div>

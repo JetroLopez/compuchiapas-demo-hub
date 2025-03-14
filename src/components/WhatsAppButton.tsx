@@ -4,7 +4,7 @@ import { MessageCircle, X } from 'lucide-react';
 
 const WhatsAppButton: React.FC = () => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const whatsappNumber = "+529612345678"; // Ejemplo - cambiar por número real
+  const whatsappNumber = "+529622148546"; // Updated WhatsApp number
   const whatsappMessage = "¡Hola! Me gustaría obtener más información sobre sus servicios.";
   
   const handleClick = () => {

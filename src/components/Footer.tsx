@@ -107,13 +107,20 @@ const Footer: React.FC = () => {
               <li className="flex items-start">
                 <MapPin size={20} className="mr-3 text-tech-blue mt-1" />
                 <span className="text-gray-300">
-                  Av. Central Norte #456, Tuxtla Gutiérrez, Chiapas, México
+                  <a 
+                    href="https://maps.app.goo.gl/pCvE2nMgBWeqsqjv9" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="hover:text-white transition-colors"
+                  >
+                    Boulevard Belisario Domínguez 2090, Tuxtla Gutiérrez, Chiapas, México
+                  </a>
                 </span>
               </li>
               <li className="flex items-center">
                 <Phone size={20} className="mr-3 text-tech-blue" />
-                <a href="tel:+529612345678" className="text-gray-300 hover:text-white transition-colors">
-                  +52 (961) 234-5678
+                <a href="tel:+529622148546" className="text-gray-300 hover:text-white transition-colors">
+                  +52 (962) 214-8546
                 </a>
               </li>
               <li className="flex items-center">

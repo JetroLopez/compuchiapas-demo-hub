@@ -8,7 +8,7 @@ interface ServiceCardProps {
   description: string;
   icon: React.ReactNode;
   className?: string;
-  style?: React.CSSProperties; // Add style prop
+  style?: React.CSSProperties;
 }
 
 const ServiceCard: React.FC<ServiceCardProps> = ({ 
@@ -18,7 +18,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   className,
   style
 }) => {
-  const whatsappNumber = "+529612345678"; // Ejemplo - cambiar por número real
+  const whatsappNumber = "+529622148546"; // Updated WhatsApp number
   const whatsappMessage = `Hola, me interesa el servicio de ${title}. ¿Podrían darme más información?`;
   
   const handleWhatsAppClick = () => {
