@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import ProductHero from '../components/product/ProductHero';
@@ -31,10 +30,7 @@ const Productos: React.FC = () => {
     { id: 'punto de venta', name: 'Punto de venta' },
     { id: 'redes', name: 'Redes' }
   ]);
-  
-  // Empty products array as a fallback
-  const products = [];
-  
+
   // Fetch categories from Supabase
   const { data: supabaseCategories } = useQuery({
     queryKey: ['categories'],
@@ -50,28 +46,17 @@ const Productos: React.FC = () => {
           throw error;
         }
         
-        console.log('Categories data from Supabase:', data);
-        
-        // Get unique categories
         const uniqueCategories = Array.from(new Set(data.map(item => item["LINEA ACT"])));
-        
-        console.log('Unique categories:', uniqueCategories);
-        
-        // Map to category objects
         const categoryObjects = uniqueCategories.map(category => ({
           id: category.toLowerCase(),
           name: category
         }));
         
-        // Add 'all' category at the beginning
         const allCategories = [
           { id: 'all', name: 'Todos' },
           ...categoryObjects
         ];
         
-        console.log('All categories:', allCategories);
-        
-        // Only update categories if we found some
         if (categoryObjects.length > 0) {
           setCategories(allCategories);
         }
@@ -84,9 +69,31 @@ const Productos: React.FC = () => {
     },
     enabled: true
   });
-  
+
+  // Fetch products from Supabase
+  const { data: productsData, isLoading, isError } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('Productos')
+          .select('*');
+
+        if (error) {
+          console.error('Error fetching products:', error);
+          throw error;
+        }
+
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        return [];
+      }
+    },
+    enabled: true,
+  });
+
   useEffect(() => {
-    // Para el SEO
     document.title = "Productos | Compuchiapas";
   }, []);
 
@@ -95,7 +102,13 @@ const Productos: React.FC = () => {
     setActiveCategory('all');
   };
 
-  // No need to directly filter products here, as filtering happens in the ProductsList component
+  if (isLoading) {
+    return <div className="text-center py-8">Cargando productos...</div>;
+  }
+
+  if (isError) {
+    return <div className="text-center py-8 text-red-500">Ocurrió un error al cargar los productos.</div>;
+  }
 
   return (
     <Layout>
@@ -122,7 +135,7 @@ const Productos: React.FC = () => {
           
           {/* Products Grid */}
           <ProductsList 
-            products={products} 
+            products={productsData || []} 
             searchTerm={searchTerm}
             activeCategory={activeCategory}
           />
