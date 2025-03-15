@@ -1,12 +1,12 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { Phone, Mail, MapPin, MessageCircle, Clock, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
 const Contacto: React.FC = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,45 +15,40 @@ const Contacto: React.FC = () => {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   useEffect(() => {
     // Para el SEO
     document.title = "Contacto | Compuchiapas";
   }, []);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
+    const {
+      id,
+      value
+    } = e.target;
     setFormData(prev => ({
       ...prev,
       [id]: value
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
-      const { error } = await supabase
-        .from('contact_submissions')
-        .insert([
-          {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            subject: formData.subject,
-            message: formData.message
-          }
-        ]);
-
+      const {
+        error
+      } = await supabase.from('contact_submissions').insert([{
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        subject: formData.subject,
+        message: formData.message
+      }]);
       if (error) {
         throw error;
       }
-
       toast({
         title: "Mensaje enviado",
         description: "Nos pondremos en contacto contigo lo antes posible.",
-        variant: "default",
+        variant: "default"
       });
 
       // Reset form
@@ -69,17 +64,15 @@ const Contacto: React.FC = () => {
       toast({
         title: "Error al enviar mensaje",
         description: "Por favor, intenta nuevamente más tarde.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  return (
-    <Layout>
+  return <Layout>
       {/* Hero Section */}
-      <section className="pt-32 pb-20 md:pt-40 md:pb-28 bg-gradient-to-b from-tech-lightGray to-white">
+      <section className="pt-32 pb-20 md:pt-40 md:pb-28 bg-gradient-to-b from-tech-lightGray to-white my-[79px] mx-[35px] py-[27px]">
         <div className="container-padding max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">Contáctanos</h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -89,7 +82,7 @@ const Contacto: React.FC = () => {
       </section>
       
       {/* Contact Info Cards */}
-      <section className="py-16 md:py-24">
+      <section className="py-16 px-[6px] mx-[22px] my-[5px] md:py-0">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* WhatsApp */}
@@ -99,12 +92,7 @@ const Contacto: React.FC = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">WhatsApp</h3>
               <p className="text-gray-600 mb-6">Respuesta inmediata a tus consultas</p>
-              <a 
-                href="https://wa.me/529622148546" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-green-500 hover:bg-green-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2"
-              >
+              <a href="https://wa.me/529622148546" target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2 px-[22px] py-[6px] my-0 mx-0">
                 <MessageCircle size={18} />
                 Contáctanos por WhatsApp
               </a>
@@ -117,10 +105,7 @@ const Contacto: React.FC = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Teléfono</h3>
               <p className="text-gray-600 mb-6">Llámanos para atención personalizada</p>
-              <a 
-                href="tel:+529622148546" 
-                className="bg-tech-blue hover:bg-tech-blue/90 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2"
-              >
+              <a href="tel:+529622148546" className="bg-tech-blue hover:bg-tech-blue/90 text-white rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2 py-[7px] px-[22px]">
                 <Phone size={18} />
                 +52 (962) 214-8546
               </a>
@@ -133,10 +118,7 @@ const Contacto: React.FC = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Correo Electrónico</h3>
               <p className="text-gray-600 mb-6">Escríbenos para consultas detalladas</p>
-              <a 
-                href="mailto:contacto@compuchiapas.com" 
-                className="bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2"
-              >
+              <a href="mailto:contacto@compuchiapas.com" className="bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2">
                 <Mail size={18} />
                 contacto@compuchiapas.com
               </a>
@@ -153,16 +135,9 @@ const Contacto: React.FC = () => {
             <div className="glass-card rounded-2xl overflow-hidden h-[400px] lg:h-auto">
               {/* En un proyecto real, aquí iría un mapa interactivo como Google Maps */}
               <div className="relative w-full h-full bg-gray-200">
-                <iframe 
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3820.3872995234184!2d-93.14755792392837!3d16.75603842397744!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ecd8b5f5f9f4f7%3A0xb8ba8977d4642ce2!2sBoulevard%20Belisario%20Dom%C3%ADnguez%202090%2C%2029000%20Tuxtla%20Guti%C3%A9rrez%2C%20Chis.%2C%20Mexico!5e0!3m2!1sen!2sus!4v1693443012345!5m2!1sen!2sus" 
-                  width="100%" 
-                  height="100%" 
-                  style={{ border: 0 }}
-                  allowFullScreen={false} 
-                  loading="lazy" 
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Ubicación de Compuchiapas"
-                ></iframe>
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3820.3872995234184!2d-93.14755792392837!3d16.75603842397744!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ecd8b5f5f9f4f7%3A0xb8ba8977d4642ce2!2sBoulevard%20Belisario%20Dom%C3%ADnguez%202090%2C%2029000%20Tuxtla%20Guti%C3%A9rrez%2C%20Chis.%2C%20Mexico!5e0!3m2!1sen!2sus!4v1693443012345!5m2!1sen!2sus" width="100%" height="100%" style={{
+                border: 0
+              }} allowFullScreen={false} loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Ubicación de Compuchiapas"></iframe>
                 <div className="absolute top-0 left-0 w-full h-full bg-black/5 flex items-center justify-center">
                   <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs">
                     <h3 className="font-semibold mb-2">Compuchiapas</h3>
@@ -192,30 +167,14 @@ const Contacto: React.FC = () => {
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                       Nombre completo
                     </label>
-                    <input
-                      type="text"
-                      id="name"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
-                      placeholder="Tu nombre"
-                      required
-                      value={formData.name}
-                      onChange={handleChange}
-                    />
+                    <input type="text" id="name" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu nombre" required value={formData.name} onChange={handleChange} />
                   </div>
                   
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                       Correo electrónico
                     </label>
-                    <input
-                      type="email"
-                      id="email"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
-                      placeholder="Tu email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
-                    />
+                    <input type="email" id="email" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu email" required value={formData.email} onChange={handleChange} />
                   </div>
                 </div>
                 
@@ -223,52 +182,24 @@ const Contacto: React.FC = () => {
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                     Teléfono
                   </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
-                    placeholder="Tu teléfono"
-                    required
-                    value={formData.phone}
-                    onChange={handleChange}
-                  />
+                  <input type="tel" id="phone" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu teléfono" required value={formData.phone} onChange={handleChange} />
                 </div>
                 
                 <div>
                   <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
                     Asunto
                   </label>
-                  <input
-                    type="text"
-                    id="subject"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
-                    placeholder="Asunto de tu mensaje"
-                    required
-                    value={formData.subject}
-                    onChange={handleChange}
-                  />
+                  <input type="text" id="subject" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Asunto de tu mensaje" required value={formData.subject} onChange={handleChange} />
                 </div>
                 
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
                     Mensaje
                   </label>
-                  <textarea
-                    id="message"
-                    rows={5}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
-                    placeholder="Escribe tu mensaje aquí..."
-                    required
-                    value={formData.message}
-                    onChange={handleChange}
-                  ></textarea>
+                  <textarea id="message" rows={5} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Escribe tu mensaje aquí..." required value={formData.message} onChange={handleChange}></textarea>
                 </div>
                 
-                <button
-                  type="submit"
-                  className="w-full bg-tech-blue hover:bg-tech-blue/90 text-white py-3 px-8 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
-                  disabled={isSubmitting}
-                >
+                <button type="submit" className="w-full bg-tech-blue hover:bg-tech-blue/90 text-white py-3 px-8 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2" disabled={isSubmitting}>
                   {isSubmitting ? 'Enviando...' : 'Enviar mensaje'}
                   {!isSubmitting && <ArrowRight size={18} />}
                 </button>
@@ -334,10 +265,7 @@ const Contacto: React.FC = () => {
                   <p className="text-sm text-gray-600">
                     Para emergencias técnicas fuera de horario, contacta a nuestro equipo de soporte al:
                   </p>
-                  <a 
-                    href="tel:+529612345678" 
-                    className="mt-2 text-tech-blue font-medium hover:underline flex items-center"
-                  >
+                  <a href="tel:+529612345678" className="mt-2 text-tech-blue font-medium hover:underline flex items-center">
                     <Phone size={16} className="mr-2" />
                     +52 (961) 234-5678
                   </a>
@@ -355,19 +283,12 @@ const Contacto: React.FC = () => {
           <p className="text-xl mb-12 max-w-3xl mx-auto opacity-90">
             Contáctanos por WhatsApp y recibe atención personalizada en minutos
           </p>
-          <a 
-            href="https://wa.me/529622148546" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="bg-white text-tech-blue hover:bg-gray-100 py-4 px-10 rounded-lg font-medium text-lg transition-all duration-300 inline-flex items-center justify-center gap-2"
-          >
+          <a href="https://wa.me/529622148546" target="_blank" rel="noopener noreferrer" className="bg-white text-tech-blue hover:bg-gray-100 py-4 px-10 rounded-lg font-medium text-lg transition-all duration-300 inline-flex items-center justify-center gap-2">
             <MessageCircle size={24} />
             Contáctanos por WhatsApp
           </a>
         </div>
       </section>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default Contacto;
