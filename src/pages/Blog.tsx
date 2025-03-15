@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import Layout from '../components/Layout';
 import { ArrowRight, Calendar, User } from 'lucide-react';
@@ -52,9 +51,9 @@ const Blog: React.FC = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="pt-24 pb-12 md:pt-28 md:pb-16 bg-gradient-to-b from-tech-lightGray to-white">
+      <section className="pt-24 pb-4 md:pt-28 md:pb-8 bg-gradient-to-b from-tech-lightGray to-white">
         <div className="container-padding max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Blog Tecnológico</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Blog Tecnológico</h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
             Artículos, guías y consejos para mantenerte al día con la tecnología
           </p>
@@ -62,7 +61,7 @@ const Blog: React.FC = () => {
       </section>
       
       {/* Featured Article - Moved higher */}
-      <section className="py-10">
+      <section className="py-6">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="glass-card rounded-2xl overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2">

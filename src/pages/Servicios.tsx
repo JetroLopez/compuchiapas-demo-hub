@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import Layout from '../components/Layout';
 import ServiceCard from '../components/ServiceCard';
@@ -81,7 +80,7 @@ const Servicios: React.FC = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="pt-32 pb-20 md:pt-40 md:pb-28 bg-gradient-to-b from-tech-lightGray to-white">
+      <section className="pt-24 pb-12 md:pt-28 md:pb-16 bg-gradient-to-b from-tech-lightGray to-white">
         <div className="container-padding max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">Servicios Técnicos Profesionales</h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -91,7 +90,7 @@ const Servicios: React.FC = () => {
       </section>
       
       {/* Services Grid */}
-      <section className="py-16 md:py-24">
+      <section className="py-10 md:py-16">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
@@ -101,8 +100,7 @@ const Servicios: React.FC = () => {
                 description={service.description}
                 icon={service.icon}
                 className={cn(
-                  "animate-fade-up",
-                  index % 2 === 0 ? "lg:transform lg:translate-y-4" : ""
+                  "animate-fade-up h-full"
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}
               />
