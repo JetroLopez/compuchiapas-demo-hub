@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ProductCard from '../ProductCard';
 import { useQuery } from '@tanstack/react-query';
@@ -21,6 +20,7 @@ interface ProductsListProps {
   products: ProductSpec[];
   searchTerm: string;
   activeCategory: string;
+  resetFilters: () => void; // Add resetFilters to the props
 }
 
 // Esta función obtiene productos de Supabase
@@ -91,7 +91,7 @@ const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
   }
 };
 
-const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activeCategory }) => {
+const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activeCategory, resetFilters }) => {
   // Obtener productos de Supabase
   const { data: supabaseProducts, isLoading, error } = useQuery({
     queryKey: ['products'],
@@ -140,7 +140,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activ
   }
 
   if (filteredProducts.length === 0) {
-    return <NoProductsFound />;
+    return <NoProductsFound resetFilters={resetFilters} />;
   }
 
   return (
