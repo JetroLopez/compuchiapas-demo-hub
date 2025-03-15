@@ -19,8 +19,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   sku,
   stock
 }) => {
-  const whatsappNumber = "9622148546"; // Número de WhatsApp actualizado
-  const whatsappMessage = `Hola, me interesa el producto ${name} con precio ${price}. ¿Podrían darme más información?`;
+  const category = specs.find(spec => spec.includes('Marca:'))?.replace('Marca:', '').trim() || '';
+  const whatsappNumber = "9622148546";
+  const whatsappMessage = `Me interesa el producto ${name} con clave ${sku || 'N/A'} que ví en su sitio web`;
   
   const handleWhatsAppClick = () => {
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
@@ -39,29 +40,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
       
       <div className="p-6">
         <h3 className="text-xl font-semibold mb-1">{name}</h3>
+        <p className="text-tech-blue text-sm mb-2">{category}</p>
         {sku && (
           <p className="text-gray-400 text-sm mb-2">SKU: {sku}</p>
         )}
-        <p className="text-tech-blue font-bold text-xl mb-2">{price}</p>
         
         {stock !== undefined && (
           <p className="text-sm font-medium mb-3">
-            {stock >= 1 ? (
+            {stock > 0 ? (
               <span className="text-green-600">Disponible</span>
             ) : (
               <span className="text-red-600">No disponible</span>
             )}
           </p>
         )}
-        
-        <div className="space-y-2 mb-6">
-          {specs.map((spec, index) => (
-            <p key={index} className="text-sm text-gray-600 flex items-start">
-              <span className="mr-2 text-tech-blue">•</span>
-              {spec}
-            </p>
-          ))}
-        </div>
         
         <button 
           onClick={handleWhatsAppClick}

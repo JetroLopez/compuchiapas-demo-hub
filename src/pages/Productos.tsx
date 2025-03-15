@@ -93,15 +93,15 @@ const Productos: React.FC = () => {
     <Layout>
       <ProductHero />
       
-      {/* Special Banner */}
-      <section className="py-12">
+      {/* Special Banner - reduced spacing */}
+      <section className="py-8">
         <div className="container-padding max-w-7xl mx-auto">
           <CustomQuoteBanner />
         </div>
       </section>
       
       {/* Product Catalog */}
-      <section className="py-16">
+      <section className="py-12">
         <div className="container-padding max-w-7xl mx-auto">
           {/* Search and Filter */}
           <ProductFilters 
@@ -122,8 +122,8 @@ const Productos: React.FC = () => {
         </div>
       </section>
       
-      {/* Custom Builds CTA */}
-      <section className="py-16 bg-tech-lightGray">
+      {/* Custom Builds CTA - reduced spacing */}
+      <section className="py-12 bg-tech-lightGray">
         <div className="container-padding max-w-7xl mx-auto">
           <CustomPCBuild />
         </div>

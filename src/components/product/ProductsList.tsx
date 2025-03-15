@@ -20,7 +20,7 @@ interface ProductsListProps {
   products: ProductSpec[];
   searchTerm: string;
   activeCategory: string;
-  resetFilters: () => void; // Add resetFilters to the props
+  resetFilters: () => void;
 }
 
 // Esta función obtiene productos de Supabase
@@ -46,15 +46,11 @@ const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
     
     // Mapear datos de Supabase a nuestra interfaz ProductSpec
     const mappedProducts = data.map((item, index) => {
-      // Generar un precio de placeholder (normalmente vendría de tu base de datos)
-      const price = `$${Math.floor(Math.random() * 15000 + 500)} MXN`;
+      // No usamos precio ahora
+      const price = '';
       
-      // Generar especificaciones de placeholder
-      const specs = [
-        `Marca: ${item.Linea || 'Genérica'}`,
-        'Calidad: Excelente',
-        'Garantía: 1 año'
-      ];
+      // Simplificamos las especificaciones, solo usamos la categoría
+      const specs = [`Marca: ${item["LINEA ACT"] || 'No especificada'}`];
       
       // Obtener imagen de placeholder - en una app real, tendrías URLs de imágenes en tu base de datos
       const imagePool = [
