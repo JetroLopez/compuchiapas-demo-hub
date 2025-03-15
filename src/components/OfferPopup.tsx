@@ -30,10 +30,10 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-3 left-3 z-30 animate-fade-up">
+      <div className="fixed bottom-1 left-1 z-30 animate-fade-up">
         <button 
           onClick={handleReopen}
-          className="bg-tech-blue text-white rounded-full py-2 px-4 shadow-lg hover:bg-tech-blue/90 transition-colors text-sm"
+          className="bg-tech-blue text-white rounded-full py-1.5 px-3 shadow-lg hover:bg-tech-blue/90 transition-colors text-xs"
         >
           Ver oferta
         </button>
@@ -44,23 +44,23 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-3 left-3 z-30 max-w-xs animate-fade-up">
-      <div className="bg-white rounded-lg shadow-xl p-4 border border-gray-100 relative">
+    <div className="fixed bottom-1 left-1 z-30 max-w-xs animate-fade-up">
+      <div className="bg-white rounded-lg shadow-xl p-3 border border-gray-100 relative">
         <button 
           onClick={handleClose}
-          className="absolute right-1 top-1 p-1 rounded-full hover:bg-gray-200 transition-colors"
+          className="absolute right-0.5 top-0.5 p-1 rounded-full hover:bg-gray-200 transition-colors"
           aria-label="Cerrar"
         >
-          <X size={16} className="text-gray-500" />
+          <X size={14} className="text-gray-500" />
         </button>
         
-        <h3 className="text-base font-bold mb-1">{title}</h3>
-        <p className="text-sm text-gray-600 mb-2">
+        <h3 className="text-sm font-bold mb-0.5">{title}</h3>
+        <p className="text-xs text-gray-600 mb-1.5">
           {description}
         </p>
         <div className="flex justify-end">
           <button 
-            className="text-sm text-tech-blue font-medium hover:underline"
+            className="text-xs text-tech-blue font-medium hover:underline"
             onClick={onCtaClick}
           >
             {ctaText}

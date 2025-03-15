@@ -3,7 +3,7 @@ import React from 'react';
 
 const ProductHero: React.FC = () => {
   return (
-    <section className="pt-20 pb-8 md:pt-28 md:pb-10 bg-gradient-to-b from-tech-lightGray to-white">
+    <section className="pt-16 pb-6 md:pt-24 md:pb-8 bg-gradient-to-b from-tech-lightGray to-white">
       <div className="container-padding max-w-7xl mx-auto text-center">
         <h1 className="text-3xl md:text-4xl font-bold mb-2">Catálogo de Productos</h1>
         <p className="text-lg text-gray-600 max-w-3xl mx-auto">

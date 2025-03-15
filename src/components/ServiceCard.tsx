@@ -28,7 +28,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <div 
       className={cn(
-        "glass-card rounded-2xl p-6 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl h-full flex flex-col",
+        "glass-card rounded-2xl p-6 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl flex flex-col h-full",
         className
       )}
       style={style}

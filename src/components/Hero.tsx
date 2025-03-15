@@ -41,7 +41,7 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-tech-lightGray to-white -z-10"></div>
       
@@ -49,7 +49,7 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] -z-10"></div>
       
       <div className="container-padding max-w-6xl mx-auto text-center">
-        <div className="space-y-12 mt-24">
+        <div className="space-y-10 mt-12">
           <h1 
             ref={titleRef}
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-tech-gray opacity-100"
@@ -60,12 +60,12 @@ const Hero: React.FC = () => {
           
           <p 
             ref={subtitleRef}
-            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto mt-6 opacity-100"
+            className="text-xl md:text-2xl text-tech-gray/80 max-w-3xl mx-auto mt-8 opacity-100"
           >
             Servicios técnicos profesionales y equipos de calidad con garantía de satisfacción
           </p>
           
-          <div ref={ctaRef} className="flex flex-col sm:flex-row justify-center gap-4 pt-6 opacity-100">
+          <div ref={ctaRef} className="flex flex-col sm:flex-row justify-center gap-4 pt-8 opacity-100">
             <a href="/servicios" className="btn-primary">
               Ver servicios
             </a>
