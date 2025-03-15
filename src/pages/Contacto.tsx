@@ -72,7 +72,7 @@ const Contacto: React.FC = () => {
   };
   return <Layout>
       {/* Hero Section */}
-      <section className="pt-32 pb-20 md:pt-40 md:pb-28 bg-gradient-to-b from-tech-lightGray to-white my-[79px] mx-[35px] py-[27px]">
+      <section className="pt-32 pb-20 md:pt-40 md:pb-28 bg-gradient-to-b from-tech-lightGray to-white mx-[35px] my-[72px] py-[9px]">
         <div className="container-padding max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">Contáctanos</h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
