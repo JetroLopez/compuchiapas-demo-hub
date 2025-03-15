@@ -18,7 +18,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   className,
   style
 }) => {
-  const whatsappNumber = "+529622148546"; // Updated WhatsApp number
+  const whatsappNumber = "9622148546"; // Número de WhatsApp actualizado
   const whatsappMessage = `Hola, me interesa el servicio de ${title}. ¿Podrían darme más información?`;
   
   const handleWhatsAppClick = () => {
@@ -28,7 +28,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <div 
       className={cn(
-        "glass-card rounded-2xl p-6 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl",
+        "glass-card rounded-2xl p-6 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl h-full flex flex-col",
         className
       )}
       style={style}
@@ -38,11 +38,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       </div>
       
       <h3 className="text-xl font-semibold mb-3">{title}</h3>
-      <p className="text-gray-600 mb-6">{description}</p>
+      <p className="text-gray-600 mb-6 flex-grow">{description}</p>
       
       <button 
         onClick={handleWhatsAppClick}
-        className="group flex items-center text-tech-blue font-medium hover:underline"
+        className="group flex items-center text-tech-blue font-medium hover:underline mt-auto"
       >
         Cotizar por WhatsApp
         <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />

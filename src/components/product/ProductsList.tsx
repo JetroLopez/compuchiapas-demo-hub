@@ -4,6 +4,7 @@ import ProductCard from '../ProductCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import NoProductsFound from './NoProductsFound';
 
 interface ProductSpec {
   id: number;
@@ -22,7 +23,7 @@ interface ProductsListProps {
   activeCategory: string;
 }
 
-// This function fetches products from Supabase
+// Esta función obtiene productos de Supabase
 const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
   console.log('Fetching products from Supabase');
   
@@ -43,19 +44,19 @@ const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
       return [];
     }
     
-    // Map Supabase data to our ProductSpec interface
+    // Mapear datos de Supabase a nuestra interfaz ProductSpec
     const mappedProducts = data.map((item, index) => {
-      // Generate a placeholder price (this would typically come from your database)
+      // Generar un precio de placeholder (normalmente vendría de tu base de datos)
       const price = `$${Math.floor(Math.random() * 15000 + 500)} MXN`;
       
-      // Generate placeholder specs
+      // Generar especificaciones de placeholder
       const specs = [
         `Marca: ${item.Linea || 'Genérica'}`,
         'Calidad: Excelente',
         'Garantía: 1 año'
       ];
       
-      // Get placeholder image - in a real app, you would have image URLs in your database
+      // Obtener imagen de placeholder - en una app real, tendrías URLs de imágenes en tu base de datos
       const imagePool = [
         'https://images.unsplash.com/photo-1496181133206-80ce9b88a853',
         'https://images.unsplash.com/photo-1587202372775-e229f172b9d7',
@@ -91,25 +92,25 @@ const fetchProductsFromSupabase = async (): Promise<ProductSpec[]> => {
 };
 
 const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activeCategory }) => {
-  // Fetch products from Supabase
+  // Obtener productos de Supabase
   const { data: supabaseProducts, isLoading, error } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProductsFromSupabase,
-    // Now we enable the query since Supabase is connected
+    // Activamos la consulta ya que Supabase está conectado
     enabled: true,
   });
   
   console.log('Query state:', { isLoading, error, productCount: supabaseProducts?.length || 0 });
   
-  // Use Supabase products if available, otherwise use the props.products as fallback
+  // Usar productos de Supabase si están disponibles, de lo contrario usar los props.products como respaldo
   const displayProducts = supabaseProducts || products;
   
-  // Apply filters to the display products (this now works for both Supabase and local data)
+  // Aplicar filtros a los productos a mostrar (esto funciona tanto para datos de Supabase como para datos locales)
   const filteredProducts = displayProducts.filter(product => {
-    // Filter by category
+    // Filtrar por categoría
     const categoryMatch = activeCategory === 'all' || product.category === activeCategory;
     
-    // Filter by search term
+    // Filtrar por término de búsqueda
     const searchMatch = 
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       product.specs.some(spec => spec.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -139,14 +140,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ products, searchTerm, activ
   }
 
   if (filteredProducts.length === 0) {
-    return (
-      <div className="col-span-full text-center py-16">
-        <p className="text-xl text-gray-600">No se encontraron productos que coincidan con tu búsqueda.</p>
-        {displayProducts.length === 0 && (
-          <p className="text-sm mt-2 text-gray-500">No hay productos disponibles en la base de datos.</p>
-        )}
-      </div>
-    );
+    return <NoProductsFound />;
   }
 
   return (

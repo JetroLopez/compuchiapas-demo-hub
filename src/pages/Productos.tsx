@@ -1,10 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import ProductHero from '../components/product/ProductHero';
 import CustomQuoteBanner from '../components/product/CustomQuoteBanner';
 import ProductFilters from '../components/product/ProductFilters';
 import ProductsList from '../components/product/ProductsList';
-import NoProductsFound from '../components/product/NoProductsFound';
 import CustomPCBuild from '../components/product/CustomPCBuild';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +13,7 @@ const Productos: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Define predefined categories matching the LINEA ACT from Supabase
+  // Define las categorías predefinidas que coinciden con la LINEA ACT de Supabase
   const [categories, setCategories] = useState([
     { id: 'all', name: 'Todos' },
     { id: 'accesorios', name: 'Accesorios' },
@@ -31,22 +31,30 @@ const Productos: React.FC = () => {
     { id: 'redes', name: 'Redes' }
   ]);
 
-  // Fetch categories from Supabase
+  // Obtener categorías de Supabase
   const { data: supabaseCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from('Productos')
-          .select('*')
-          .order('LINEA ACT');
+          .select('*');
           
         if (error) {
           console.error('Error fetching categories:', error);
           throw error;
         }
         
+        console.log('Categories data from Supabase:', data);
+        
+        if (!data || data.length === 0) {
+          console.log('No categories found');
+          return categories;
+        }
+        
         const uniqueCategories = Array.from(new Set(data.map(item => item["LINEA ACT"])));
+        console.log('Unique categories:', uniqueCategories);
+        
         const categoryObjects = uniqueCategories.map(category => ({
           id: category.toLowerCase(),
           name: category
@@ -56,6 +64,8 @@ const Productos: React.FC = () => {
           { id: 'all', name: 'Todos' },
           ...categoryObjects
         ];
+        
+        console.log('All categories:', allCategories);
         
         if (categoryObjects.length > 0) {
           setCategories(allCategories);
@@ -70,29 +80,6 @@ const Productos: React.FC = () => {
     enabled: true
   });
 
-  // Fetch products from Supabase
-  const { data: productsData, isLoading, isError } = useQuery({
-    queryKey: ['products'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('Productos')
-          .select('*');
-
-        if (error) {
-          console.error('Error fetching products:', error);
-          throw error;
-        }
-
-        return data || [];
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        return [];
-      }
-    },
-    enabled: true,
-  });
-
   useEffect(() => {
     document.title = "Productos | Compuchiapas";
   }, []);
@@ -101,14 +88,6 @@ const Productos: React.FC = () => {
     setSearchTerm('');
     setActiveCategory('all');
   };
-
-  if (isLoading) {
-    return <div className="text-center py-8">Cargando productos...</div>;
-  }
-
-  if (isError) {
-    return <div className="text-center py-8 text-red-500">Ocurrió un error al cargar los productos.</div>;
-  }
 
   return (
     <Layout>
@@ -135,7 +114,7 @@ const Productos: React.FC = () => {
           
           {/* Products Grid */}
           <ProductsList 
-            products={productsData || []} 
+            products={[]} 
             searchTerm={searchTerm}
             activeCategory={activeCategory}
           />
