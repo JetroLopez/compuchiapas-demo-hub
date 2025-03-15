@@ -30,12 +30,12 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-6 left-6 z-30 animate-fade-up">
+      <div className="fixed bottom-3 left-3 z-30 animate-fade-up">
         <button 
           onClick={handleReopen}
-          className="bg-tech-blue text-white rounded-full py-2 px-4 shadow-lg hover:bg-tech-blue/90 transition-colors"
+          className="bg-tech-blue text-white rounded-full py-2 px-4 shadow-lg hover:bg-tech-blue/90 transition-colors text-sm"
         >
-          Ver oferta especial
+          Ver oferta
         </button>
       </div>
     );
@@ -44,23 +44,23 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-24 left-6 z-30 max-w-sm animate-fade-up">
-      <div className="bg-white rounded-lg shadow-xl p-6 border border-gray-100 relative">
+    <div className="fixed bottom-3 left-3 z-30 max-w-xs animate-fade-up">
+      <div className="bg-white rounded-lg shadow-xl p-4 border border-gray-100 relative">
         <button 
           onClick={handleClose}
-          className="absolute right-2 top-2 p-1 rounded-full hover:bg-gray-200 transition-colors"
+          className="absolute right-1 top-1 p-1 rounded-full hover:bg-gray-200 transition-colors"
           aria-label="Cerrar"
         >
-          <X size={18} className="text-gray-500" />
+          <X size={16} className="text-gray-500" />
         </button>
         
-        <h3 className="text-lg font-bold mb-2">{title}</h3>
-        <p className="text-gray-600 mb-4">
+        <h3 className="text-base font-bold mb-1">{title}</h3>
+        <p className="text-sm text-gray-600 mb-2">
           {description}
         </p>
         <div className="flex justify-end">
           <button 
-            className="text-tech-blue font-medium hover:underline"
+            className="text-sm text-tech-blue font-medium hover:underline"
             onClick={onCtaClick}
           >
             {ctaText}

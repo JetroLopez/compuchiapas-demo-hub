@@ -1,19 +1,79 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { Phone, Mail, MapPin, MessageCircle, Clock, ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Contacto: React.FC = () => {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     // Para el SEO
     document.title = "Contacto | Compuchiapas";
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí iría la lógica para manejar el envío del formulario
-    // Por ahora, solo mostraremos un mensaje en la consola
-    console.log('Formulario enviado');
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('contact_submissions')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            subject: formData.subject,
+            message: formData.message
+          }
+        ]);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Mensaje enviado",
+        description: "Nos pondremos en contacto contigo lo antes posible.",
+        variant: "default",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: ''
+      });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Error al enviar mensaje",
+        description: "Por favor, intenta nuevamente más tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -86,7 +146,7 @@ const Contacto: React.FC = () => {
       </section>
       
       {/* Map & Contact Form */}
-      <section className="py-16 md:py-24 bg-tech-lightGray">
+      <section id="contact-form" className="py-16 md:py-24 bg-tech-lightGray">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Map */}
@@ -138,6 +198,8 @@ const Contacto: React.FC = () => {
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                       placeholder="Tu nombre"
                       required
+                      value={formData.name}
+                      onChange={handleChange}
                     />
                   </div>
                   
@@ -151,6 +213,8 @@ const Contacto: React.FC = () => {
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                       placeholder="Tu email"
                       required
+                      value={formData.email}
+                      onChange={handleChange}
                     />
                   </div>
                 </div>
@@ -165,6 +229,8 @@ const Contacto: React.FC = () => {
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                     placeholder="Tu teléfono"
                     required
+                    value={formData.phone}
+                    onChange={handleChange}
                   />
                 </div>
                 
@@ -178,6 +244,8 @@ const Contacto: React.FC = () => {
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                     placeholder="Asunto de tu mensaje"
                     required
+                    value={formData.subject}
+                    onChange={handleChange}
                   />
                 </div>
                 
@@ -191,15 +259,18 @@ const Contacto: React.FC = () => {
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                     placeholder="Escribe tu mensaje aquí..."
                     required
+                    value={formData.message}
+                    onChange={handleChange}
                   ></textarea>
                 </div>
                 
                 <button
                   type="submit"
                   className="w-full bg-tech-blue hover:bg-tech-blue/90 text-white py-3 px-8 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
                 >
-                  Enviar mensaje
-                  <ArrowRight size={18} />
+                  {isSubmitting ? 'Enviando...' : 'Enviar mensaje'}
+                  {!isSubmitting && <ArrowRight size={18} />}
                 </button>
               </form>
             </div>

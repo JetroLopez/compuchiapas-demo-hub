@@ -31,6 +31,13 @@ const NavBar: React.FC = () => {
     { name: 'Contacto', path: '/contacto' },
   ];
 
+  const handleContactClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (location.pathname === '/contacto') {
+      e.preventDefault();
+      document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <header 
       className={cn(
@@ -63,8 +70,9 @@ const NavBar: React.FC = () => {
               </Link>
             ))}
             <a 
-              href="#contacto" 
+              href={location.pathname === '/contacto' ? '#contact-form' : '/contacto'} 
               className="btn-primary"
+              onClick={handleContactClick}
             >
               Contáctanos
             </a>
@@ -100,8 +108,9 @@ const NavBar: React.FC = () => {
               </Link>
             ))}
             <a 
-              href="#contacto" 
+              href={location.pathname === '/contacto' ? '#contact-form' : '/contacto'} 
               className="btn-primary text-center mt-2"
+              onClick={handleContactClick}
             >
               Contáctanos
             </a>

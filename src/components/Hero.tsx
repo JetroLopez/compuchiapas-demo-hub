@@ -41,7 +41,7 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-tech-lightGray to-white -z-10"></div>
       
@@ -49,10 +49,10 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] -z-10"></div>
       
       <div className="container-padding max-w-6xl mx-auto text-center">
-        <div className="space-y-8">
+        <div className="space-y-12 mt-24">
           <h1 
             ref={titleRef}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-tech-gray opacity-100 pt-10"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-tech-gray opacity-100"
           >
             <span className="block mb-2">Expertos en tecnología</span>
             <span className="text-gradient block">Para tu negocio y hogar</span>
