@@ -1,13 +1,11 @@
-
 import React from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Check } from 'lucide-react';
 
 interface ProductCardProps {
   name: string;
   price: string;
   image: string;
   specs: string[];
-  sku?: string;
   stock?: number;
 }
 
@@ -16,19 +14,17 @@ const ProductCard: React.FC<ProductCardProps> = ({
   price, 
   image, 
   specs,
-  sku,
   stock
 }) => {
-  const category = specs.find(spec => spec.includes('Marca:'))?.replace('Marca:', '').trim() || '';
   const whatsappNumber = "9622148546";
-  const whatsappMessage = `Me interesa el producto ${name} con clave ${sku || 'N/A'} que ví en su sitio web`;
+  const whatsappMessage = `Me interesa el producto "${name}" que vi en su sitio web. ¿Está disponible?`;
   
   const handleWhatsAppClick = () => {
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
   };
 
   return (
-    <div className="glass-card rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl group">
+    <div className="glass-card rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
       <div className="relative overflow-hidden h-56">
         <img 
           src={image} 
@@ -36,29 +32,34 @@ const ProductCard: React.FC<ProductCardProps> = ({
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
         />
+        {stock !== undefined && stock > 0 && (
+          <span className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+            Disponible
+          </span>
+        )}
       </div>
       
       <div className="p-6">
-        <h3 className="text-xl font-semibold mb-1">{name}</h3>
-        <p className="text-tech-blue text-sm mb-2">{category}</p>
-        {sku && (
-          <p className="text-gray-400 text-sm mb-2">SKU: {sku}</p>
+        <h3 className="text-lg font-semibold mb-2 line-clamp-2">{name}</h3>
+        
+        {price && (
+          <p className="text-tech-blue text-xl font-bold mb-3">{price}</p>
         )}
         
-        {stock !== undefined && (
-          <p className="text-sm font-medium mb-3">
-            {stock > 0 ? (
-              <span className="text-green-600">Disponible</span>
-            ) : (
-              <span className="text-red-600">No disponible</span>
-            )}
-          </p>
+        {specs.length > 0 && (
+          <ul className="space-y-1 mb-4">
+            {specs.slice(0, 4).map((spec, index) => (
+              <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
+                <Check size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
+                <span>{spec}</span>
+              </li>
+            ))}
+          </ul>
         )}
         
         <button 
           onClick={handleWhatsAppClick}
-          className="w-full btn-primary flex items-center justify-center gap-2"
-          disabled={stock !== undefined && stock < 1}
+          className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
         >
           <MessageCircle size={18} />
           Consultar por WhatsApp
