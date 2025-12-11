@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import ProductHero from '../components/product/ProductHero';
@@ -9,75 +8,32 @@ import CustomPCBuild from '../components/product/CustomPCBuild';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+interface Category {
+  id: string;
+  name: string;
+  display_order: number;
+}
+
 const Productos: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Define las categorías predefinidas que coinciden con la LINEA ACT de Supabase
-  const [categories, setCategories] = useState([
-    { id: 'all', name: 'Todos' },
-    { id: 'accesorios', name: 'Accesorios' },
-    { id: 'almacenamiento', name: 'Almacenamiento' },
-    { id: 'cargadores', name: 'Cargadores' },
-    { id: 'computadoras', name: 'Computadoras' },
-    { id: 'consumibles', name: 'Consumibles' },
-    { id: 'digitales', name: 'Digitales' },
-    { id: 'energia', name: 'Energía' },
-    { id: 'impresoras', name: 'Impresoras' },
-    { id: 'laptops', name: 'Laptops' },
-    { id: 'mobiliario', name: 'Mobiliario' },
-    { id: 'monitores', name: 'Monitores' },
-    { id: 'punto de venta', name: 'Punto de venta' },
-    { id: 'redes', name: 'Redes' }
-  ]);
 
-  // Obtener categorías de Supabase
-  const { data: supabaseCategories } = useQuery({
+  // Obtener categorías de la base de datos
+  const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('Productos')
-          .select('*');
-          
-        if (error) {
-          console.error('Error fetching categories:', error);
-          throw error;
-        }
+    queryFn: async (): Promise<Category[]> => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, display_order')
+        .order('display_order', { ascending: true });
         
-        console.log('Categories data from Supabase:', data);
-        
-        if (!data || data.length === 0) {
-          console.log('No categories found');
-          return categories;
-        }
-        
-        const uniqueCategories = Array.from(new Set(data.map(item => item["LINEA ACT"])));
-        console.log('Unique categories:', uniqueCategories);
-        
-        const categoryObjects = uniqueCategories.map(category => ({
-          id: category.toLowerCase(),
-          name: category
-        }));
-        
-        const allCategories = [
-          { id: 'all', name: 'Todos' },
-          ...categoryObjects
-        ];
-        
-        console.log('All categories:', allCategories);
-        
-        if (categoryObjects.length > 0) {
-          setCategories(allCategories);
-        }
-        
-        return allCategories;
-      } catch (error) {
+      if (error) {
         console.error('Error fetching categories:', error);
-        return categories;
+        return [{ id: 'all', name: 'Todos', display_order: 0 }];
       }
-    },
-    enabled: true
+      
+      return data || [{ id: 'all', name: 'Todos', display_order: 0 }];
+    }
   });
 
   useEffect(() => {
@@ -93,7 +49,7 @@ const Productos: React.FC = () => {
     <Layout>
       <ProductHero />
       
-      {/* Special Banner - reduced spacing */}
+      {/* Special Banner */}
       <section className="py-8">
         <div className="container-padding max-w-7xl mx-auto">
           <CustomQuoteBanner />
@@ -114,7 +70,6 @@ const Productos: React.FC = () => {
           
           {/* Products Grid */}
           <ProductsList 
-            products={[]} 
             searchTerm={searchTerm}
             activeCategory={activeCategory}
             resetFilters={resetFilters}
@@ -122,7 +77,7 @@ const Productos: React.FC = () => {
         </div>
       </section>
       
-      {/* Custom Builds CTA - reduced spacing */}
+      {/* Custom Builds CTA */}
       <section className="py-12 bg-tech-lightGray">
         <div className="container-padding max-w-7xl mx-auto">
           <CustomPCBuild />
