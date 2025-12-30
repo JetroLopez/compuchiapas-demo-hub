@@ -149,47 +149,35 @@ export type Database = {
       products: {
         Row: {
           category_id: string | null
+          clave: string | null
           created_at: string
-          description: string | null
+          existencias: number | null
           id: string
           image_url: string | null
           is_active: boolean | null
-          is_featured: boolean | null
           name: string
-          price: string
-          price_numeric: number | null
-          specs: string[] | null
-          stock: number | null
           updated_at: string
         }
         Insert: {
           category_id?: string | null
+          clave?: string | null
           created_at?: string
-          description?: string | null
+          existencias?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
-          is_featured?: boolean | null
           name: string
-          price: string
-          price_numeric?: number | null
-          specs?: string[] | null
-          stock?: number | null
           updated_at?: string
         }
         Update: {
           category_id?: string | null
+          clave?: string | null
           created_at?: string
-          description?: string | null
+          existencias?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
-          is_featured?: boolean | null
           name?: string
-          price?: string
-          price_numeric?: number | null
-          specs?: string[] | null
-          stock?: number | null
           updated_at?: string
         }
         Relationships: [
