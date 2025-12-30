@@ -1,23 +1,21 @@
 import React from 'react';
-import { MessageCircle, Check } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 
 interface ProductCardProps {
+  clave: string | null;
   name: string;
-  price: string;
   image: string;
-  specs: string[];
-  stock?: number;
+  existencias: number;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
+  clave,
   name, 
-  price, 
   image, 
-  specs,
-  stock
+  existencias
 }) => {
   const whatsappNumber = "9622148546";
-  const whatsappMessage = `Me interesa el producto "${name}" que vi en su sitio web. ¿Está disponible?`;
+  const whatsappMessage = `Hola, me interesa cotizar el producto:\n\nClave: ${clave || 'N/A'}\nDescripción: ${name}\n\n¿Podrían darme más información?`;
   
   const handleWhatsAppClick = () => {
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
@@ -32,37 +30,30 @@ const ProductCard: React.FC<ProductCardProps> = ({
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
         />
-        {stock !== undefined && stock > 0 && (
+        {existencias > 0 && (
           <span className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-            Disponible
+            En stock: {existencias}
+          </span>
+        )}
+        {existencias === 0 && (
+          <span className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+            Agotado
           </span>
         )}
       </div>
       
       <div className="p-6">
-        <h3 className="text-lg font-semibold mb-2 line-clamp-2">{name}</h3>
-        
-        {price && (
-          <p className="text-tech-blue text-xl font-bold mb-3">{price}</p>
+        {clave && (
+          <p className="text-xs text-gray-500 mb-1">Clave: {clave}</p>
         )}
-        
-        {specs.length > 0 && (
-          <ul className="space-y-1 mb-4">
-            {specs.slice(0, 4).map((spec, index) => (
-              <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
-                <Check size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
-                <span>{spec}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <h3 className="text-lg font-semibold mb-4 line-clamp-2">{name}</h3>
         
         <button 
           onClick={handleWhatsAppClick}
           className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
         >
           <MessageCircle size={18} />
-          Consultar por WhatsApp
+          Cotizar por WhatsApp
         </button>
       </div>
     </div>

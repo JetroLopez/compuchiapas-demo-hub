@@ -7,15 +7,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface Product {
   id: string;
+  clave: string | null;
   name: string;
-  price: string;
-  price_numeric: number | null;
   category_id: string | null;
   image_url: string | null;
-  specs: string[];
-  description: string | null;
-  stock: number | null;
-  is_featured: boolean;
+  existencias: number | null;
 }
 
 interface ProductsListProps {
@@ -31,8 +27,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     queryFn: async (): Promise<Product[]> => {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
-        .order('is_featured', { ascending: false })
+        .select('id, clave, name, category_id, image_url, existencias')
         .order('created_at', { ascending: false });
         
       if (error) {
@@ -53,8 +48,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     const searchLower = searchTerm.toLowerCase();
     const searchMatch = 
       product.name.toLowerCase().includes(searchLower) || 
-      product.specs.some(spec => spec.toLowerCase().includes(searchLower)) ||
-      (product.description && product.description.toLowerCase().includes(searchLower));
+      (product.clave && product.clave.toLowerCase().includes(searchLower));
     
     return categoryMatch && searchMatch;
   });
@@ -94,11 +88,10 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
       {filteredProducts.map((product) => (
         <ProductCard
           key={product.id}
+          clave={product.clave}
           name={product.name}
-          price={product.price}
           image={product.image_url || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1000&q=80'}
-          specs={product.specs}
-          stock={product.stock ?? undefined}
+          existencias={product.existencias ?? 0}
         />
       ))}
     </div>
