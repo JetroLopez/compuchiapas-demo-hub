@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw } from 'lucide-react';
 import AdminProducts from '@/components/admin/AdminProducts';
 import AdminUsers from '@/components/admin/AdminUsers';
+import ProductSync from '@/components/admin/ProductSync';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -63,8 +64,12 @@ const Admin: React.FC = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {isAdmin ? (
-          <Tabs defaultValue="products" className="w-full">
+          <Tabs defaultValue="sync" className="w-full">
             <TabsList className="mb-6">
+              <TabsTrigger value="sync" className="gap-2">
+                <RefreshCw size={16} />
+                Sincronizar
+              </TabsTrigger>
               <TabsTrigger value="products" className="gap-2">
                 <Package size={16} />
                 Productos
@@ -74,6 +79,10 @@ const Admin: React.FC = () => {
                 Usuarios
               </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="sync">
+              <ProductSync />
+            </TabsContent>
             
             <TabsContent value="products">
               <AdminProducts />
