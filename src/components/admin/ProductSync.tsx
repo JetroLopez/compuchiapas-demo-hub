@@ -13,6 +13,7 @@ interface ParsedProduct {
   descripcion: string;
   linea: string;
   existencias: number;
+  imagen_url?: string;
 }
 
 const ProductSync: React.FC = () => {
@@ -59,7 +60,7 @@ const ProductSync: React.FC = () => {
         continue;
       }
 
-      // Need at least 4 columns: CLAVE, DESCRIPCION, LINEA, EXISTENCIAS
+      // Need at least 4 columns: CLAVE, DESCRIPCION, LINEA, EXISTENCIAS (URL_IMAGEN optional)
       if (parts.length >= 4) {
         const existencias = parseInt(parts[3]) || 0;
         
@@ -70,6 +71,7 @@ const ProductSync: React.FC = () => {
             descripcion: parts[1],
             linea: parts[2],
             existencias,
+            imagen_url: parts[4]?.trim() || undefined,
           });
         }
       }
@@ -90,7 +92,7 @@ const ProductSync: React.FC = () => {
       const products = parseTableData(pastedData);
       
       if (products.length === 0) {
-        setParseError('No se encontraron productos válidos. Asegúrate de que el formato sea: CLAVE | DESCRIPCION | LINEA | EXISTENCIAS');
+        setParseError('No se encontraron productos válidos. Asegúrate de que el formato sea: CLAVE | DESCRIPCION | LINEA | EXISTENCIAS | URL_IMAGEN (opcional)');
         return;
       }
 
@@ -123,13 +125,18 @@ const ProductSync: React.FC = () => {
                c.id.toLowerCase() === product.linea.toLowerCase()
         );
 
-        const productData = {
+        const productData: any = {
           clave: product.clave,
           name: product.descripcion,
           category_id: category?.id || null,
           existencias: product.existencias,
           is_active: true,
         };
+
+        // Only include image_url if provided
+        if (product.imagen_url) {
+          productData.image_url = product.imagen_url;
+        }
 
         if (existingClaves.has(product.clave)) {
           // Update existing
@@ -197,7 +204,7 @@ const ProductSync: React.FC = () => {
           Sincronizar Inventario
         </CardTitle>
         <CardDescription>
-          Pega los datos de tu punto de venta con formato: CLAVE, DESCRIPCIÓN, LÍNEA, EXISTENCIAS
+          Pega los datos de tu punto de venta con formato: CLAVE, DESCRIPCIÓN, LÍNEA, EXISTENCIAS, URL_IMAGEN (opcional)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -205,8 +212,8 @@ const ProductSync: React.FC = () => {
           <Textarea
             placeholder={`Ejemplo de formato (separado por tabs o espacios):
 
-CLAVE001    Teclado USB Logitech    Periféricos    15
-CLAVE002    Mouse Inalámbrico       Periféricos    8
+CLAVE001    Teclado USB Logitech    Periféricos    15    https://ejemplo.com/teclado.jpg
+CLAVE002    Mouse Inalámbrico       Periféricos    8     https://ejemplo.com/mouse.jpg
 CLAVE003    Laptop HP 15            Equipos        3`}
             value={pastedData}
             onChange={(e) => setPastedData(e.target.value)}
@@ -247,6 +254,7 @@ CLAVE003    Laptop HP 15            Equipos        3`}
                     <th className="text-left p-2">Descripción</th>
                     <th className="text-left p-2">Línea</th>
                     <th className="text-center p-2">Existencias</th>
+                    <th className="text-left p-2">URL Imagen</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -256,6 +264,9 @@ CLAVE003    Laptop HP 15            Equipos        3`}
                       <td className="p-2 truncate max-w-xs">{product.descripcion}</td>
                       <td className="p-2">{product.linea}</td>
                       <td className="p-2 text-center">{product.existencias}</td>
+                      <td className="p-2 truncate max-w-[150px] text-xs text-muted-foreground" title={product.imagen_url}>
+                        {product.imagen_url || '-'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
