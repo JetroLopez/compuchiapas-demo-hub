@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Upload, Download, Trash2, Plus, Loader2, Search } from 'lucide-react';
+import { Upload, Download, Trash2, Plus, Loader2, Search, Save } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,11 +25,20 @@ interface Category {
   name: string;
 }
 
+interface EditedProduct {
+  clave?: string | null;
+  name?: string;
+  category_id?: string | null;
+  image_url?: string | null;
+  existencias?: number | null;
+}
+
 const AdminProducts: React.FC = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editedProducts, setEditedProducts] = useState<Record<string, EditedProduct>>({});
   const [newProduct, setNewProduct] = useState({
     clave: '',
     name: '',
@@ -63,6 +72,78 @@ const AdminProducts: React.FC = () => {
       
       if (error) throw error;
       return data || [];
+    },
+  });
+
+  // Reset edited products when products change (after save or refetch)
+  useEffect(() => {
+    setEditedProducts({});
+  }, [products]);
+
+  // Check if there are unsaved changes
+  const hasChanges = useMemo(() => {
+    return Object.keys(editedProducts).length > 0;
+  }, [editedProducts]);
+
+  // Update a product field locally
+  const updateProductField = (productId: string, field: keyof EditedProduct, value: string | number | null) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    const currentEdits = editedProducts[productId] || {};
+    const originalValue = product[field];
+    
+    // If the new value equals the original, remove the edit
+    if (value === originalValue || (value === '' && originalValue === null)) {
+      const { [field]: _, ...remainingEdits } = currentEdits;
+      if (Object.keys(remainingEdits).length === 0) {
+        const { [productId]: __, ...remainingProducts } = editedProducts;
+        setEditedProducts(remainingProducts);
+      } else {
+        setEditedProducts({ ...editedProducts, [productId]: remainingEdits });
+      }
+    } else {
+      setEditedProducts({
+        ...editedProducts,
+        [productId]: { ...currentEdits, [field]: value === '' ? null : value }
+      });
+    }
+  };
+
+  // Get the display value for a field (edited or original)
+  const getFieldValue = (product: Product, field: keyof EditedProduct) => {
+    const edited = editedProducts[product.id];
+    if (edited && field in edited) {
+      return edited[field];
+    }
+    return product[field];
+  };
+
+  // Save all changes mutation
+  const saveChangesMutation = useMutation({
+    mutationFn: async () => {
+      const updates = Object.entries(editedProducts).map(([id, changes]) => ({
+        id,
+        ...changes,
+      }));
+
+      for (const update of updates) {
+        const { id, ...fields } = update;
+        const { error } = await supabase
+          .from('products')
+          .update(fields)
+          .eq('id', id);
+        
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast.success(`${Object.keys(editedProducts).length} producto(s) actualizado(s)`);
+      setEditedProducts({});
+    },
+    onError: () => {
+      toast.error('Error al guardar cambios');
     },
   });
 
@@ -208,10 +289,8 @@ const AdminProducts: React.FC = () => {
     (p.clave && p.clave.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const getCategoryName = (categoryId: string | null) => {
-    if (!categoryId) return '-';
-    const category = categories.find(c => c.id === categoryId);
-    return category?.name || categoryId;
+  const isProductEdited = (productId: string) => {
+    return productId in editedProducts;
   };
 
   return (
@@ -311,6 +390,20 @@ const AdminProducts: React.FC = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            <Button 
+              size="sm" 
+              variant={hasChanges ? "default" : "outline"}
+              disabled={!hasChanges || saveChangesMutation.isPending}
+              onClick={() => saveChangesMutation.mutate()}
+              className={hasChanges ? "bg-green-600 hover:bg-green-700" : ""}
+            >
+              {saveChangesMutation.isPending ? (
+                <Loader2 size={16} className="mr-2 animate-spin" />
+              ) : (
+                <Save size={16} className="mr-2" />
+              )}
+              Guardar cambios
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -326,38 +419,93 @@ const AdminProducts: React.FC = () => {
           />
         </div>
 
+        {hasChanges && (
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
+            Hay {Object.keys(editedProducts).length} producto(s) con cambios sin guardar
+          </div>
+        )}
+
         {/* Products Table */}
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Clave</TableHead>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead className="text-center">Existencias</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="w-24">Clave</TableHead>
+                  <TableHead className="min-w-[200px]">Descripción</TableHead>
+                  <TableHead className="w-40">Categoría</TableHead>
+                  <TableHead className="w-32">URL Imagen</TableHead>
+                  <TableHead className="w-24 text-center">Existencias</TableHead>
+                  <TableHead className="w-16 text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No se encontraron productos
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-mono text-sm">{product.clave || '-'}</TableCell>
-                      <TableCell className="max-w-xs truncate">{product.name}</TableCell>
-                      <TableCell>{getCategoryName(product.category_id)}</TableCell>
-                      <TableCell className="text-center">{product.existencias || 0}</TableCell>
-                      <TableCell className="text-right">
+                    <TableRow 
+                      key={product.id}
+                      className={isProductEdited(product.id) ? "bg-amber-50/50 dark:bg-amber-950/30" : ""}
+                    >
+                      <TableCell className="p-1">
+                        <Input
+                          value={(getFieldValue(product, 'clave') as string) || ''}
+                          onChange={(e) => updateProductField(product.id, 'clave', e.target.value)}
+                          className="h-8 font-mono text-sm"
+                          placeholder="-"
+                        />
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input
+                          value={(getFieldValue(product, 'name') as string) || ''}
+                          onChange={(e) => updateProductField(product.id, 'name', e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Select
+                          value={(getFieldValue(product, 'category_id') as string) || ''}
+                          onValueChange={(value) => updateProductField(product.id, 'category_id', value || null)}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Sin categoría" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input
+                          value={(getFieldValue(product, 'image_url') as string) || ''}
+                          onChange={(e) => updateProductField(product.id, 'image_url', e.target.value)}
+                          className="h-8 text-xs w-28"
+                          placeholder="URL"
+                          title={(getFieldValue(product, 'image_url') as string) || ''}
+                        />
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input
+                          type="number"
+                          value={(getFieldValue(product, 'existencias') as number) ?? 0}
+                          onChange={(e) => updateProductField(product.id, 'existencias', parseInt(e.target.value) || 0)}
+                          className="h-8 text-sm text-center"
+                        />
+                      </TableCell>
+                      <TableCell className="p-1 text-right">
                         <Button
                           variant="ghost"
                           size="sm"
