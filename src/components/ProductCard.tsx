@@ -26,9 +26,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div className="relative overflow-hidden h-56">
         <img 
           src={image} 
-          alt={name} 
+          alt=""
+          title=""
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
+          draggable={false}
         />
         {existencias > 0 && (
           <span className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
