@@ -435,7 +435,7 @@ const AdminProducts: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-24">Clave</TableHead>
+                  <TableHead className="w-36">Clave</TableHead>
                   <TableHead className="min-w-[200px]">Descripción</TableHead>
                   <TableHead className="w-40">Categoría</TableHead>
                   <TableHead className="w-32">URL Imagen</TableHead>
