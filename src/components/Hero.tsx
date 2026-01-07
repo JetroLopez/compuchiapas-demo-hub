@@ -91,9 +91,9 @@ const Hero: React.FC = () => {
       />
 
       {/* Main content */}
-      <div className="container-padding max-w-6xl mx-auto text-center flex-1 flex flex-col justify-center">
+      <div className="container-padding max-w-6xl mx-auto text-center flex-1 flex flex-col justify-center mb-12 md:mb-16">
         <motion.div
-          className="space-y-6"
+          className="space-y-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -130,14 +130,12 @@ const Hero: React.FC = () => {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 w-full">
           {/* Services Banner */}
-          <motion.a
+          <a
             href="/servicios"
             className="group relative overflow-hidden bg-gradient-to-br from-tech-blue to-blue-700 py-12 md:py-16 px-8 flex flex-col items-center justify-center cursor-pointer"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             {/* Hover overlay effect */}
-            <motion.div
+            <div
               className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
             />
             
@@ -163,29 +161,27 @@ const Hero: React.FC = () => {
               >
                 <Wrench className="w-8 h-8 text-white" />
               </motion.div>
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
+              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300 origin-center">
                 Nuestros Servicios
               </h3>
               <p className="text-blue-100/80 text-sm md:text-base max-w-xs mx-auto">
                 Reparación, mantenimiento y soporte técnico especializado
               </p>
-              <motion.span
+              <span
                 className="inline-block mt-4 text-white font-medium group-hover:translate-x-2 transition-transform duration-300"
               >
                 Explorar →
-              </motion.span>
+              </span>
             </div>
-          </motion.a>
+          </a>
 
           {/* Products Banner */}
-          <motion.a
+          <a
             href="/productos"
             className="group relative overflow-hidden bg-gradient-to-br from-tech-orange to-orange-600 py-12 md:py-16 px-8 flex flex-col items-center justify-center cursor-pointer"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             {/* Hover overlay effect */}
-            <motion.div
+            <div
               className="absolute inset-0 bg-gradient-to-br from-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
             />
             
@@ -211,19 +207,19 @@ const Hero: React.FC = () => {
               >
                 <ShoppingBag className="w-8 h-8 text-white" />
               </motion.div>
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
+              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300 origin-center">
                 Catálogo de Productos
               </h3>
               <p className="text-orange-100/80 text-sm md:text-base max-w-xs mx-auto">
                 Equipos, componentes y accesorios de las mejores marcas
               </p>
-              <motion.span
+              <span
                 className="inline-block mt-4 text-white font-medium group-hover:translate-x-2 transition-transform duration-300"
               >
                 Ver productos →
-              </motion.span>
+              </span>
             </div>
-          </motion.a>
+          </a>
         </div>
       </motion.div>
 
