@@ -33,7 +33,7 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden pt-16">
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 -z-20" />
       
@@ -105,7 +105,7 @@ const Hero: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <span className="block mb-3">Expertos en tecnología</span>
-            <span className="block bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent pb-2">
               Para tu negocio y hogar
             </span>
           </motion.h1>
