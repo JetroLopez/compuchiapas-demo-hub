@@ -23,7 +23,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group">
-      <div className="relative overflow-hidden h-56">
+      <div className="relative overflow-hidden aspect-square">
         <img 
           src={image} 
           alt=""
