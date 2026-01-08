@@ -1,13 +1,13 @@
 
 import React from 'react';
-import { Laptop, Printer, Database, Wifi, Monitor } from 'lucide-react';
+import { Laptop, Printer, Database, Monitor } from 'lucide-react';
 import ServiceCard from './ServiceCard';
 
 const FeaturedServices: React.FC = () => {
   const services = [
     {
       title: 'Reparación de Laptops',
-      description: 'Solucionamos problemas de hardware y software en todas las marcas con diagnóstico gratuito.',
+      description: 'Solucionamos problemas de hardware y software en todas las marcas con diagnóstico el mismo día.',
       icon: <Laptop size={32} />
     },
     {
@@ -19,11 +19,6 @@ const FeaturedServices: React.FC = () => {
       title: 'Recuperación de Datos',
       description: 'Recuperamos información de discos duros dañados y dispositivos de almacenamiento.',
       icon: <Database size={32} />
-    },
-    {
-      title: 'Configuración de Redes',
-      description: 'Instalación y optimización de redes WiFi para hogares y negocios.',
-      icon: <Wifi size={32} />
     },
     {
       title: 'Ensamble de PCs',

@@ -168,7 +168,7 @@ const Contacto: React.FC = () => {
             
             {/* Contact Form */}
             <div className="glass-card rounded-2xl p-8 md:p-12">
-              <h2 className="text-3xl font-bold mb-6">Envíanos un mensaje</h2>
+              <h2 className="text-3xl font-bold mb-6">Requieres información o necesitas una cotización, envíanos un mensaje</h2>
               <p className="text-gray-600 mb-8">
                 Completa el formulario y nos pondremos en contacto contigo lo antes posible.
               </p>
