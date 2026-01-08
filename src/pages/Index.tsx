@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import Hero from '../components/Hero';
 import FeaturedServices from '../components/FeaturedServices';
@@ -7,8 +7,20 @@ import ProductCategories from '../components/ProductCategories';
 import TestimonialCard from '../components/TestimonialCard';
 import OfferPopup from '../components/OfferPopup';
 import { ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Index: React.FC = () => {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    device: '',
+    message: '',
+    privacy: false
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     // Para el SEO
     document.title = "Compuchiapas | Servicios Técnicos y Venta de Equipo de Cómputo";
@@ -16,6 +28,57 @@ const Index: React.FC = () => {
 
   const scrollToContact = () => {
     document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { id, value, type } = e.target;
+    if (type === 'checkbox') {
+      setFormData(prev => ({ ...prev, [id]: (e.target as HTMLInputElement).checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [id]: value }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.privacy) {
+      toast({
+        title: "Error",
+        description: "Debes aceptar la política de privacidad.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('contact_submissions').insert([{
+        name: formData.name,
+        email: '', // No hay campo de email en este formulario
+        phone: formData.phone,
+        subject: `Solicitud desde landing - ${formData.device}`,
+        message: formData.message
+      }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Mensaje enviado",
+        description: "Nos pondremos en contacto contigo lo antes posible.",
+        variant: "default"
+      });
+
+      setFormData({ name: '', phone: '', device: '', message: '', privacy: false });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Error al enviar mensaje",
+        description: "Por favor, intenta nuevamente más tarde.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const testimonials = [
@@ -176,7 +239,7 @@ const Index: React.FC = () => {
               </div>
               
               <div>
-                <form className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -188,6 +251,8 @@ const Index: React.FC = () => {
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                         placeholder="Tu nombre"
                         required
+                        value={formData.name}
+                        onChange={handleChange}
                       />
                     </div>
                     
@@ -201,6 +266,8 @@ const Index: React.FC = () => {
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                         placeholder="Tu teléfono"
                         required
+                        value={formData.phone}
+                        onChange={handleChange}
                       />
                     </div>
                   </div>
@@ -213,6 +280,8 @@ const Index: React.FC = () => {
                       id="device"
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                       required
+                      value={formData.device}
+                      onChange={handleChange}
                     >
                       <option value="">Selecciona una opción</option>
                       <option value="laptop">Laptop</option>
@@ -233,6 +302,8 @@ const Index: React.FC = () => {
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
                       placeholder="Detalla el problema que estás experimentando..."
                       required
+                      value={formData.message}
+                      onChange={handleChange}
                     ></textarea>
                   </div>
                   
@@ -242,6 +313,8 @@ const Index: React.FC = () => {
                       id="privacy"
                       className="h-4 w-4 text-tech-blue focus:ring-tech-blue border-gray-300 rounded"
                       required
+                      checked={formData.privacy}
+                      onChange={handleChange}
                     />
                     <label htmlFor="privacy" className="ml-2 block text-sm text-gray-700">
                       Acepto la política de privacidad
@@ -251,8 +324,9 @@ const Index: React.FC = () => {
                   <button
                     type="submit"
                     className="w-full btn-primary"
+                    disabled={isSubmitting}
                   >
-                    Enviar mensaje
+                    {isSubmitting ? 'Enviando...' : 'Enviar mensaje'}
                   </button>
                 </form>
               </div>
