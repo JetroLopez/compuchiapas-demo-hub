@@ -10,9 +10,9 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Column 1 */}
           <div>
-            <h3 className="text-xl font-bold mb-6">Compuchiapas</h3>
+            <h3 className="text-xl font-bold mb-6">Compusistemas de Chiapas S.A. de C.V.</h3>
             <p className="text-gray-300 mb-6">
-              Expertos en tecnología con más de 10 años de experiencia brindando soluciones informáticas de calidad.
+              Expertos en tecnología con más de 30 años de experiencia brindando soluciones informáticas y de calidad.
             </p>
             <div className="flex space-x-4">
               <a 
@@ -108,12 +108,12 @@ const Footer: React.FC = () => {
                 <MapPin size={20} className="mr-3 text-tech-blue mt-1" />
                 <span className="text-gray-300">
                   <a 
-                    href="https://maps.app.goo.gl/pCvE2nMgBWeqsqjv9" 
+                    href="https://maps.app.goo.gl/compusistemas-tapachula" 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="hover:text-white transition-colors"
                   >
-                    Boulevard Belisario Domínguez 2090, Tuxtla Gutiérrez, Chiapas, México
+                    6a. Avenida Sur, Centro, 30700 Tapachula de Córdova y Ordóñez, Chis.
                   </a>
                 </span>
               </li>

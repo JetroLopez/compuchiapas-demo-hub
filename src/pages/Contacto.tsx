@@ -135,15 +135,15 @@ const Contacto: React.FC = () => {
             <div className="glass-card rounded-2xl overflow-hidden h-[400px] lg:h-auto">
               {/* En un proyecto real, aquí iría un mapa interactivo como Google Maps */}
               <div className="relative w-full h-full bg-gray-200">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3820.3872995234184!2d-93.14755792392837!3d16.75603842397744!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ecd8b5f5f9f4f7%3A0xb8ba8977d4642ce2!2sBoulevard%20Belisario%20Dom%C3%ADnguez%202090%2C%2029000%20Tuxtla%20Guti%C3%A9rrez%2C%20Chis.%2C%20Mexico!5e0!3m2!1sen!2sus!4v1693443012345!5m2!1sen!2sus" width="100%" height="100%" style={{
+              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3794.123456789!2d-92.26!3d14.9!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x858e1234567890ab%3A0x1234567890abcdef!2sCompusistemas%20de%20Chiapas!5e0!3m2!1ses!2smx!4v1693443012345!5m2!1ses!2smx" width="100%" height="100%" style={{
                 border: 0
-              }} allowFullScreen={false} loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Ubicación de Compuchiapas"></iframe>
+              }} allowFullScreen={false} loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Ubicación de Compusistemas de Chiapas"></iframe>
                 <div className="absolute top-0 left-0 w-full h-full bg-black/5 flex items-center justify-center">
                   <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs">
-                    <h3 className="font-semibold mb-2">Compuchiapas</h3>
+                    <h3 className="font-semibold mb-2">Compusistemas de Chiapas</h3>
                     <div className="flex items-start text-gray-700 mb-2">
                       <MapPin size={16} className="mt-0.5 mr-2 flex-shrink-0" />
-                      <p className="text-sm">Boulevard Belisario Domínguez 2090, 29000 Tuxtla Gutiérrez, Chiapas, México</p>
+                      <p className="text-sm">6a. Avenida Sur, Centro, 30700 Tapachula de Córdova y Ordóñez, Chis.</p>
                     </div>
                     <div className="flex items-center text-gray-700">
                       <Clock size={16} className="mr-2" />

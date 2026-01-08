@@ -166,8 +166,8 @@ const Index: React.FC = () => {
                     <div>
                       <h3 className="text-lg font-semibold">Ubicación</h3>
                       <p className="text-gray-600">
-                        <a href="https://maps.app.goo.gl/pCvE2nMgBWeqsqjv9" target="_blank" rel="noopener noreferrer" className="hover:text-tech-blue">
-                          Boulevard Belisario Domínguez 2090, 29000 Tuxtla Gutiérrez, Chis., México
+                        <a href="https://maps.app.goo.gl/compusistemas-tapachula" target="_blank" rel="noopener noreferrer" className="hover:text-tech-blue">
+                          6a. Avenida Sur, Centro, 30700 Tapachula de Córdova y Ordóñez, Chis.
                         </a>
                       </p>
                     </div>
