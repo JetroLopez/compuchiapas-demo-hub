@@ -108,7 +108,7 @@ const Footer: React.FC = () => {
                 <MapPin size={20} className="mr-3 text-tech-blue mt-1" />
                 <span className="text-gray-300">
                   <a 
-                    href="https://maps.app.goo.gl/compusistemas-tapachula" 
+                    href="https://maps.app.goo.gl/jp9mgSQvwcNeHM1U9" 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="hover:text-white transition-colors"
@@ -134,7 +134,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400">
-          <p>© {new Date().getFullYear()} Compuchiapas. Todos los derechos reservados.</p>
+          <p>© 2026 Compusistemas de Chiapas. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>

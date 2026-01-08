@@ -132,12 +132,24 @@ const Contacto: React.FC = () => {
         <div className="container-padding max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Map */}
-            <div className="glass-card rounded-2xl overflow-hidden h-[400px] lg:h-auto">
-              {/* En un proyecto real, aquí iría un mapa interactivo como Google Maps */}
-              <div className="relative w-full h-full bg-gray-200">
-              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3794.123456789!2d-92.26!3d14.9!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x858e1234567890ab%3A0x1234567890abcdef!2sCompusistemas%20de%20Chiapas!5e0!3m2!1ses!2smx!4v1693443012345!5m2!1ses!2smx" width="100%" height="100%" style={{
-                border: 0
-              }} allowFullScreen={false} loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Ubicación de Compusistemas de Chiapas"></iframe>
+            <a 
+              href="https://maps.app.goo.gl/jp9mgSQvwcNeHM1U9" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="glass-card rounded-2xl overflow-hidden h-[400px] lg:h-auto block cursor-pointer hover:shadow-xl transition-shadow"
+            >
+              {/* Mapa interactivo clickeable */}
+              <div className="relative w-full h-full bg-gray-200 pointer-events-none">
+                <iframe 
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3794.5!2d-92.2636!3d14.9047!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x858e87b2c6f9e8ab%3A0x1234567890abcdef!2s6a%20Avenida%20Sur%2C%20Centro%2C%2030700%20Tapachula%20de%20C%C3%B3rdova%20y%20Ord%C3%B3%C3%B1ez%2C%20Chis.!5e0!3m2!1ses!2smx!4v1693443012345!5m2!1ses!2smx" 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 0 }} 
+                  allowFullScreen={false} 
+                  loading="lazy" 
+                  referrerPolicy="no-referrer-when-downgrade" 
+                  title="Ubicación de Compusistemas de Chiapas"
+                ></iframe>
                 <div className="absolute top-0 left-0 w-full h-full bg-black/5 flex items-center justify-center">
                   <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs">
                     <h3 className="font-semibold mb-2">Compusistemas de Chiapas</h3>
@@ -152,7 +164,7 @@ const Contacto: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </a>
             
             {/* Contact Form */}
             <div className="glass-card rounded-2xl p-8 md:p-12">
