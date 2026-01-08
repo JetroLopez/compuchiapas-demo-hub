@@ -92,9 +92,9 @@ const Contacto: React.FC = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">WhatsApp</h3>
               <p className="text-gray-600 mb-6">Respuesta inmediata a tus consultas</p>
-              <a href="https://wa.me/529622148546" target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2 px-[22px] py-[6px] my-0 mx-0">
+              <a href="https://wa.me/529622148546" target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2 py-3 px-6">
                 <MessageCircle size={18} />
-                Contáctanos por WhatsApp
+                Enviar mensaje
               </a>
             </div>
             
@@ -105,9 +105,9 @@ const Contacto: React.FC = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Teléfono</h3>
               <p className="text-gray-600 mb-6">Llámanos para atención personalizada</p>
-              <a href="tel:+529622148546" className="bg-tech-blue hover:bg-tech-blue/90 text-white rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2 py-[7px] px-[22px]">
+              <a href="tel:+529622148546" className="bg-tech-blue hover:bg-tech-blue/90 text-white rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2 py-3 px-6">
                 <Phone size={18} />
-                +52 (962) 214-8546
+                Llamar
               </a>
             </div>
             
@@ -120,7 +120,7 @@ const Contacto: React.FC = () => {
               <p className="text-gray-600 mb-6">Escríbenos para consultas detalladas</p>
               <a href="mailto:contacto@compuchiapas.com" className="bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2">
                 <Mail size={18} />
-                contacto@compuchiapas.com
+                Email
               </a>
             </div>
           </div>
