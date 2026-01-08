@@ -36,6 +36,8 @@ interface EditedProduct {
   existencias?: number | null;
 }
 
+const INITIAL_ITEMS = 10;
+
 const AdminProducts: React.FC = () => {
   const queryClient = useQueryClient();
   const csvInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +46,8 @@ const AdminProducts: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editedProducts, setEditedProducts] = useState<Record<string, EditedProduct>>({});
+  const [showAll, setShowAll] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [newProduct, setNewProduct] = useState({
     clave: '',
     name: '',
@@ -386,6 +390,24 @@ const AdminProducts: React.FC = () => {
     (p.clave && p.clave.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Productos a mostrar según paginación
+  const displayedProducts = showAll ? filteredProducts : filteredProducts.slice(0, INITIAL_ITEMS);
+  const remainingCount = filteredProducts.length - INITIAL_ITEMS;
+  const hasMoreProducts = !showAll && remainingCount > 0;
+
+  const handleShowMore = async () => {
+    setIsLoadingMore(true);
+    // Simular carga para mejor UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setShowAll(true);
+    setIsLoadingMore(false);
+  };
+
+  // Reset showAll when search changes
+  useEffect(() => {
+    setShowAll(false);
+  }, [searchTerm]);
+
   const isProductEdited = (productId: string) => {
     return productId in editedProducts;
   };
@@ -608,14 +630,14 @@ const AdminProducts: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.length === 0 ? (
+                {displayedProducts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No se encontraron productos
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts.map((product) => (
+                  displayedProducts.map((product) => (
                     <TableRow 
                       key={product.id}
                       className={isProductEdited(product.id) ? "bg-amber-50/50 dark:bg-amber-950/30" : ""}
@@ -686,9 +708,36 @@ const AdminProducts: React.FC = () => {
             </Table>
           </div>
         )}
+
+        {/* Show more button */}
+        {!isLoading && hasMoreProducts && (
+          <div className="flex justify-center mt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleShowMore}
+              disabled={isLoadingMore}
+              className="min-w-[200px]"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Espere un momento...
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  Mostrar {remainingCount} productos más
+                </>
+              )}
+            </Button>
+          </div>
+        )}
         
         <p className="text-sm text-muted-foreground mt-4">
-          Total: {filteredProducts.length} productos
+          {showAll || filteredProducts.length <= INITIAL_ITEMS 
+            ? `Total: ${filteredProducts.length} productos`
+            : `Mostrando ${displayedProducts.length} de ${filteredProducts.length} productos`
+          }
         </p>
       </CardContent>
     </Card>
