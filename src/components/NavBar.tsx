@@ -8,6 +8,9 @@ const NavBar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  
+  // Pages that need dark header when not scrolled
+  const needsDarkHeader = location.pathname === '/productos';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,7 +45,11 @@ const NavBar: React.FC = () => {
     <header 
       className={cn(
         'fixed w-full z-50 transition-all duration-300 ease-in-out',
-        isScrolled ? 'bg-white/80 backdrop-blur-lg shadow-sm' : 'bg-transparent'
+        isScrolled 
+          ? 'bg-white/80 backdrop-blur-lg shadow-sm' 
+          : needsDarkHeader 
+            ? 'bg-tech-blue' 
+            : 'bg-transparent'
       )}
     >
       <div className="container-padding mx-auto">
