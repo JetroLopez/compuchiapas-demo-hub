@@ -114,10 +114,11 @@ const ProductSync: React.FC = () => {
         existingProducts?.map(p => [p.clave, p.id]) || []
       );
 
-      const toUpsert: any[] = [];
+      const toUpdate: any[] = [];
+      const toInsert: any[] = [];
       const newClaves = new Set(products.map(p => p.clave));
 
-      // Prepare products for upsert
+      // Prepare products for update or insert
       for (const product of products) {
         // Find category ID by matching name
         const category = categories.find(
@@ -139,14 +140,14 @@ const ProductSync: React.FC = () => {
         }
 
         if (existingClaves.has(product.clave)) {
-          // Update existing
-          toUpsert.push({
+          // Update existing - include the id
+          toUpdate.push({
             id: existingClaves.get(product.clave),
             ...productData,
           });
         } else {
-          // Insert new
-          toUpsert.push(productData);
+          // Insert new - don't include id, let the database generate it
+          toInsert.push(productData);
         }
       }
 
@@ -163,16 +164,29 @@ const ProductSync: React.FC = () => {
         if (deactivateError) throw deactivateError;
       }
 
-      // Upsert products
-      const { error } = await supabase
-        .from('products')
-        .upsert(toUpsert, { onConflict: 'clave' });
+      // Update existing products
+      if (toUpdate.length > 0) {
+        const { error: updateError } = await supabase
+          .from('products')
+          .upsert(toUpdate, { onConflict: 'id' });
 
-      if (error) throw error;
+        if (updateError) throw updateError;
+      }
+
+      // Insert new products
+      if (toInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('products')
+          .insert(toInsert);
+
+        if (insertError) throw insertError;
+      }
 
       return {
         synced: products.length,
         deactivated: clavesToDeactivate.length,
+        updated: toUpdate.length,
+        inserted: toInsert.length,
       };
     },
     onSuccess: (result) => {
