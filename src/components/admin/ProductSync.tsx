@@ -153,7 +153,19 @@ const ProductSync: React.FC = () => {
 
   const syncMutation = useMutation({
     mutationFn: async (products: ParsedProduct[]) => {
-      const newClaves = new Set(products.map((p) => p.clave).filter(Boolean));
+      // Deduplicate by CLAVE to avoid Postgres error:
+      // "ON CONFLICT DO UPDATE command cannot affect row a second time"
+      const deduped = new Map<string, ParsedProduct>();
+      let duplicates = 0;
+      for (const p of products) {
+        if (!p.clave) continue;
+        if (deduped.has(p.clave)) duplicates++;
+        // Keep the last occurrence (usually the most recent inventory row)
+        deduped.set(p.clave, p);
+      }
+      const uniqueProducts = Array.from(deduped.values());
+
+      const newClaves = new Set(uniqueProducts.map((p) => p.clave).filter(Boolean));
 
       // Fetch ALL existing claves (PostgREST default limit is 1000)
       const pageSize = 1000;
@@ -189,7 +201,7 @@ const ProductSync: React.FC = () => {
       }
 
       // Upsert (by CLAVE) so we don't depend on fetching all IDs, and avoid duplicates.
-      const rows = products.map((product) => {
+      const rows = uniqueProducts.map((product) => {
         const category = categories.find(
           (c) =>
             c.name.toLowerCase() === product.linea.toLowerCase() ||
@@ -218,15 +230,18 @@ const ProductSync: React.FC = () => {
       if (upsertError) throw upsertError;
 
       return {
-        synced: products.length,
+        synced: uniqueProducts.length,
         deactivated: clavesToDeactivate.length,
+        duplicates,
       };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      const extra = result.duplicates > 0 ? ` (${result.duplicates} claves duplicadas fusionadas)` : '';
       toast.success(
-        `Sincronización completada: ${result.synced} productos actualizados, ${result.deactivated} marcados sin existencias`
+        `Sincronización completada: ${result.synced} productos actualizados, ${result.deactivated} marcados sin existencias${extra}`
       );
       setPastedData('');
       setParsedProducts([]);
