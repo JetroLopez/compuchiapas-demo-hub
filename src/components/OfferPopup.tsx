@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface OfferPopupProps {
@@ -7,6 +7,7 @@ interface OfferPopupProps {
   description: string;
   ctaText: string;
   onCtaClick: () => void;
+  delay?: number;
 }
 
 const OfferPopup: React.FC<OfferPopupProps> = ({
@@ -14,9 +15,19 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
   description,
   ctaText,
   onCtaClick,
+  delay = 40000,
 }) => {
+  const [isVisible, setIsVisible] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [delay]);
 
   const handleClose = () => {
     setIsMinimized(true);
@@ -27,6 +38,8 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
     setIsMinimized(false);
     setIsOpen(true);
   };
+
+  if (!isVisible) return null;
 
   if (isMinimized) {
     return (
@@ -44,8 +57,8 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-1 left-1 z-30 max-w-xs animate-fade-up">
-      <div className="bg-white rounded-lg shadow-xl p-3 border border-gray-100 relative">
+    <div className="fixed bottom-1 left-1 z-30 max-w-[200px] md:max-w-xs animate-fade-up">
+      <div className="bg-white rounded-lg shadow-xl p-2 md:p-3 border border-gray-100 relative">
         <button 
           onClick={handleClose}
           className="absolute right-0.5 top-0.5 p-1 rounded-full hover:bg-gray-200 transition-colors"
@@ -54,13 +67,13 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
           <X size={14} className="text-gray-500" />
         </button>
         
-        <h3 className="text-sm font-bold mb-0.5">{title}</h3>
-        <p className="text-xs text-gray-600 mb-1.5">
+        <h3 className="text-xs md:text-sm font-bold mb-0.5 pr-4">{title}</h3>
+        <p className="text-[10px] md:text-xs text-gray-600 mb-1 md:mb-1.5">
           {description}
         </p>
         <div className="flex justify-end">
           <button 
-            className="text-xs text-tech-blue font-medium hover:underline"
+            className="text-[10px] md:text-xs text-tech-blue font-medium hover:underline"
             onClick={onCtaClick}
           >
             {ctaText}
