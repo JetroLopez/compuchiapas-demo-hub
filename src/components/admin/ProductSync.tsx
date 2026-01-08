@@ -35,45 +35,91 @@ const ProductSync: React.FC = () => {
   });
 
   const parseTableData = (text: string): ParsedProduct[] => {
-    const lines = text.trim().split('\n').filter(line => line.trim());
+    const lines = text
+      .trim()
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+
     if (lines.length === 0) return [];
 
     const products: ParsedProduct[] = [];
-    
+
     // Detect delimiter (tab or multiple spaces)
     const firstLine = lines[0];
     const isTabDelimited = firstLine.includes('\t');
-    
-    for (const line of lines) {
-      let parts: string[];
-      
-      if (isTabDelimited) {
-        parts = line.split('\t').map(p => p.trim());
-      } else {
-        // Handle space-delimited data (at least 2 spaces as separator)
-        parts = line.split(/\s{2,}/).map(p => p.trim());
-      }
 
+    const looksLikeUrl = (value: string) => /^https?:\/\//i.test(value);
+
+    for (const line of lines) {
       // Skip header row if detected
       const lowerLine = line.toLowerCase();
       if (lowerLine.includes('clave') && lowerLine.includes('descripcion')) {
         continue;
       }
 
-      // Need at least 4 columns: CLAVE, DESCRIPCION, LINEA, EXISTENCIAS (URL_IMAGEN optional)
-      if (parts.length >= 4) {
-        const existencias = parseInt(parts[3]) || 0;
-        
-        // Only include products with existencias >= 1
-        if (existencias >= 1) {
-          products.push({
-            clave: parts[0],
-            descripcion: parts[1],
-            linea: parts[2],
-            existencias,
-            imagen_url: parts[4]?.trim() || undefined,
-          });
+      let clave = '';
+      let descripcion = '';
+      let linea = '';
+      let existencias = 0;
+      let imagen_url: string | undefined;
+
+      if (isTabDelimited) {
+        const parts = line.split('\t').map((p) => p.trim());
+        if (parts.length < 4) continue;
+
+        clave = parts[0] || '';
+        descripcion = parts[1] || '';
+        linea = parts[2] || '';
+        existencias = parseInt(parts[3] || '0', 10) || 0;
+        imagen_url = parts[4]?.trim() || undefined;
+      } else {
+        // Try: separated by 2+ spaces (common when copying from some systems)
+        const parts = line
+          .split(/\s{2,}/)
+          .map((p) => p.trim())
+          .filter(Boolean);
+
+        if (parts.length >= 4) {
+          clave = parts[0] || '';
+          descripcion = parts[1] || '';
+          linea = parts[2] || '';
+          existencias = parseInt(parts[3] || '0', 10) || 0;
+          imagen_url = parts[4]?.trim() || undefined;
+        } else {
+          // Fallback: single-space separated (descripcion puede contener espacios)
+          // Formato esperado:
+          // CLAVE <descripcion...> LINEA EXISTENCIAS [URL_IMAGEN]
+          const tokens = line.split(/\s+/).filter(Boolean);
+          if (tokens.length < 4) continue;
+
+          clave = tokens[0] || '';
+
+          const last = tokens[tokens.length - 1];
+          const hasUrl = looksLikeUrl(last);
+
+          if (hasUrl) {
+            imagen_url = last;
+            existencias = parseInt(tokens[tokens.length - 2] || '0', 10) || 0;
+            linea = tokens[tokens.length - 3] || '';
+            descripcion = tokens.slice(1, tokens.length - 3).join(' ').trim();
+          } else {
+            existencias = parseInt(last || '0', 10) || 0;
+            linea = tokens[tokens.length - 2] || '';
+            descripcion = tokens.slice(1, tokens.length - 2).join(' ').trim();
+          }
         }
+      }
+
+      // Only include products with existencias >= 1
+      if (clave && descripcion && linea && existencias >= 1) {
+        products.push({
+          clave,
+          descripcion,
+          linea,
+          existencias,
+          imagen_url,
+        });
       }
     }
 
@@ -82,7 +128,7 @@ const ProductSync: React.FC = () => {
 
   const handlePaste = () => {
     setParseError(null);
-    
+
     if (!pastedData.trim()) {
       setParseError('No hay datos para procesar');
       return;
@@ -90,9 +136,11 @@ const ProductSync: React.FC = () => {
 
     try {
       const products = parseTableData(pastedData);
-      
+
       if (products.length === 0) {
-        setParseError('No se encontraron productos válidos. Asegúrate de que el formato sea: CLAVE | DESCRIPCION | LINEA | EXISTENCIAS | URL_IMAGEN (opcional)');
+        setParseError(
+          'No se encontraron productos válidos. Asegúrate de que el formato sea: CLAVE | DESCRIPCION | LINEA | EXISTENCIAS | URL_IMAGEN (opcional)'
+        );
         return;
       }
 
@@ -105,25 +153,47 @@ const ProductSync: React.FC = () => {
 
   const syncMutation = useMutation({
     mutationFn: async (products: ParsedProduct[]) => {
-      // Get all current claves from DB
-      const { data: existingProducts } = await supabase
-        .from('products')
-        .select('id, clave');
+      const newClaves = new Set(products.map((p) => p.clave).filter(Boolean));
 
-      const existingClaves = new Map(
-        existingProducts?.map(p => [p.clave, p.id]) || []
-      );
+      // Fetch ALL existing claves (PostgREST default limit is 1000)
+      const pageSize = 1000;
+      const existingClaves: string[] = [];
 
-      const toUpdate: any[] = [];
-      const toInsert: any[] = [];
-      const newClaves = new Set(products.map(p => p.clave));
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('clave')
+          .range(from, from + pageSize - 1);
 
-      // Prepare products for update or insert
-      for (const product of products) {
-        // Find category ID by matching name
+        if (error) throw error;
+
+        const claves = (data || []).map((r) => r.clave).filter(Boolean) as string[];
+        existingClaves.push(...claves);
+
+        if (!data || data.length < pageSize) break;
+      }
+
+      // Mark products not in list as inactive (0 existencias)
+      const clavesToDeactivate = existingClaves.filter((clave) => !newClaves.has(clave));
+
+      // Update in chunks to avoid oversized queries
+      const chunkSize = 500;
+      for (let i = 0; i < clavesToDeactivate.length; i += chunkSize) {
+        const chunk = clavesToDeactivate.slice(i, i + chunkSize);
+        const { error: deactivateError } = await supabase
+          .from('products')
+          .update({ existencias: 0 })
+          .in('clave', chunk);
+
+        if (deactivateError) throw deactivateError;
+      }
+
+      // Upsert (by CLAVE) so we don't depend on fetching all IDs, and avoid duplicates.
+      const rows = products.map((product) => {
         const category = categories.find(
-          c => c.name.toLowerCase() === product.linea.toLowerCase() ||
-               c.id.toLowerCase() === product.linea.toLowerCase()
+          (c) =>
+            c.name.toLowerCase() === product.linea.toLowerCase() ||
+            c.id.toLowerCase() === product.linea.toLowerCase()
         );
 
         const productData: any = {
@@ -134,71 +204,40 @@ const ProductSync: React.FC = () => {
           is_active: true,
         };
 
-        // Only include image_url if provided
         if (product.imagen_url) {
           productData.image_url = product.imagen_url;
         }
 
-        if (existingClaves.has(product.clave)) {
-          // Update existing - include the id
-          toUpdate.push({
-            id: existingClaves.get(product.clave),
-            ...productData,
-          });
-        } else {
-          // Insert new - don't include id, let the database generate it
-          toInsert.push(productData);
-        }
-      }
+        return productData;
+      });
 
-      // Mark products not in list as inactive (0 existencias)
-      const clavesToDeactivate = Array.from(existingClaves.keys())
-        .filter(clave => clave && !newClaves.has(clave));
+      const { error: upsertError } = await supabase
+        .from('products')
+        .upsert(rows, { onConflict: 'clave' });
 
-      if (clavesToDeactivate.length > 0) {
-        const { error: deactivateError } = await supabase
-          .from('products')
-          .update({ existencias: 0 })
-          .in('clave', clavesToDeactivate);
-
-        if (deactivateError) throw deactivateError;
-      }
-
-      // Update existing products
-      if (toUpdate.length > 0) {
-        const { error: updateError } = await supabase
-          .from('products')
-          .upsert(toUpdate, { onConflict: 'id' });
-
-        if (updateError) throw updateError;
-      }
-
-      // Insert new products
-      if (toInsert.length > 0) {
-        const { error: insertError } = await supabase
-          .from('products')
-          .insert(toInsert);
-
-        if (insertError) throw insertError;
-      }
+      if (upsertError) throw upsertError;
 
       return {
         synced: products.length,
         deactivated: clavesToDeactivate.length,
-        updated: toUpdate.length,
-        inserted: toInsert.length,
       };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast.success(`Sincronización completada: ${result.synced} productos actualizados, ${result.deactivated} marcados sin existencias`);
+      toast.success(
+        `Sincronización completada: ${result.synced} productos actualizados, ${result.deactivated} marcados sin existencias`
+      );
       setPastedData('');
       setParsedProducts([]);
     },
     onError: (error) => {
       console.error('Sync error:', error);
-      toast.error('Error al sincronizar productos');
+      const message =
+        error && typeof error === 'object' && 'message' in (error as any)
+          ? String((error as any).message)
+          : 'Error desconocido';
+      toast.error(`Error al sincronizar productos: ${message}`);
     },
   });
 
