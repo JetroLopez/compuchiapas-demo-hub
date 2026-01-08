@@ -10,7 +10,7 @@ const Servicios: React.FC = () => {
   }, []);
   const services = [{
     title: 'Reparación de Laptops',
-    description: 'Solucionamos problemas de hardware y software en todas las marcas con diagnóstico gratuito.',
+    description: 'Solucionamos problemas de hardware y software en todas las marcas con diagnóstico el mismo día.',
     icon: <Laptop size={32} />
   }, {
     title: 'Reparación de Impresoras',

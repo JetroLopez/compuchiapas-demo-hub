@@ -4,7 +4,6 @@ import Layout from '../components/Layout';
 import Hero from '../components/Hero';
 import FeaturedServices from '../components/FeaturedServices';
 import ProductCategories from '../components/ProductCategories';
-import TestimonialCard from '../components/TestimonialCard';
 import OfferPopup from '../components/OfferPopup';
 import { ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -81,24 +80,6 @@ const Index: React.FC = () => {
     }
   };
 
-  const testimonials = [
-    {
-      name: "Carlos Martínez",
-      testimonial: "Repararon mi laptop en 24 horas cuando otros técnicos me decían que tardaría una semana. El servicio fue excelente y profesional.",
-      rating: 5
-    },
-    {
-      name: "María González",
-      testimonial: "Me asesoraron perfectamente para elegir una computadora según mis necesidades. El precio fue justo y la instalación impecable.",
-      rating: 5
-    },
-    {
-      name: "Roberto Sánchez",
-      testimonial: "Llevé mi impresora que otros no pudieron reparar y la dejaron funcionando como nueva. Muy recomendados.",
-      rating: 4
-    }
-  ];
-
   return (
     <Layout>
       <Hero />
@@ -156,38 +137,6 @@ const Index: React.FC = () => {
       </section>
       
       <ProductCategories />
-      
-      {/* Testimonials */}
-      <section className="section-padding">
-        <div className="container-padding max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Lo que dicen nuestros clientes</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              La satisfacción de nuestros clientes es nuestra mejor referencia
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <TestimonialCard
-                key={index}
-                name={testimonial.name}
-                testimonial={testimonial.testimonial}
-                rating={testimonial.rating}
-              />
-            ))}
-          </div>
-          
-          <div className="text-center mt-12">
-            <a 
-              href="#contacto" 
-              className="btn-primary inline-flex items-center"
-            >
-              Contáctanos hoy <ArrowRight size={18} className="ml-2" />
-            </a>
-          </div>
-        </div>
-      </section>
       
       {/* Contact Form */}
       <section id="contacto" className="section-padding bg-tech-lightGray">
