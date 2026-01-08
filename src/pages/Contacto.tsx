@@ -264,7 +264,7 @@ const Contacto: React.FC = () => {
                 <ul className="space-y-4">
                   <li className="flex justify-between items-center pb-2 border-b border-gray-200">
                     <span className="font-medium">Sábado</span>
-                    <span className="text-gray-600">10:00 AM - 4:00 PM</span>
+                    <span className="text-gray-600">9:00 AM - 2:00 PM</span>
                   </li>
                   <li className="flex justify-between items-center pb-2 border-b border-gray-200">
                     <span className="font-medium">Domingo</span>
@@ -277,9 +277,9 @@ const Contacto: React.FC = () => {
                   <p className="text-sm text-gray-600">
                     Para emergencias técnicas fuera de horario, contacta a nuestro equipo de soporte al:
                   </p>
-                  <a href="tel:+529612345678" className="mt-2 text-tech-blue font-medium hover:underline flex items-center">
+                  <a href="tel:+529624142417" className="mt-2 text-tech-blue font-medium hover:underline flex items-center">
                     <Phone size={16} className="mr-2" />
-                    +52 (961) 234-5678
+                    +52 (962) 414-2417
                   </a>
                 </div>
               </div>
