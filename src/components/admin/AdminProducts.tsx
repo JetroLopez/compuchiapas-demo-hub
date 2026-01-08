@@ -6,10 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Upload, Download, Trash2, Plus, Loader2, Search, Save } from 'lucide-react';
+import { Upload, Download, Trash2, Plus, Loader2, Search, Save, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import * as XLSX from 'xlsx';
 
 interface Product {
   id: string;
@@ -35,9 +38,11 @@ interface EditedProduct {
 
 const AdminProducts: React.FC = () => {
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const xlsxInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editedProducts, setEditedProducts] = useState<Record<string, EditedProduct>>({});
   const [newProduct, setNewProduct] = useState({
     clave: '',
@@ -179,6 +184,55 @@ const AdminProducts: React.FC = () => {
     },
   });
 
+  // Delete all products
+  const handleDeleteAll = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast.success('Todos los productos han sido eliminados');
+    } catch (error: any) {
+      toast.error(`Error al eliminar productos: ${error.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Parse products from array of rows
+  const parseProductRows = (rows: any[], headers: string[]): any[] => {
+    const normalizedHeaders = headers.map(h => String(h || '').trim().toLowerCase());
+    
+    const claveIndex = normalizedHeaders.findIndex(h => h === 'clave');
+    const nameIndex = normalizedHeaders.findIndex(h => h === 'descripcion' || h === 'name' || h === 'nombre');
+    const imageIndex = normalizedHeaders.findIndex(h => h === 'image_url' || h === 'imagen');
+    const existenciasIndex = normalizedHeaders.findIndex(h => h === 'existencias' || h === 'stock');
+    const categoryIndex = normalizedHeaders.findIndex(h => h === 'category_id' || h === 'categoria' || h === 'linea');
+
+    if (nameIndex === -1) {
+      throw new Error('El archivo debe tener una columna "descripcion" o "name"');
+    }
+
+    const productsToInsert = [];
+    for (const row of rows) {
+      const values = Array.isArray(row) ? row : Object.values(row);
+      
+      const product: any = {
+        name: String(values[nameIndex] || '').trim(),
+        clave: claveIndex !== -1 ? String(values[claveIndex] || '').trim() || null : null,
+        image_url: imageIndex !== -1 ? String(values[imageIndex] || '').trim() || null : null,
+        existencias: existenciasIndex !== -1 ? parseInt(String(values[existenciasIndex])) || 0 : 0,
+        category_id: categoryIndex !== -1 ? String(values[categoryIndex] || '').trim() || null : null,
+      };
+
+      if (product.name) {
+        productsToInsert.push(product);
+      }
+    }
+
+    return productsToInsert;
+  };
+
   // Import CSV
   const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -189,35 +243,10 @@ const AdminProducts: React.FC = () => {
       try {
         const text = event.target?.result as string;
         const lines = text.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const headers = lines[0].split(',').map(h => h.trim());
         
-        const claveIndex = headers.findIndex(h => h === 'clave');
-        const nameIndex = headers.findIndex(h => h === 'descripcion' || h === 'name' || h === 'nombre');
-        const imageIndex = headers.findIndex(h => h === 'image_url' || h === 'imagen');
-        const existenciasIndex = headers.findIndex(h => h === 'existencias' || h === 'stock');
-        const categoryIndex = headers.findIndex(h => h === 'category_id' || h === 'categoria');
-
-        if (nameIndex === -1) {
-          toast.error('El CSV debe tener una columna "descripcion" o "name"');
-          return;
-        }
-
-        const productsToInsert = [];
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
-          
-          const product: any = {
-            name: values[nameIndex] || '',
-            clave: claveIndex !== -1 ? values[claveIndex] || null : null,
-            image_url: imageIndex !== -1 ? values[imageIndex] || null : null,
-            existencias: existenciasIndex !== -1 ? parseInt(values[existenciasIndex]) || 0 : 0,
-            category_id: categoryIndex !== -1 ? values[categoryIndex] || null : null,
-          };
-
-          if (product.name) {
-            productsToInsert.push(product);
-          }
-        }
+        const rows = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
+        const productsToInsert = parseProductRows(rows, headers);
 
         if (productsToInsert.length === 0) {
           toast.error('No se encontraron productos válidos en el CSV');
@@ -227,22 +256,72 @@ const AdminProducts: React.FC = () => {
         const { error } = await supabase.from('products').insert(productsToInsert);
         
         if (error) {
-          toast.error('Error al importar productos');
-          console.error(error);
+          toast.error(`Error al importar productos: ${error.message}`);
         } else {
           toast.success(`${productsToInsert.length} productos importados`);
           queryClient.invalidateQueries({ queryKey: ['admin-products'] });
         }
-      } catch (error) {
-        toast.error('Error al procesar el archivo CSV');
-        console.error(error);
+      } catch (error: any) {
+        toast.error(error.message || 'Error al procesar el archivo CSV');
       }
     };
     reader.readAsText(file);
     
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (csvInputRef.current) {
+      csvInputRef.current.value = '';
+    }
+  };
+
+  // Import XLSX
+  const handleImportXLSX = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Get first sheet
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON with headers
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        
+        if (jsonData.length < 2) {
+          toast.error('El archivo XLSX está vacío o no tiene datos');
+          return;
+        }
+
+        const headers = jsonData[0].map(h => String(h || ''));
+        const rows = jsonData.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== null && cell !== ''));
+        
+        const productsToInsert = parseProductRows(rows, headers);
+
+        if (productsToInsert.length === 0) {
+          toast.error('No se encontraron productos válidos en el XLSX');
+          return;
+        }
+
+        const { error } = await supabase.from('products').insert(productsToInsert);
+        
+        if (error) {
+          toast.error(`Error al importar productos: ${error.message}`);
+        } else {
+          toast.success(`${productsToInsert.length} productos importados desde XLSX`);
+          queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+        }
+      } catch (error: any) {
+        toast.error(error.message || 'Error al procesar el archivo XLSX');
+        console.error(error);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    
+    if (xlsxInputRef.current) {
+      xlsxInputRef.current.value = '';
     }
   };
 
@@ -267,6 +346,24 @@ const AdminProducts: React.FC = () => {
     link.click();
     
     toast.success('CSV exportado');
+  };
+
+  // Export XLSX
+  const handleExportXLSX = () => {
+    const data = products.map(p => ({
+      clave: p.clave || '',
+      descripcion: p.name,
+      image_url: p.image_url || '',
+      existencias: p.existencias || 0,
+      category_id: p.category_id || '',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+    
+    XLSX.writeFile(workbook, `productos_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('XLSX exportado');
   };
 
   const handleAddProduct = () => {
@@ -300,20 +397,87 @@ const AdminProducts: React.FC = () => {
           <CardTitle>Gestión de Productos</CardTitle>
           <div className="flex flex-wrap gap-2">
             <input
-              ref={fileInputRef}
+              ref={csvInputRef}
               type="file"
               accept=".csv"
               onChange={handleImportCSV}
               className="hidden"
             />
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={16} className="mr-2" />
-              Importar CSV
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportCSV}>
-              <Download size={16} className="mr-2" />
-              Exportar CSV
-            </Button>
+            <input
+              ref={xlsxInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleImportXLSX}
+              className="hidden"
+            />
+            
+            {/* Import Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Upload size={16} className="mr-2" />
+                  Importar
+                  <ChevronDown size={14} className="ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => csvInputRef.current?.click()}>
+                  Importar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => xlsxInputRef.current?.click()}>
+                  Importar XLSX
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download size={16} className="mr-2" />
+                  Exportar
+                  <ChevronDown size={14} className="ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportXLSX}>
+                  Exportar XLSX
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Delete All Button */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 size={16} className="mr-2" />
+                  Borrar todo
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción eliminará TODOS los productos de la base de datos. Esta acción no se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDeleteAll}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Sí, borrar todo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
