@@ -204,12 +204,12 @@ const AdminProducts: React.FC = () => {
   };
 
   // Parse products from array of rows
-  const parseProductRows = (rows: any[], headers: string[]): any[] => {
+  const parseProductRows = (rows: any[], headers: string[], validCategoryIds: Set<string>): any[] => {
     const normalizedHeaders = headers.map(h => String(h || '').trim().toLowerCase());
     
     const claveIndex = normalizedHeaders.findIndex(h => h === 'clave');
     const nameIndex = normalizedHeaders.findIndex(h => h === 'descripcion' || h === 'name' || h === 'nombre');
-    const imageIndex = normalizedHeaders.findIndex(h => h === 'image_url' || h === 'imagen');
+    const imageIndex = normalizedHeaders.findIndex(h => h === 'image_url' || h === 'imagen' || h === 'img_url');
     const existenciasIndex = normalizedHeaders.findIndex(h => h === 'existencias' || h === 'stock');
     const categoryIndex = normalizedHeaders.findIndex(h => h === 'category_id' || h === 'categoria' || h === 'linea');
 
@@ -221,12 +221,16 @@ const AdminProducts: React.FC = () => {
     for (const row of rows) {
       const values = Array.isArray(row) ? row : Object.values(row);
       
+      const rawCategoryId = categoryIndex !== -1 ? String(values[categoryIndex] || '').trim() : null;
+      // Validate category_id exists, otherwise set to null
+      const categoryId = rawCategoryId && validCategoryIds.has(rawCategoryId) ? rawCategoryId : null;
+      
       const product: any = {
         name: String(values[nameIndex] || '').trim(),
         clave: claveIndex !== -1 ? String(values[claveIndex] || '').trim() || null : null,
         image_url: imageIndex !== -1 ? String(values[imageIndex] || '').trim() || null : null,
         existencias: existenciasIndex !== -1 ? parseInt(String(values[existenciasIndex])) || 0 : 0,
-        category_id: categoryIndex !== -1 ? String(values[categoryIndex] || '').trim() || null : null,
+        category_id: categoryId,
       };
 
       if (product.name) {
@@ -245,12 +249,16 @@ const AdminProducts: React.FC = () => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
+        // Fetch valid category IDs
+        const { data: categoriesData } = await supabase.from('categories').select('id');
+        const validCategoryIds = new Set((categoriesData || []).map(c => c.id));
+
         const text = event.target?.result as string;
         const lines = text.split('\n').filter(line => line.trim());
         const headers = lines[0].split(',').map(h => h.trim());
         
         const rows = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
-        const productsToInsert = parseProductRows(rows, headers);
+        const productsToInsert = parseProductRows(rows, headers, validCategoryIds);
 
         if (productsToInsert.length === 0) {
           toast.error('No se encontraron productos válidos en el CSV');
@@ -284,6 +292,10 @@ const AdminProducts: React.FC = () => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
+        // Fetch valid category IDs
+        const { data: categoriesData } = await supabase.from('categories').select('id');
+        const validCategoryIds = new Set((categoriesData || []).map(c => c.id));
+
         const data = new Uint8Array(event.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         
@@ -302,7 +314,7 @@ const AdminProducts: React.FC = () => {
         const headers = jsonData[0].map(h => String(h || ''));
         const rows = jsonData.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== null && cell !== ''));
         
-        const productsToInsert = parseProductRows(rows, headers);
+        const productsToInsert = parseProductRows(rows, headers, validCategoryIds);
 
         if (productsToInsert.length === 0) {
           toast.error('No se encontraron productos válidos en el XLSX');
