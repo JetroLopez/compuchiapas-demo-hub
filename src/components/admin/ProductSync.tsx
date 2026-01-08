@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Save, Loader2, ClipboardPaste, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Save, Loader2, Upload, AlertTriangle, CheckCircle2, FileSpreadsheet } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import * as XLSX from 'xlsx';
 
 interface ParsedProduct {
   clave: string;
@@ -16,11 +18,29 @@ interface ParsedProduct {
   imagen_url?: string;
 }
 
+// Column name variations we accept (case-insensitive)
+const COLUMN_ALIASES: Record<string, string[]> = {
+  clave: ['clave', 'codigo', 'código', 'sku', 'id', 'cve'],
+  descripcion: ['descripcion', 'descripción', 'nombre', 'name', 'producto', 'desc'],
+  linea: ['linea', 'línea', 'categoria', 'categoría', 'category', 'cat', 'line'],
+  existencias: ['existencias', 'existencia', 'stock', 'qty', 'cantidad', 'inventory', 'inv', 'exist'],
+  imagen_url: ['imagen_url', 'imagen', 'image', 'url', 'foto', 'photo', 'img', 'url_imagen', 'image_url'],
+};
+
+function normalizeColumnName(col: string): string | null {
+  const lower = col.toLowerCase().trim();
+  for (const [key, aliases] of Object.entries(COLUMN_ALIASES)) {
+    if (aliases.includes(lower)) return key;
+  }
+  return null;
+}
+
 const ProductSync: React.FC = () => {
   const queryClient = useQueryClient();
-  const [pastedData, setPastedData] = useState('');
   const [parsedProducts, setParsedProducts] = useState<ParsedProduct[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch categories to map LINEA values
   const { data: categories = [] } = useQuery({
@@ -34,140 +54,129 @@ const ProductSync: React.FC = () => {
     },
   });
 
-  const parseTableData = (text: string): ParsedProduct[] => {
-    const lines = text
-      .trim()
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean);
+  const parseXlsx = (file: File): Promise<ParsedProduct[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
 
-    if (lines.length === 0) return [];
+          // Use first sheet
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
 
-    const products: ParsedProduct[] = [];
+          // Convert to JSON with header row
+          const rows: Record<string, any>[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
-    // Detect delimiter (tab or multiple spaces)
-    const firstLine = lines[0];
-    const isTabDelimited = firstLine.includes('\t');
-
-    const looksLikeUrl = (value: string) => /^https?:\/\//i.test(value);
-
-    for (const line of lines) {
-      // Skip header row if detected
-      const lowerLine = line.toLowerCase();
-      if (lowerLine.includes('clave') && lowerLine.includes('descripcion')) {
-        continue;
-      }
-
-      let clave = '';
-      let descripcion = '';
-      let linea = '';
-      let existencias = 0;
-      let imagen_url: string | undefined;
-
-      if (isTabDelimited) {
-        const parts = line.split('\t').map((p) => p.trim());
-        if (parts.length < 4) continue;
-
-        clave = parts[0] || '';
-        descripcion = parts[1] || '';
-        linea = parts[2] || '';
-        existencias = parseInt(parts[3] || '0', 10) || 0;
-        imagen_url = parts[4]?.trim() || undefined;
-      } else {
-        // Try: separated by 2+ spaces (common when copying from some systems)
-        const parts = line
-          .split(/\s{2,}/)
-          .map((p) => p.trim())
-          .filter(Boolean);
-
-        if (parts.length >= 4) {
-          clave = parts[0] || '';
-          descripcion = parts[1] || '';
-          linea = parts[2] || '';
-          existencias = parseInt(parts[3] || '0', 10) || 0;
-          imagen_url = parts[4]?.trim() || undefined;
-        } else {
-          // Fallback: single-space separated (descripcion puede contener espacios)
-          // Formato esperado:
-          // CLAVE <descripcion...> LINEA EXISTENCIAS [URL_IMAGEN]
-          const tokens = line.split(/\s+/).filter(Boolean);
-          if (tokens.length < 4) continue;
-
-          clave = tokens[0] || '';
-
-          const last = tokens[tokens.length - 1];
-          const hasUrl = looksLikeUrl(last);
-
-          if (hasUrl) {
-            imagen_url = last;
-            existencias = parseInt(tokens[tokens.length - 2] || '0', 10) || 0;
-            linea = tokens[tokens.length - 3] || '';
-            descripcion = tokens.slice(1, tokens.length - 3).join(' ').trim();
-          } else {
-            existencias = parseInt(last || '0', 10) || 0;
-            linea = tokens[tokens.length - 2] || '';
-            descripcion = tokens.slice(1, tokens.length - 2).join(' ').trim();
+          if (rows.length === 0) {
+            reject(new Error('El archivo está vacío'));
+            return;
           }
+
+          // Map columns from first row keys
+          const firstRowKeys = Object.keys(rows[0]);
+          const columnMap: Record<string, string> = {};
+          for (const key of firstRowKeys) {
+            const normalized = normalizeColumnName(key);
+            if (normalized) {
+              columnMap[normalized] = key;
+            }
+          }
+
+          // Validate required columns
+          const missing: string[] = [];
+          if (!columnMap.clave) missing.push('CLAVE');
+          if (!columnMap.descripcion) missing.push('DESCRIPCION');
+          if (!columnMap.linea) missing.push('LINEA');
+          if (!columnMap.existencias) missing.push('EXISTENCIAS');
+
+          if (missing.length > 0) {
+            reject(new Error(`Columnas requeridas no encontradas: ${missing.join(', ')}`));
+            return;
+          }
+
+          const products: ParsedProduct[] = [];
+          for (const row of rows) {
+            const clave = String(row[columnMap.clave] ?? '').trim();
+            const descripcion = String(row[columnMap.descripcion] ?? '').trim();
+            const linea = String(row[columnMap.linea] ?? '').trim();
+            const existenciasRaw = row[columnMap.existencias];
+            const existencias = typeof existenciasRaw === 'number' 
+              ? existenciasRaw 
+              : parseInt(String(existenciasRaw), 10) || 0;
+            const imagen_url = columnMap.imagen_url 
+              ? String(row[columnMap.imagen_url] ?? '').trim() || undefined 
+              : undefined;
+
+            // Only include products with existencias >= 1
+            if (clave && descripcion && linea && existencias >= 1) {
+              products.push({
+                clave,
+                descripcion,
+                linea,
+                existencias,
+                imagen_url,
+              });
+            }
+          }
+
+          resolve(products);
+        } catch (err) {
+          reject(err);
         }
-      }
-
-      // Only include products with existencias >= 1
-      if (clave && descripcion && linea && existencias >= 1) {
-        products.push({
-          clave,
-          descripcion,
-          linea,
-          existencias,
-          imagen_url,
-        });
-      }
-    }
-
-    return products;
+      };
+      reader.onerror = () => reject(new Error('Error al leer el archivo'));
+      reader.readAsArrayBuffer(file);
+    });
   };
 
-  const handlePaste = () => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setParseError(null);
+    setParsedProducts([]);
+    setFileName(null);
 
-    if (!pastedData.trim()) {
-      setParseError('No hay datos para procesar');
-      return;
-    }
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileName(file.name);
 
     try {
-      const products = parseTableData(pastedData);
+      const products = await parseXlsx(file);
 
       if (products.length === 0) {
-        setParseError(
-          'No se encontraron productos válidos. Asegúrate de que el formato sea: CLAVE | DESCRIPCION | LINEA | EXISTENCIAS | URL_IMAGEN (opcional)'
-        );
+        setParseError('No se encontraron productos válidos con existencias >= 1');
         return;
       }
 
       setParsedProducts(products);
-      toast.success(`${products.length} productos detectados`);
-    } catch (error) {
-      setParseError('Error al procesar los datos');
+      toast.success(`${products.length} productos detectados en ${file.name}`);
+    } catch (err: any) {
+      console.error('Parse error:', err);
+      setParseError(err?.message || 'Error al procesar el archivo');
+    }
+
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
   const syncMutation = useMutation({
     mutationFn: async (products: ParsedProduct[]) => {
-      // Deduplicate by CLAVE to avoid Postgres error:
-      // "ON CONFLICT DO UPDATE command cannot affect row a second time"
+      // Deduplicate by CLAVE to avoid Postgres error
       const deduped = new Map<string, ParsedProduct>();
       let duplicates = 0;
       for (const p of products) {
         if (!p.clave) continue;
         if (deduped.has(p.clave)) duplicates++;
-        // Keep the last occurrence (usually the most recent inventory row)
         deduped.set(p.clave, p);
       }
       const uniqueProducts = Array.from(deduped.values());
 
       const newClaves = new Set(uniqueProducts.map((p) => p.clave).filter(Boolean));
 
-      // Fetch ALL existing claves (PostgREST default limit is 1000)
+      // Fetch ALL existing claves (paginate to avoid 1000 limit)
       const pageSize = 1000;
       const existingClaves: string[] = [];
 
@@ -188,7 +197,6 @@ const ProductSync: React.FC = () => {
       // Mark products not in list as inactive (0 existencias)
       const clavesToDeactivate = existingClaves.filter((clave) => !newClaves.has(clave));
 
-      // Update in chunks to avoid oversized queries
       const chunkSize = 500;
       for (let i = 0; i < clavesToDeactivate.length; i += chunkSize) {
         const chunk = clavesToDeactivate.slice(i, i + chunkSize);
@@ -200,7 +208,7 @@ const ProductSync: React.FC = () => {
         if (deactivateError) throw deactivateError;
       }
 
-      // Upsert (by CLAVE) so we don't depend on fetching all IDs, and avoid duplicates.
+      // Upsert by CLAVE
       const rows = uniqueProducts.map((product) => {
         const category = categories.find(
           (c) =>
@@ -243,8 +251,8 @@ const ProductSync: React.FC = () => {
       toast.success(
         `Sincronización completada: ${result.synced} productos actualizados, ${result.deactivated} marcados sin existencias${extra}`
       );
-      setPastedData('');
       setParsedProducts([]);
+      setFileName(null);
     },
     onError: (error) => {
       console.error('Sync error:', error);
@@ -268,33 +276,34 @@ const ProductSync: React.FC = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ClipboardPaste size={20} />
-          Sincronizar Inventario
+          <FileSpreadsheet size={20} />
+          Sincronizar Inventario desde Excel
         </CardTitle>
         <CardDescription>
-          Pega los datos de tu punto de venta con formato: CLAVE, DESCRIPCIÓN, LÍNEA, EXISTENCIAS, URL_IMAGEN (opcional)
+          Sube un archivo XLSX con las columnas: <strong>CLAVE</strong>, <strong>DESCRIPCION</strong>, <strong>LINEA</strong>, <strong>EXISTENCIAS</strong>, y opcionalmente <strong>URL_IMAGEN</strong>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <Textarea
-            placeholder={`Ejemplo de formato (separado por tabs o espacios):
-
-CLAVE001    Teclado USB Logitech    Periféricos    15    https://ejemplo.com/teclado.jpg
-CLAVE002    Mouse Inalámbrico       Periféricos    8     https://ejemplo.com/mouse.jpg
-CLAVE003    Laptop HP 15            Equipos        3`}
-            value={pastedData}
-            onChange={(e) => setPastedData(e.target.value)}
-            rows={10}
-            className="font-mono text-sm"
-          />
-        </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handlePaste} disabled={!pastedData.trim()}>
-            <ClipboardPaste size={16} className="mr-2" />
-            Procesar Datos
-          </Button>
+        <div className="space-y-2">
+          <Label htmlFor="file-upload">Archivo Excel (.xlsx, .xls)</Label>
+          <div className="flex items-center gap-3">
+            <Input
+              ref={fileInputRef}
+              id="file-upload"
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileChange}
+              className="max-w-md"
+            />
+            {fileName && (
+              <span className="text-sm text-muted-foreground truncate max-w-[200px]">
+                {fileName}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Acepta nombres de columna alternativos: clave/codigo/sku, descripcion/nombre, linea/categoria, existencias/stock, imagen_url/imagen/url
+          </p>
         </div>
 
         {parseError && (
