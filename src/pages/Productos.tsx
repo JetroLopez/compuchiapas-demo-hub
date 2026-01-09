@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ProductHero from '../components/product/ProductHero';
 import CustomQuoteBanner from '../components/product/CustomQuoteBanner';
@@ -15,7 +16,9 @@ interface Category {
 }
 
 const Productos: React.FC = () => {
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialCategory = searchParams.get('categoria') || 'all';
+  const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Obtener categorías de la base de datos
@@ -39,6 +42,16 @@ const Productos: React.FC = () => {
   useEffect(() => {
     document.title = "Productos | Compuchiapas";
   }, []);
+
+  // Update URL when category changes
+  useEffect(() => {
+    if (activeCategory === 'all') {
+      searchParams.delete('categoria');
+    } else {
+      searchParams.set('categoria', activeCategory);
+    }
+    setSearchParams(searchParams, { replace: true });
+  }, [activeCategory, searchParams, setSearchParams]);
 
   const resetFilters = () => {
     setSearchTerm('');

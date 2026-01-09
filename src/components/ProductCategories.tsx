@@ -22,7 +22,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ title, image, slug, classNa
         className
       )}
       style={style}
-      onClick={() => navigate(`/productos/${slug}`)}
+      onClick={() => navigate(`/productos?categoria=${slug}`)}
     >
       {/* Background Image */}
       <div className="absolute inset-0">

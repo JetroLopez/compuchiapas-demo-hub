@@ -5,6 +5,7 @@ import Hero from '../components/Hero';
 import FeaturedServices from '../components/FeaturedServices';
 import ProductCategories from '../components/ProductCategories';
 import OfferPopup from '../components/OfferPopup';
+import PromotionsCarousel from '../components/PromotionsCarousel';
 import { ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -85,6 +86,8 @@ const Index: React.FC = () => {
       <Hero />
       
       <FeaturedServices />
+      
+      <PromotionsCarousel />
       
       {/* Special Feature Section */}
       <section className="section-padding">
