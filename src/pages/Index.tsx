@@ -85,9 +85,9 @@ const Index: React.FC = () => {
     <Layout>
       <Hero />
       
-      <FeaturedServices />
-      
       <PromotionsCarousel />
+      
+      <FeaturedServices />
       
       {/* Special Feature Section */}
       <section className="section-padding">
