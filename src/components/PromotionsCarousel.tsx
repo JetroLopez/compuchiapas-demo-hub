@@ -5,7 +5,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tag } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tag, ShoppingCart } from 'lucide-react';
 
 interface Promotion {
   id: string;
@@ -61,6 +62,16 @@ const PromotionsCarousel: React.FC = () => {
       style: 'currency',
       currency: 'MXN',
     }).format(price);
+  };
+
+  const whatsappNumber = "9622148546";
+
+  const handleWhatsAppClick = (promo: Promotion) => {
+    const message = `Ví esta promoción en su pagina web y me interesa
+*${promo.clave}*
+*${promo.nombre}* por *${formatPrice(promo.precio)}*
+¿Sigue disponible?`;
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   return (
@@ -128,10 +139,21 @@ const PromotionsCarousel: React.FC = () => {
                       {promo.nombre}
                     </h3>
                     {promo.descripcion && (
-                      <p className="text-sm text-gray-600 line-clamp-2">
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-4">
                         {promo.descripcion}
                       </p>
                     )}
+                    <Button
+                      onClick={() => handleWhatsAppClick(promo)}
+                      className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold group/btn relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-green-500/25"
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        <ShoppingCart className="w-4 h-4 transition-transform duration-300 group-hover/btn:scale-110 group-hover/btn:rotate-12" />
+                        <span className="transition-all duration-300 group-hover/btn:tracking-wider">Comprar ahora</span>
+                      </span>
+                      <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                      <span className="absolute -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 group-hover/btn:animate-[shimmer_1s_ease]" />
+                    </Button>
                   </CardContent>
                 </Card>
               </CarouselItem>
