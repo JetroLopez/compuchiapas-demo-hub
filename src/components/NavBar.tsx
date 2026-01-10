@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ const NavBar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const headerRef = useRef<HTMLElement>(null);
   
   // Pages that need dark header when not scrolled
   const needsDarkHeader = ['/productos', '/servicios', '/blog', '/contacto'].includes(location.pathname);
@@ -26,6 +27,22 @@ const NavBar: React.FC = () => {
     setMenuOpen(false);
   }, [location.pathname]);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuOpen && headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside as EventListener);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside as EventListener);
+    };
+  }, [menuOpen]);
+
   const navLinks = [
     { name: 'Inicio', path: '/' },
     { name: 'Servicios', path: '/servicios' },
@@ -43,6 +60,7 @@ const NavBar: React.FC = () => {
 
   return (
     <header 
+      ref={headerRef}
       className={cn(
         'fixed w-full z-50 transition-all duration-300 ease-in-out',
         isScrolled 
