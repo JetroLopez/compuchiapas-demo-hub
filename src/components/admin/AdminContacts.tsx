@@ -5,14 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { MessageCircle, Mail, Phone, User, Calendar, FileText } from 'lucide-react';
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { MessageCircle, Mail, Phone, User, Calendar, FileText, ChevronDown, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ContactSubmission {
@@ -29,8 +26,8 @@ interface ContactSubmission {
 const AdminContacts: React.FC = () => {
   const [contacts, setContacts] = useState<ContactSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const whatsappNumber = "9622148546";
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchContacts();
@@ -54,16 +51,23 @@ const AdminContacts: React.FC = () => {
     }
   };
 
-  const handleContactClick = (contact: ContactSubmission) => {
-    let message: string;
+  const getContactMessage = (contact: ContactSubmission) => {
     if (contact.subject && contact.subject.trim() !== '') {
-      message = `Nos comunicamos de compusistemas con *${contact.name}* con respecto a *${contact.subject}*`;
-    } else {
-      message = `Nos comunicamos de compusistemas con *${contact.name}*, ¿Cómo podemos ayudarle?`;
+      return `Nos comunicamos de compusistemas con *${contact.name}* con respecto a *${contact.subject}*`;
     }
-    
-    const phoneNumber = contact.phone?.replace(/\D/g, '') || whatsappNumber;
-    window.open(`https://wa.me/52${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    return `Nos comunicamos de compusistemas con *${contact.name}*, ¿Cómo podemos ayudarle?`;
+  };
+
+  const handleCopyMessage = async (contact: ContactSubmission) => {
+    const message = getContactMessage(contact);
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedId(contact.id);
+      toast.success('Mensaje copiado al portapapeles');
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error('Error al copiar el mensaje');
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -99,9 +103,9 @@ const AdminContacts: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
+              <Skeleton key={i} className="h-14 w-full rounded-lg" />
             ))}
           </div>
         </CardContent>
@@ -127,87 +131,110 @@ const AdminContacts: React.FC = () => {
             <p>No hay solicitudes de contacto</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[150px]">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Nombre
+          <div className="space-y-2">
+            {contacts.map((contact) => (
+              <Collapsible
+                key={contact.id}
+                open={expandedId === contact.id}
+                onOpenChange={(open) => setExpandedId(open ? contact.id : null)}
+              >
+                <div className="border rounded-lg hover:bg-muted/50 transition-colors">
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between p-3 cursor-pointer">
+                      <div className="flex items-center gap-6 flex-1">
+                        <div className="flex items-center gap-2 min-w-[150px]">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{contact.name}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          {contact.phone ? (
+                            <a
+                              href={`https://wa.me/52${contact.phone.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {contact.phone}
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyMessage(contact);
+                          }}
+                          className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all"
+                        >
+                          {copiedId === contact.id ? (
+                            <>
+                              <Check className="h-4 w-4" />
+                              Copiado
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4" />
+                              Contactar
+                            </>
+                          )}
+                        </Button>
+                        
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedId === contact.id ? 'rotate-180' : ''}`} />
+                      </div>
                     </div>
-                  </TableHead>
-                  <TableHead className="min-w-[180px]">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Email
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="px-3 pb-3 pt-0 border-t bg-muted/30">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Email:</span>
+                            <a href={`mailto:${contact.email}`} className="text-primary hover:underline">
+                              {contact.email}
+                            </a>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Asunto:</span>
+                            <span>{contact.subject || '-'}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Fecha:</span>
+                            <span>{formatDate(contact.created_at)}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2 text-sm">
+                            <MessageCircle className="h-4 w-4 text-muted-foreground mt-0.5" />
+                            <span className="text-muted-foreground">Mensaje:</span>
+                          </div>
+                          <p className="text-sm bg-background p-2 rounded border">
+                            {contact.message}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                        {getStatusBadge(contact.status)}
+                      </div>
                     </div>
-                  </TableHead>
-                  <TableHead className="min-w-[120px]">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      Teléfono
-                    </div>
-                  </TableHead>
-                  <TableHead className="min-w-[150px]">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Asunto
-                    </div>
-                  </TableHead>
-                  <TableHead className="min-w-[200px]">Mensaje</TableHead>
-                  <TableHead className="min-w-[100px]">Estado</TableHead>
-                  <TableHead className="min-w-[140px]">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Fecha
-                    </div>
-                  </TableHead>
-                  <TableHead className="min-w-[120px]">Acción</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contacts.map((contact) => (
-                  <TableRow key={contact.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{contact.name}</TableCell>
-                    <TableCell>
-                      <a 
-                        href={`mailto:${contact.email}`} 
-                        className="text-primary hover:underline"
-                      >
-                        {contact.email}
-                      </a>
-                    </TableCell>
-                    <TableCell>{contact.phone || '-'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={contact.subject}>
-                      {contact.subject || '-'}
-                    </TableCell>
-                    <TableCell className="max-w-[250px]">
-                      <p className="truncate" title={contact.message}>
-                        {contact.message}
-                      </p>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(contact.status)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(contact.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        onClick={() => handleContactClick(contact)}
-                        className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white gap-2 group relative overflow-hidden"
-                        disabled={!contact.phone}
-                        title={contact.phone ? 'Enviar mensaje por WhatsApp' : 'Sin número de teléfono'}
-                      >
-                        <MessageCircle className="h-4 w-4 transition-transform group-hover:scale-110" />
-                        <span className="transition-all group-hover:tracking-wider">Contactar</span>
-                        <span className="absolute -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 group-hover:animate-shimmer" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            ))}
           </div>
         )}
       </CardContent>
