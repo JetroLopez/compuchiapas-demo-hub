@@ -55,17 +55,17 @@ const ProductCategories: React.FC = () => {
     },
     {
       title: 'Computadoras de Escritorio',
-      image: 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      image: 'https://tecnotraffic.net/wp-content/uploads/2022/04/Las-mejores-computadoras-de-escritorio-de-2022.jpg',
       slug: 'desktops'
     },
     {
       title: 'Accesorios',
-      image: 'https://images.unsplash.com/photo-1600267204026-85c3cc8cb62f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      image: 'https://tse1.mm.bing.net/th/id/OIP.jXpHOwODKsL2zXMM92p_QgHaEq?rs=1&pid=ImgDetMain&o=7&rm=3',
       slug: 'accesorios'
     },
     {
       title: 'Punto de Venta',
-      image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      image: 'https://cervantes.srv.br/lz/getfile.php?file=&id=0337b072bf67d2d155103851a4f90466',
       slug: 'pos'
     }
   ];
