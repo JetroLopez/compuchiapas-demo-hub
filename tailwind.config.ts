@@ -93,6 +93,14 @@ export default {
 				'shimmer': {
 					'0%': { transform: 'translateX(-100%) skewX(-12deg)' },
 					'100%': { transform: 'translateX(200%) skewX(-12deg)' }
+				},
+				'glow': {
+					'0%, 100%': { boxShadow: '0 0 5px rgba(239, 68, 68, 0.5)' },
+					'50%': { boxShadow: '0 0 25px rgba(239, 68, 68, 0.8)' }
+				},
+				'notification-bounce': {
+					'0%, 100%': { transform: 'scale(1)' },
+					'50%': { transform: 'scale(1.2)' }
 				}
 			},
 			animation: {
@@ -101,7 +109,9 @@ export default {
 				'fade-in': 'fade-in 0.5s ease-out',
 				'fade-up': 'fade-up 0.5s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out',
-				'shimmer': 'shimmer 1s ease'
+				'shimmer': 'shimmer 1s ease',
+				'glow': 'glow 1.5s ease-in-out infinite',
+				'notification-bounce': 'notification-bounce 0.6s ease-in-out infinite'
 			}
 		}
 	},
