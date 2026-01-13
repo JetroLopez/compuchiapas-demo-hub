@@ -1,21 +1,9 @@
 
 import React, { useState } from 'react';
-import { Search, Monitor, Cpu, HardDrive, Laptop, Printer, Network, Headphones, Package, ChevronDown, ChevronUp, Warehouse } from 'lucide-react';
+import { Search, Monitor, Cpu, HardDrive, Laptop, Printer, Network, Headphones, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 interface Category {
-  id: string;
-  name: string;
-}
-
-interface WarehouseType {
   id: string;
   name: string;
 }
@@ -26,9 +14,6 @@ interface ProductFiltersProps {
   setActiveCategory: (category: string) => void;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  warehouses?: WarehouseType[];
-  activeWarehouse: string;
-  setActiveWarehouse: (warehouse: string) => void;
 }
 
 // Agrupación visual de categorías (no afecta la base de datos)
@@ -75,10 +60,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   activeCategory,
   setActiveCategory,
   searchTerm,
-  setSearchTerm,
-  warehouses = [],
-  activeWarehouse,
-  setActiveWarehouse
+  setSearchTerm
 }) => {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
@@ -116,40 +98,18 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 
   return (
     <div className="mb-8 space-y-6">
-      {/* Barra de búsqueda y filtro de almacén */}
-      <div className="flex flex-col sm:flex-row gap-4 max-w-3xl mx-auto">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search size={20} className="text-muted-foreground" />
-          </div>
-          <input
-            type="text"
-            placeholder="Buscar productos..."
-            className="w-full pl-12 pr-4 py-3 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      {/* Barra de búsqueda */}
+      <div className="relative max-w-xl mx-auto">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search size={20} className="text-muted-foreground" />
         </div>
-        
-        {/* Filtro de almacén */}
-        {warehouses.length > 0 && (
-          <Select value={activeWarehouse} onValueChange={setActiveWarehouse}>
-            <SelectTrigger className="w-full sm:w-[180px] h-[50px] rounded-xl">
-              <div className="flex items-center gap-2">
-                <Warehouse size={18} className="text-muted-foreground" />
-                <SelectValue placeholder="Almacén" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los almacenes</SelectItem>
-              {warehouses.map((warehouse) => (
-                <SelectItem key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <input
+          type="text"
+          placeholder="Buscar productos..."
+          className="w-full pl-12 pr-4 py-3 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
       
       {/* Grid de categorías agrupadas */}

@@ -15,17 +15,10 @@ interface Category {
   display_order: number;
 }
 
-interface Warehouse {
-  id: string;
-  name: string;
-}
-
 const Productos: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('categoria') || 'all';
-  const initialWarehouse = searchParams.get('almacen') || 'all';
   const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [activeWarehouse, setActiveWarehouse] = useState(initialWarehouse);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Obtener categorías de la base de datos
@@ -46,47 +39,23 @@ const Productos: React.FC = () => {
     }
   });
 
-  // Obtener almacenes de la base de datos
-  const { data: warehouses = [] } = useQuery({
-    queryKey: ['warehouses'],
-    queryFn: async (): Promise<Warehouse[]> => {
-      const { data, error } = await supabase
-        .from('warehouses')
-        .select('id, name')
-        .order('name');
-        
-      if (error) {
-        console.error('Error fetching warehouses:', error);
-        return [];
-      }
-      
-      return data || [];
-    }
-  });
-
   useEffect(() => {
     document.title = "Productos | Compuchiapas";
   }, []);
 
-  // Update URL when category or warehouse changes
+  // Update URL when category changes
   useEffect(() => {
     if (activeCategory === 'all') {
       searchParams.delete('categoria');
     } else {
       searchParams.set('categoria', activeCategory);
     }
-    if (activeWarehouse === 'all') {
-      searchParams.delete('almacen');
-    } else {
-      searchParams.set('almacen', activeWarehouse);
-    }
     setSearchParams(searchParams, { replace: true });
-  }, [activeCategory, activeWarehouse, searchParams, setSearchParams]);
+  }, [activeCategory, searchParams, setSearchParams]);
 
   const resetFilters = () => {
     setSearchTerm('');
     setActiveCategory('all');
-    setActiveWarehouse('all');
   };
 
   return (
@@ -110,16 +79,12 @@ const Productos: React.FC = () => {
             setActiveCategory={setActiveCategory}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            warehouses={warehouses}
-            activeWarehouse={activeWarehouse}
-            setActiveWarehouse={setActiveWarehouse}
           />
           
           {/* Products Grid */}
           <ProductsList 
             searchTerm={searchTerm}
             activeCategory={activeCategory}
-            activeWarehouse={activeWarehouse}
             resetFilters={resetFilters}
           />
         </div>

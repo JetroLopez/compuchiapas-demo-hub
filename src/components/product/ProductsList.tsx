@@ -14,25 +14,13 @@ interface Product {
   existencias: number | null;
 }
 
-interface ProductWarehouseStock {
-  product_id: string;
-  warehouse_id: string;
-  existencias: number;
-}
-
 interface ProductsListProps {
   searchTerm: string;
   activeCategory: string;
-  activeWarehouse?: string;
   resetFilters: () => void;
 }
 
-const ProductsList: React.FC<ProductsListProps> = ({ 
-  searchTerm, 
-  activeCategory, 
-  activeWarehouse = 'all',
-  resetFilters 
-}) => {
+const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory, resetFilters }) => {
   // Obtener productos de la base de datos
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: ['products'],
@@ -50,90 +38,20 @@ const ProductsList: React.FC<ProductsListProps> = ({
       return data || [];
     }
   });
-
-  // Obtener stock por almacén
-  const { data: warehouseStock = [] } = useQuery({
-    queryKey: ['product-warehouse-stock'],
-    queryFn: async (): Promise<ProductWarehouseStock[]> => {
-      const { data, error } = await supabase
-        .from('product_warehouse_stock')
-        .select('product_id, warehouse_id, existencias');
-        
-      if (error) {
-        console.error('Error fetching warehouse stock:', error);
-        return [];
-      }
-      
-      return data || [];
-    }
-  });
-
-  // Crear mapa de stock por producto y almacén
-  const stockByProductWarehouse = React.useMemo(() => {
-    const map = new Map<string, Map<string, number>>();
-    warehouseStock.forEach((stock) => {
-      if (!map.has(stock.product_id)) {
-        map.set(stock.product_id, new Map());
-      }
-      map.get(stock.product_id)!.set(stock.warehouse_id, stock.existencias);
-    });
-    return map;
-  }, [warehouseStock]);
-
-  // Calcular existencias totales por producto (suma de todos los almacenes)
-  const totalStockByProduct = React.useMemo(() => {
-    const map = new Map<string, number>();
-    stockByProductWarehouse.forEach((warehouseMap, productId) => {
-      let total = 0;
-      warehouseMap.forEach((existencias) => {
-        total += existencias;
-      });
-      map.set(productId, total);
-    });
-    return map;
-  }, [stockByProductWarehouse]);
   
   // Aplicar filtros
-  const filteredProducts = React.useMemo(() => {
-    return products.filter(product => {
-      // Filtrar por categoría
-      const categoryMatch = activeCategory === 'all' || product.category_id === activeCategory;
-      
-      // Filtrar por término de búsqueda
-      const searchLower = searchTerm.toLowerCase();
-      const searchMatch = 
-        product.name.toLowerCase().includes(searchLower) || 
-        (product.clave && product.clave.toLowerCase().includes(searchLower));
-      
-      // Filtrar por almacén
-      let warehouseMatch = true;
-      if (activeWarehouse !== 'all') {
-        const productWarehouseStock = stockByProductWarehouse.get(product.id);
-        if (productWarehouseStock) {
-          const stockInWarehouse = productWarehouseStock.get(activeWarehouse) || 0;
-          warehouseMatch = stockInWarehouse > 0;
-        } else {
-          warehouseMatch = false;
-        }
-      }
-      
-      return categoryMatch && searchMatch && warehouseMatch;
-    });
-  }, [products, activeCategory, searchTerm, activeWarehouse, stockByProductWarehouse]);
-
-  // Función para obtener las existencias a mostrar
-  const getDisplayExistencias = (productId: string): number => {
-    if (activeWarehouse !== 'all') {
-      // Mostrar solo las existencias del almacén seleccionado
-      const productWarehouseStock = stockByProductWarehouse.get(productId);
-      if (productWarehouseStock) {
-        return productWarehouseStock.get(activeWarehouse) || 0;
-      }
-      return 0;
-    }
-    // Mostrar existencias totales
-    return totalStockByProduct.get(productId) || 0;
-  };
+  const filteredProducts = products.filter(product => {
+    // Filtrar por categoría
+    const categoryMatch = activeCategory === 'all' || product.category_id === activeCategory;
+    
+    // Filtrar por término de búsqueda
+    const searchLower = searchTerm.toLowerCase();
+    const searchMatch = 
+      product.name.toLowerCase().includes(searchLower) || 
+      (product.clave && product.clave.toLowerCase().includes(searchLower));
+    
+    return categoryMatch && searchMatch;
+  });
 
   if (isLoading) {
     return (
@@ -173,7 +91,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
           clave={product.clave}
           name={product.name}
           image={product.image_url || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1000&q=80'}
-          existencias={getDisplayExistencias(product.id)}
+          existencias={product.existencias ?? 0}
         />
       ))}
     </div>
