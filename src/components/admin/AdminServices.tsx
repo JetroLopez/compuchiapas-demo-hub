@@ -87,21 +87,52 @@ const AdminServices: React.FC = () => {
         continue;
       }
       
-      // Try tab-separated first
-      let parts = trimmedLine.split('\t').map(p => p.trim()).filter(p => p);
+      // Try tab-separated first (keep empty parts to maintain column positions)
+      let parts = trimmedLine.split('\t').map(p => p.trim());
       
-      // If not enough parts, try multiple spaces
+      // If not enough parts, try multiple spaces (keep empty parts)
       if (parts.length < 5) {
-        parts = trimmedLine.split(/\s{2,}/).map(p => p.trim()).filter(p => p);
+        parts = trimmedLine.split(/\s{2,}/).map(p => p.trim());
       }
       
-      if (parts.length >= 5) {
+      // Find key columns by position - at minimum we need: clave, cliente, estatus, fecha
+      // Condición can be empty
+      const nonEmptyParts = parts.filter(p => p);
+      
+      if (nonEmptyParts.length >= 4) {
         // Remove leading zeros from clave
-        const clave = parts[0].replace(/^0+/, '') || '0';
-        const cliente = parts[1];
-        const estatusRaw = parts[2];
-        const fechaRaw = parts[3];
-        const condicion = parts.slice(4).join(' ');
+        const clave = nonEmptyParts[0].replace(/^0+/, '') || '0';
+        const cliente = nonEmptyParts[1];
+        
+        // Detect which part is the status and which is the date
+        let estatusRaw = '';
+        let fechaRaw = '';
+        let condicionStartIndex = 4;
+        
+        // Check if part 2 is a valid status
+        const possibleStatus = nonEmptyParts[2].toLowerCase();
+        const isStatus = ['emitida', 'remitida', 'facturada', 'cancelada'].some(s => possibleStatus.includes(s));
+        
+        // Check if part 2 looks like a date (DD/MM/YYYY)
+        const isDate = /\d{1,2}\/\d{1,2}\/\d{4}/.test(nonEmptyParts[2]);
+        
+        if (isStatus) {
+          estatusRaw = nonEmptyParts[2];
+          fechaRaw = nonEmptyParts[3] || '';
+          condicionStartIndex = 4;
+        } else if (isDate) {
+          // Status might have been skipped/empty, use date position
+          estatusRaw = 'Emitida'; // Default
+          fechaRaw = nonEmptyParts[2];
+          condicionStartIndex = 3;
+        } else {
+          // Standard parsing
+          estatusRaw = nonEmptyParts[2];
+          fechaRaw = nonEmptyParts[3] || '';
+          condicionStartIndex = 4;
+        }
+        
+        const condicion = nonEmptyParts.slice(condicionStartIndex).join(' ');
         
         // Validate and normalize status
         let estatus: ServiceStatus = 'Emitida';
