@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,9 @@ import {
   Minimize2,
   RefreshCw,
   Bell,
-  Warehouse
+  Warehouse,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -70,6 +72,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const previousContactsCount = useRef<number>(0);
 
   // Update current time every minute
   useEffect(() => {
@@ -78,6 +82,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Create notification sound
+  const playNotificationSound = useCallback(() => {
+    if (!soundEnabled) return;
+    
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      const playBeep = (startTime: number, frequency: number, duration: number) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'square';
+        
+        gainNode.gain.setValueAtTime(0.6, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+
+      const currentTime = audioContext.currentTime;
+      // Triple beep pattern for urgency
+      playBeep(currentTime, 880, 0.15);
+      playBeep(currentTime + 0.2, 988, 0.15);
+      playBeep(currentTime + 0.4, 1047, 0.15);
+      playBeep(currentTime + 0.6, 1175, 0.25);
+      
+    } catch (error) {
+      console.log('Could not play notification sound:', error);
+    }
+  }, [soundEnabled]);
 
   // Fetch active services (Emitida or Remitida - in store)
   const { data: services = [], isLoading: servicesLoading, refetch: refetchServices } = useQuery({
@@ -109,6 +149,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  // Play sound when contacts change
+  useEffect(() => {
+    if (pendingContactsCount > previousContactsCount.current && previousContactsCount.current >= 0) {
+      playNotificationSound();
+    }
+    previousContactsCount.current = pendingContactsCount;
+  }, [pendingContactsCount, playNotificationSound]);
 
   // Fetch active promotions
   const { data: promotions = [], isLoading: promotionsLoading } = useQuery({
@@ -160,12 +208,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     },
   });
 
-  // Get service age color
+  // Get service age color and urgency class
   const getServiceColor = (fechaElaboracion: string) => {
     const days = differenceInDays(currentTime, new Date(fechaElaboracion));
     if (days >= 5) return 'bg-red-500/20 border-red-500 text-red-700 dark:text-red-300';
     if (days >= 3) return 'bg-yellow-500/20 border-yellow-500 text-yellow-700 dark:text-yellow-300';
     return 'bg-green-500/20 border-green-500 text-green-700 dark:text-green-300';
+  };
+
+  const getUrgencyClass = (fechaElaboracion: string) => {
+    const days = differenceInDays(currentTime, new Date(fechaElaboracion));
+    if (days >= 5) return 'animate-urgency';
+    if (days >= 3) return 'animate-urgency-pulse';
+    return '';
   };
 
   const getServiceBadgeColor = (days: number) => {
@@ -203,12 +258,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold">Dashboard</h2>
+          <h2 className="text-2xl font-bold">Compusistemas de Chiapas</h2>
           <span className="text-sm text-muted-foreground">
             {format(currentTime, "EEEE d 'de' MMMM, HH:mm", { locale: es })}
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="rounded-full"
+            title={soundEnabled ? 'Silenciar notificaciones' : 'Activar notificaciones'}
+          >
+            {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => refetchServices()}>
             <RefreshCw size={16} className="mr-2" />
             Actualizar
@@ -242,7 +306,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <Card 
           className={cn(
             "cursor-pointer hover:bg-muted/50 transition-colors relative",
-            pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-pulse"
+            pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
           )} 
           onClick={() => {
             onNavigateToTab('contacts');
@@ -254,7 +318,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="p-2 rounded-lg bg-orange-500/10 relative">
                 <MessageCircle className="h-5 w-5 text-orange-500" />
                 {pendingContactsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-notification-bounce">
                     {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
                   </span>
                 )}
@@ -266,7 +330,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
             {pendingContactsCount > 0 && (
               <div className="absolute top-1 right-1">
-                <Bell className="h-4 w-4 text-orange-500 animate-bounce" />
+                <Bell className="h-5 w-5 text-orange-500 animate-bounce" />
               </div>
             )}
           </CardContent>
@@ -315,13 +379,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 Servicios en Tienda
               </div>
               <div className="flex gap-2">
-                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500">
+                <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500">
                   Nuevo
                 </Badge>
-                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500">
+                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500">
                   3+ días
                 </Badge>
-                <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500">
+                <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500">
                   5+ días
                 </Badge>
               </div>
@@ -349,7 +413,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         key={service.id}
                         className={cn(
                           "p-3 rounded-lg border-2 transition-all",
-                          getServiceColor(service.fecha_elaboracion)
+                          getServiceColor(service.fecha_elaboracion),
+                          getUrgencyClass(service.fecha_elaboracion)
                         )}
                       >
                         <div className="flex items-start justify-between gap-4">
@@ -377,7 +442,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               {days === 0 ? 'Hoy' : `${days} día${days > 1 ? 's' : ''}`}
                             </Badge>
                             {days >= 5 && (
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                              <AlertTriangle className="h-5 w-5 text-red-500 animate-pulse" />
                             )}
                           </div>
                         </div>
@@ -438,13 +503,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <Clock size={14} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
                             <span className={cn(
                               "text-sm",
-                              isStale ? "text-yellow-600 font-medium" : "text-muted-foreground"
+                              isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
                             )}>
                               {formatTimeAgo(warehouse.updated_at)}
                             </span>
                           </div>
                           {isStale && (
-                            <p className="text-xs text-yellow-600">Requiere sincronización</p>
+                            <p className="text-xs text-yellow-600 dark:text-yellow-400">Requiere sincronización</p>
                           )}
                         </div>
                       </div>
@@ -504,7 +569,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Recent Contact Requests */}
           <Card className={cn(
-            pendingContactsCount > 0 && "ring-2 ring-orange-500"
+            pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
           )}>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-base">
@@ -513,7 +578,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Contactos Recientes
                 </div>
                 {pendingContactsCount > 0 && (
-                  <Badge className="bg-orange-500 animate-pulse">
+                  <Badge className="bg-orange-500 animate-notification-bounce">
                     {pendingContactsCount} nuevo{pendingContactsCount > 1 ? 's' : ''}
                   </Badge>
                 )}
