@@ -334,6 +334,39 @@ export type Database = {
         }
         Relationships: []
       }
+      services: {
+        Row: {
+          clave: string
+          cliente: string
+          condicion: string
+          created_at: string
+          estatus: Database["public"]["Enums"]["service_status"]
+          fecha_elaboracion: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          clave: string
+          cliente?: string
+          condicion: string
+          created_at?: string
+          estatus?: Database["public"]["Enums"]["service_status"]
+          fecha_elaboracion?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          clave?: string
+          cliente?: string
+          condicion?: string
+          created_at?: string
+          estatus?: Database["public"]["Enums"]["service_status"]
+          fecha_elaboracion?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -388,6 +421,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      service_status: "Emitida" | "Remitida" | "Facturada" | "Cancelada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -516,6 +550,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      service_status: ["Emitida", "Remitida", "Facturada", "Cancelada"],
     },
   },
 } as const

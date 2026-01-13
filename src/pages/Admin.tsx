@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench } from 'lucide-react';
 import AdminProducts from '@/components/admin/AdminProducts';
 import AdminUsers from '@/components/admin/AdminUsers';
 import ProductSync from '@/components/admin/ProductSync';
 import AdminPromotions from '@/components/admin/AdminPromotions';
 import AdminContacts from '@/components/admin/AdminContacts';
+import AdminServices from '@/components/admin/AdminServices';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -88,6 +89,10 @@ const Admin: React.FC = () => {
                 <MessageCircle size={16} />
                 Contacto
               </TabsTrigger>
+              <TabsTrigger value="services" className="gap-2">
+                <Wrench size={16} />
+                Servicios
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="sync">
@@ -108,6 +113,10 @@ const Admin: React.FC = () => {
 
             <TabsContent value="contacts">
               <AdminContacts />
+            </TabsContent>
+
+            <TabsContent value="services">
+              <AdminServices />
             </TabsContent>
           </Tabs>
         ) : (
