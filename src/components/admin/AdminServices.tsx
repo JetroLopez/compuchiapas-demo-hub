@@ -78,6 +78,14 @@ const AdminServices: React.FC = () => {
     const lines = text.trim().split('\n');
     const services: ParsedService[] = [];
     
+    // Regex to parse: [spaces][0000CLAVE][spaces/tab][CLIENTE][spaces/tab][ESTATUS][spaces/tab][FECHA][spaces/tab][CONDICION opcional]
+    // CLAVE: starts with 000000 followed by digits
+    // CLIENTE: alphanumeric (can be numeric like 762 or text like MOSTR)
+    // ESTATUS: Emitida|Remitida|Facturada|Cancelada
+    // FECHA: DD/MM/YYYY
+    // CONDICION: everything after fecha (optional, can contain spaces)
+    const lineRegex = /^\s*(0+\d+)\s+(\S+)\s+(Emitida|Remitida|Facturada|Cancelada)\s+(\d{1,2}\/\d{1,2}\/\d{4})(?:\s+(.*))?$/i;
+    
     for (const line of lines) {
       const trimmedLine = line.trim();
       if (!trimmedLine) continue;
@@ -87,52 +95,25 @@ const AdminServices: React.FC = () => {
         continue;
       }
       
-      // Robust parsing: locate clave, estatus and fecha by pattern rather than column splitting.
-      // This prevents misalignment when Cliente is numeric or Condición is empty.
-      const raw = trimmedLine;
-
-      // Clave: first number in the row (may include leading zeros)
-      const claveMatch = raw.match(/^0*\d+/);
-      if (!claveMatch) continue;
-      const clave = claveMatch[0].replace(/^0+/, '') || '0';
-
-      // Estatus: keyword anywhere in the row
-      const statusMatch = raw.match(/\b(Emitida|Remitida|Facturada|Cancelada)\b/i);
-      const estatusRaw = statusMatch?.[0] ?? 'Emitida';
-
-      // Fecha: DD/MM/YYYY anywhere in the row
-      const dateMatch = raw.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/);
-      const fechaRaw = dateMatch?.[1] ?? '';
-
-      const statusIndex = statusMatch ? raw.toLowerCase().indexOf(statusMatch[0].toLowerCase()) : -1;
-      const dateIndex = dateMatch ? raw.indexOf(dateMatch[0]) : -1;
-
-      // Cliente is whatever sits between clave and estatus (or fecha if estatus missing)
-      const afterClaveIndex = claveMatch[0].length;
-      const clienteEndIndex = statusIndex >= 0 ? statusIndex : (dateIndex >= 0 ? dateIndex : raw.length);
-      const cliente = raw
-        .slice(afterClaveIndex, clienteEndIndex)
-        .replace(/\t/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      // Condición is whatever sits after the date (can be empty)
-      const condicion = dateIndex >= 0
-        ? raw
-            .slice(dateIndex + (dateMatch?.[0].length ?? 0))
-            .replace(/\t/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-        : '';
-
-      // Validate and normalize status
+      const match = line.match(lineRegex);
+      if (!match) continue;
+      
+      const [, claveRaw, clienteRaw, estatusRaw, fechaRaw, condicionRaw] = match;
+      
+      // Remove leading zeros from clave
+      const clave = claveRaw.replace(/^0+/, '') || '0';
+      
+      // Cliente as-is, trimmed
+      const cliente = clienteRaw.trim();
+      
+      // Normalize status
       let estatus: ServiceStatus = 'Emitida';
       const estatusLower = estatusRaw.toLowerCase();
-      if (estatusLower.includes('emitida')) estatus = 'Emitida';
-      else if (estatusLower.includes('remitida')) estatus = 'Remitida';
-      else if (estatusLower.includes('facturada')) estatus = 'Facturada';
-      else if (estatusLower.includes('cancelada')) estatus = 'Cancelada';
-
+      if (estatusLower === 'emitida') estatus = 'Emitida';
+      else if (estatusLower === 'remitida') estatus = 'Remitida';
+      else if (estatusLower === 'facturada') estatus = 'Facturada';
+      else if (estatusLower === 'cancelada') estatus = 'Cancelada';
+      
       // Parse date (DD/MM/YYYY to YYYY-MM-DD)
       let fecha_elaboracion = new Date().toISOString().split('T')[0];
       const dateParts = fechaRaw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
@@ -140,6 +121,9 @@ const AdminServices: React.FC = () => {
         const [, day, month, year] = dateParts;
         fecha_elaboracion = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       }
+      
+      // Condicion is everything after fecha, can be empty
+      const condicion = condicionRaw?.trim() || '';
 
       services.push({
         clave,
