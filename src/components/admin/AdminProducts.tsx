@@ -28,6 +28,17 @@ interface Category {
   name: string;
 }
 
+interface Warehouse {
+  id: string;
+  name: string;
+}
+
+interface ProductWarehouseStock {
+  product_id: string;
+  warehouse_id: string;
+  existencias: number;
+}
+
 interface EditedProduct {
   clave?: string | null;
   name?: string;
@@ -43,6 +54,8 @@ const AdminProducts: React.FC = () => {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const xlsxInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editedProducts, setEditedProducts] = useState<Record<string, EditedProduct>>({});
@@ -78,6 +91,33 @@ const AdminProducts: React.FC = () => {
         .from('categories')
         .select('id, name')
         .order('display_order', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch warehouses
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: async (): Promise<Warehouse[]> => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .select('id, name')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch product warehouse stock
+  const { data: warehouseStock = [] } = useQuery({
+    queryKey: ['product-warehouse-stock'],
+    queryFn: async (): Promise<ProductWarehouseStock[]> => {
+      const { data, error } = await supabase
+        .from('product_warehouse_stock')
+        .select('product_id, warehouse_id, existencias');
       
       if (error) throw error;
       return data || [];
@@ -397,10 +437,40 @@ const AdminProducts: React.FC = () => {
     });
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.clave && p.clave.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Get product warehouse IDs for filtering
+  const getProductWarehouseIds = (productId: string): string[] => {
+    return warehouseStock
+      .filter(ws => ws.product_id === productId && ws.existencias > 0)
+      .map(ws => ws.warehouse_id);
+  };
+
+  // Get warehouses info for a product
+  const getProductWarehouses = (productId: string): string => {
+    const productWarehouses = warehouseStock
+      .filter(ws => ws.product_id === productId && ws.existencias > 0)
+      .map(ws => {
+        const warehouse = warehouses.find(w => w.id === ws.warehouse_id);
+        return warehouse ? `${warehouse.name}: ${ws.existencias}` : null;
+      })
+      .filter(Boolean);
+    return productWarehouses.join(', ') || '-';
+  };
+
+  const filteredProducts = products.filter(p => {
+    // Text search filter
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.clave && p.clave.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Warehouse filter
+    const matchesWarehouse = selectedWarehouse === 'all' || 
+      getProductWarehouseIds(p.id).includes(selectedWarehouse);
+    
+    // Category filter
+    const matchesCategory = selectedCategory === 'all' || 
+      p.category_id === selectedCategory;
+    
+    return matchesSearch && matchesWarehouse && matchesCategory;
+  });
 
   // Productos a mostrar según paginación
   const displayedProducts = showAll ? filteredProducts : filteredProducts.slice(0, INITIAL_ITEMS);
@@ -606,15 +676,48 @@ const AdminProducts: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre o clave..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        {/* Filters Row */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre o clave..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          {/* Warehouse Filter */}
+          <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filtrar por almacén" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los almacenes</SelectItem>
+              {warehouses.map((warehouse) => (
+                <SelectItem key={warehouse.id} value={warehouse.id}>
+                  {warehouse.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* Category Filter */}
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filtrar por categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las categorías</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {hasChanges && (
@@ -636,6 +739,7 @@ const AdminProducts: React.FC = () => {
                   <TableHead className="w-36">Clave</TableHead>
                   <TableHead className="min-w-[200px]">Descripción</TableHead>
                   <TableHead className="w-40">Categoría</TableHead>
+                  <TableHead className="w-40">Almacenes</TableHead>
                   <TableHead className="w-32">URL Imagen</TableHead>
                   <TableHead className="w-24 text-center">Existencias</TableHead>
                   <TableHead className="w-16 text-right">Acciones</TableHead>
@@ -644,7 +748,7 @@ const AdminProducts: React.FC = () => {
               <TableBody>
                 {displayedProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No se encontraron productos
                     </TableCell>
                   </TableRow>
@@ -685,6 +789,9 @@ const AdminProducts: React.FC = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell className="p-1 text-xs text-muted-foreground">
+                        {getProductWarehouses(product.id)}
                       </TableCell>
                       <TableCell className="p-1">
                         <Input
