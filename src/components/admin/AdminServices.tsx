@@ -87,77 +87,67 @@ const AdminServices: React.FC = () => {
         continue;
       }
       
-      // Try tab-separated first (keep empty parts to maintain column positions)
-      let parts = trimmedLine.split('\t').map(p => p.trim());
-      
-      // If not enough parts, try multiple spaces (keep empty parts)
-      if (parts.length < 5) {
-        parts = trimmedLine.split(/\s{2,}/).map(p => p.trim());
+      // Robust parsing: locate clave, estatus and fecha by pattern rather than column splitting.
+      // This prevents misalignment when Cliente is numeric or Condición is empty.
+      const raw = trimmedLine;
+
+      // Clave: first number in the row (may include leading zeros)
+      const claveMatch = raw.match(/^0*\d+/);
+      if (!claveMatch) continue;
+      const clave = claveMatch[0].replace(/^0+/, '') || '0';
+
+      // Estatus: keyword anywhere in the row
+      const statusMatch = raw.match(/\b(Emitida|Remitida|Facturada|Cancelada)\b/i);
+      const estatusRaw = statusMatch?.[0] ?? 'Emitida';
+
+      // Fecha: DD/MM/YYYY anywhere in the row
+      const dateMatch = raw.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/);
+      const fechaRaw = dateMatch?.[1] ?? '';
+
+      const statusIndex = statusMatch ? raw.toLowerCase().indexOf(statusMatch[0].toLowerCase()) : -1;
+      const dateIndex = dateMatch ? raw.indexOf(dateMatch[0]) : -1;
+
+      // Cliente is whatever sits between clave and estatus (or fecha if estatus missing)
+      const afterClaveIndex = claveMatch[0].length;
+      const clienteEndIndex = statusIndex >= 0 ? statusIndex : (dateIndex >= 0 ? dateIndex : raw.length);
+      const cliente = raw
+        .slice(afterClaveIndex, clienteEndIndex)
+        .replace(/\t/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Condición is whatever sits after the date (can be empty)
+      const condicion = dateIndex >= 0
+        ? raw
+            .slice(dateIndex + (dateMatch?.[0].length ?? 0))
+            .replace(/\t/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+        : '';
+
+      // Validate and normalize status
+      let estatus: ServiceStatus = 'Emitida';
+      const estatusLower = estatusRaw.toLowerCase();
+      if (estatusLower.includes('emitida')) estatus = 'Emitida';
+      else if (estatusLower.includes('remitida')) estatus = 'Remitida';
+      else if (estatusLower.includes('facturada')) estatus = 'Facturada';
+      else if (estatusLower.includes('cancelada')) estatus = 'Cancelada';
+
+      // Parse date (DD/MM/YYYY to YYYY-MM-DD)
+      let fecha_elaboracion = new Date().toISOString().split('T')[0];
+      const dateParts = fechaRaw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (dateParts) {
+        const [, day, month, year] = dateParts;
+        fecha_elaboracion = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       }
-      
-      // Find key columns by position - at minimum we need: clave, cliente, estatus, fecha
-      // Condición can be empty
-      const nonEmptyParts = parts.filter(p => p);
-      
-      if (nonEmptyParts.length >= 4) {
-        // Remove leading zeros from clave
-        const clave = nonEmptyParts[0].replace(/^0+/, '') || '0';
-        const cliente = nonEmptyParts[1];
-        
-        // Detect which part is the status and which is the date
-        let estatusRaw = '';
-        let fechaRaw = '';
-        let condicionStartIndex = 4;
-        
-        // Check if part 2 is a valid status
-        const possibleStatus = nonEmptyParts[2].toLowerCase();
-        const isStatus = ['emitida', 'remitida', 'facturada', 'cancelada'].some(s => possibleStatus.includes(s));
-        
-        // Check if part 2 looks like a date (DD/MM/YYYY)
-        const isDate = /\d{1,2}\/\d{1,2}\/\d{4}/.test(nonEmptyParts[2]);
-        
-        if (isStatus) {
-          estatusRaw = nonEmptyParts[2];
-          fechaRaw = nonEmptyParts[3] || '';
-          condicionStartIndex = 4;
-        } else if (isDate) {
-          // Status might have been skipped/empty, use date position
-          estatusRaw = 'Emitida'; // Default
-          fechaRaw = nonEmptyParts[2];
-          condicionStartIndex = 3;
-        } else {
-          // Standard parsing
-          estatusRaw = nonEmptyParts[2];
-          fechaRaw = nonEmptyParts[3] || '';
-          condicionStartIndex = 4;
-        }
-        
-        const condicion = nonEmptyParts.slice(condicionStartIndex).join(' ');
-        
-        // Validate and normalize status
-        let estatus: ServiceStatus = 'Emitida';
-        const estatusLower = estatusRaw.toLowerCase();
-        if (estatusLower.includes('emitida')) estatus = 'Emitida';
-        else if (estatusLower.includes('remitida')) estatus = 'Remitida';
-        else if (estatusLower.includes('facturada')) estatus = 'Facturada';
-        else if (estatusLower.includes('cancelada')) estatus = 'Cancelada';
-        
-        // Parse date (DD/MM/YYYY to YYYY-MM-DD)
-        let fecha_elaboracion = new Date().toISOString().split('T')[0];
-        const dateMatch = fechaRaw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        if (dateMatch) {
-          const [, day, month, year] = dateMatch;
-          fecha_elaboracion = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        }
-        
-        services.push({
-          clave,
-          cliente,
-          estatus,
-          fecha_elaboracion,
-          condicion
-        });
-      }
+
+      services.push({
+        clave,
+        cliente,
+        estatus,
+        fecha_elaboracion,
+        condicion
+      });
     }
     
     return services;
