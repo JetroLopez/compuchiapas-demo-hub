@@ -96,7 +96,8 @@ const AdminServices: React.FC = () => {
       }
       
       if (parts.length >= 5) {
-        const clave = parts[0];
+        // Remove leading zeros from clave
+        const clave = parts[0].replace(/^0+/, '') || '0';
         const cliente = parts[1];
         const estatusRaw = parts[2];
         const fechaRaw = parts[3];
@@ -227,6 +228,25 @@ const AdminServices: React.FC = () => {
     },
     onError: () => {
       toast.error('Error al eliminar servicio');
+    }
+  });
+
+  // Delete all services mutation
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-services'] });
+      toast.success('Todos los servicios han sido eliminados');
+    },
+    onError: () => {
+      toast.error('Error al eliminar servicios');
     }
   });
 
@@ -382,11 +402,44 @@ Ejemplo:
 
       {/* Services List */}
       <Card>
-        <CardHeader>
-          <CardTitle>Servicios en Tienda</CardTitle>
-          <CardDescription>
-            {filteredServices.length} servicios activos
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Servicios en Tienda</CardTitle>
+            <CardDescription>
+              {filteredServices.length} servicios activos
+            </CardDescription>
+          </div>
+          {services && services.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar Todo
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar todos los servicios?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción eliminará TODOS los {services.length} servicios permanentemente. Esta acción no se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteAllMutation.mutate()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleteAllMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Eliminar Todo'
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </CardHeader>
         <CardContent>
           {/* Filters */}
