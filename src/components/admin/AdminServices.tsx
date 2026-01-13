@@ -150,48 +150,60 @@ const AdminServices: React.FC = () => {
   // Sync mutation
   const syncMutation = useMutation({
     mutationFn: async (services: ParsedService[]) => {
-      // Separate services by status
+      // First, upsert ALL services with their correct status
+      const { error: upsertError } = await supabase
+        .from('services')
+        .upsert(
+          services.map(s => ({
+            clave: s.clave,
+            cliente: s.cliente,
+            estatus: s.estatus,
+            fecha_elaboracion: s.fecha_elaboracion,
+            condicion: s.condicion
+          })),
+          { onConflict: 'clave' }
+        );
+      
+      if (upsertError) throw upsertError;
+      
+      // Count for reporting
       const activeServices = services.filter(s => s.estatus === 'Emitida');
       const inactiveServices = services.filter(s => s.estatus !== 'Emitida');
       
-      // Delete services that are no longer active (Remitida, Facturada, Cancelada)
-      if (inactiveServices.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('services')
-          .delete()
-          .in('clave', inactiveServices.map(s => s.clave));
-        
-        if (deleteError) throw deleteError;
-      }
-      
-      // Upsert active services
-      if (activeServices.length > 0) {
-        const { error: upsertError } = await supabase
-          .from('services')
-          .upsert(
-            activeServices.map(s => ({
-              clave: s.clave,
-              cliente: s.cliente,
-              estatus: s.estatus,
-              fecha_elaboracion: s.fecha_elaboracion,
-              condicion: s.condicion
-            })),
-            { onConflict: 'clave' }
-          );
-        
-        if (upsertError) throw upsertError;
-      }
-      
       return {
-        added: activeServices.length,
-        removed: inactiveServices.length
+        total: services.length,
+        active: activeServices.length,
+        inactive: inactiveServices.length
       };
     },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-services'] });
-      toast.success(`Sincronización completada: ${result.added} activos, ${result.removed} eliminados`);
+    onSuccess: async (result) => {
+      toast.success(`Sincronización completada: ${result.total} procesados (${result.active} activos)`);
       setPastedData('');
       setParsedServices([]);
+      
+      // After a short delay, delete all non-Emitida services
+      toast.info('Limpiando servicios no activos...');
+      
+      setTimeout(async () => {
+        try {
+          const { error: deleteError } = await supabase
+            .from('services')
+            .delete()
+            .neq('estatus', 'Emitida');
+          
+          if (deleteError) {
+            console.error('Error cleaning up:', deleteError);
+            toast.error('Error al limpiar servicios inactivos');
+          } else {
+            queryClient.invalidateQueries({ queryKey: ['admin-services'] });
+            toast.success(`Servicios inactivos eliminados correctamente`);
+          }
+        } catch (err) {
+          console.error('Cleanup error:', err);
+        }
+      }, 1500);
+      
+      queryClient.invalidateQueries({ queryKey: ['admin-services'] });
     },
     onError: (error) => {
       console.error('Sync error:', error);
