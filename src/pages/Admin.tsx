@@ -1,19 +1,44 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard } from 'lucide-react';
 import AdminProducts from '@/components/admin/AdminProducts';
 import AdminUsers from '@/components/admin/AdminUsers';
 import ProductSync from '@/components/admin/ProductSync';
 import AdminPromotions from '@/components/admin/AdminPromotions';
 import AdminContacts from '@/components/admin/AdminContacts';
 import AdminServices from '@/components/admin/AdminServices';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAdmin, isLoading, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [lastViewedContactsTime, setLastViewedContactsTime] = useState<Date | null>(null);
+
+  // Track new contacts since last viewed
+  const { data: pendingContactsCount = 0 } = useQuery({
+    queryKey: ['pending-contacts-count', lastViewedContactsTime],
+    queryFn: async () => {
+      let query = supabase
+        .from('contact_submissions')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (lastViewedContactsTime) {
+        query = query.gt('created_at', lastViewedContactsTime.toISOString());
+      }
+      
+      const { count, error } = await query;
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -24,6 +49,10 @@ const Admin: React.FC = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleContactsViewed = () => {
+    setLastViewedContactsTime(new Date());
   };
 
   if (isLoading) {
@@ -67,8 +96,12 @@ const Admin: React.FC = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {isAdmin ? (
-          <Tabs defaultValue="sync" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="mb-6 flex-wrap">
+              <TabsTrigger value="dashboard" className="gap-2">
+                <LayoutDashboard size={16} />
+                Dashboard
+              </TabsTrigger>
               <TabsTrigger value="sync" className="gap-2">
                 <RefreshCw size={16} />
                 Sincronizar
@@ -85,15 +118,28 @@ const Admin: React.FC = () => {
                 <Users size={16} />
                 Usuarios
               </TabsTrigger>
-              <TabsTrigger value="contacts" className="gap-2">
+              <TabsTrigger value="contacts" className="gap-2 relative">
                 <MessageCircle size={16} />
                 Contacto
+                {pendingContactsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-pulse">
+                    {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="services" className="gap-2">
                 <Wrench size={16} />
                 Servicios
               </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="dashboard">
+              <AdminDashboard 
+                onNavigateToTab={setActiveTab}
+                pendingContactsCount={pendingContactsCount}
+                onContactsViewed={handleContactsViewed}
+              />
+            </TabsContent>
             
             <TabsContent value="sync">
               <ProductSync />
