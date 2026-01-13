@@ -447,7 +447,7 @@ Ejemplo:
                         </Select>
                       </TableCell>
                       <TableCell>
-                        {format(new Date(service.fecha_elaboracion), 'dd/MM/yyyy', { locale: es })}
+                        {format(new Date(service.fecha_elaboracion + 'T12:00:00'), 'dd/MM/yyyy', { locale: es })}
                       </TableCell>
                       <TableCell className="max-w-xs">
                         <span className="line-clamp-2">{service.condicion}</span>
