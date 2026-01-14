@@ -436,7 +436,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <div
                         key={service.id}
                         className={cn(
-                          "p-3 rounded-lg border-2 transition-all cursor-pointer",
+                          "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
                           getServiceColor(service.fecha_elaboracion),
                           getUrgencyClass(service.fecha_elaboracion)
                         )}
@@ -446,9 +446,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="font-bold text-lg">#{service.clave}</span>
-                              <Badge variant="secondary" className="text-xs">
-                                {service.estatus}
-                              </Badge>
                               {getEstatusInternoBadge(service.estatus_interno)}
                               {service.cliente !== 'MOSTR' && (
                                 <Badge variant="outline" className="text-xs">

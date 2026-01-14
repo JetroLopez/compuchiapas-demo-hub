@@ -10,8 +10,8 @@ const NavBar: React.FC = () => {
   const location = useLocation();
   const headerRef = useRef<HTMLElement>(null);
   
-  // Pages that need dark header when not scrolled
-  const needsDarkHeader = ['/productos', '/servicios', '/blog', '/contacto'].includes(location.pathname);
+  // Pages that need dark header when not scrolled (all pages now maintain dark header/hero)
+  const needsDarkHeader = true;
 
   useEffect(() => {
     const handleScroll = () => {
