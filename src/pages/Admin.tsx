@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText } from 'lucide-react';
 import AdminProducts from '@/components/admin/AdminProducts';
 import AdminUsers from '@/components/admin/AdminUsers';
 import ProductSync from '@/components/admin/ProductSync';
@@ -13,6 +13,7 @@ import AdminPromotions from '@/components/admin/AdminPromotions';
 import AdminContacts from '@/components/admin/AdminContacts';
 import AdminServices from '@/components/admin/AdminServices';
 import AdminDashboard from '@/components/admin/AdminDashboard';
+import AdminBlog from '@/components/admin/AdminBlog';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -203,6 +204,10 @@ const Admin: React.FC = () => {
                 <Wrench size={16} />
                 Servicios
               </TabsTrigger>
+              <TabsTrigger value="blog" className="gap-2">
+                <FileText size={16} />
+                Blog
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -235,6 +240,10 @@ const Admin: React.FC = () => {
 
             <TabsContent value="services">
               <AdminServices />
+            </TabsContent>
+
+            <TabsContent value="blog">
+              <AdminBlog />
             </TabsContent>
           </Tabs>
         ) : (

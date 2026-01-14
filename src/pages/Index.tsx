@@ -92,7 +92,7 @@ const Index: React.FC = () => {
       {/* Special Feature Section */}
       <section className="section-padding">
         <div className="container-padding max-w-7xl mx-auto">
-          <div className="glass-card rounded-2xl overflow-hidden">
+          <div className="glass-card dark:bg-card/80 rounded-2xl overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2">
               {/* Image */}
               <div className="relative h-64 lg:h-auto">
@@ -105,25 +105,25 @@ const Index: React.FC = () => {
               
               {/* Content */}
               <div className="p-8 md:p-12 flex flex-col justify-center">
-                <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-foreground">
                   ¿Necesitas un equipo personalizado?
                 </h2>
-                <p className="text-lg text-gray-700 mb-6">
+                <p className="text-lg text-muted-foreground mb-6">
                   ¡Ensamblamos tu PC ideal! Ya sea para gaming, diseño gráfico, 
                   arquitectura o uso general, construimos la computadora perfecta 
                   que se adapte a tus necesidades y presupuesto.
                 </p>
                 <div className="flex flex-wrap gap-4 mb-8">
-                  <div className="bg-tech-blue/10 px-4 py-2 rounded-full text-tech-blue font-medium">
+                  <div className="bg-tech-blue/10 dark:bg-primary/20 px-4 py-2 rounded-full text-tech-blue dark:text-primary font-medium">
                     Gaming
                   </div>
-                  <div className="bg-tech-blue/10 px-4 py-2 rounded-full text-tech-blue font-medium">
+                  <div className="bg-tech-blue/10 dark:bg-primary/20 px-4 py-2 rounded-full text-tech-blue dark:text-primary font-medium">
                     Diseño Gráfico
                   </div>
-                  <div className="bg-tech-blue/10 px-4 py-2 rounded-full text-tech-blue font-medium">
+                  <div className="bg-tech-blue/10 dark:bg-primary/20 px-4 py-2 rounded-full text-tech-blue dark:text-primary font-medium">
                     Workstations
                   </div>
-                  <div className="bg-tech-blue/10 px-4 py-2 rounded-full text-tech-blue font-medium">
+                  <div className="bg-tech-blue/10 dark:bg-primary/20 px-4 py-2 rounded-full text-tech-blue dark:text-primary font-medium">
                     Oficina
                   </div>
                 </div>
@@ -142,46 +142,46 @@ const Index: React.FC = () => {
       <ProductCategories />
       
       {/* Contact Form */}
-      <section id="contacto" className="section-padding bg-tech-lightGray">
+      <section id="contacto" className="section-padding bg-tech-lightGray dark:bg-muted/30">
         <div className="container-padding max-w-7xl mx-auto">
-          <div className="glass-card rounded-2xl p-8 md:p-12">
+          <div className="glass-card dark:bg-card/80 rounded-2xl p-8 md:p-12">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div>
-                <h2 className="text-3xl font-bold mb-6">Contáctanos</h2>
-                <p className="text-gray-600 mb-8">
+                <h2 className="text-3xl font-bold mb-6 text-foreground">Contáctanos</h2>
+                <p className="text-muted-foreground mb-8">
                   ¿Tienes preguntas o necesitas ayuda? No dudes en contactarnos. 
                   Nuestro equipo de expertos estará encantado de asistirte.
                 </p>
                 
                 <div className="space-y-6">
                   <div className="flex items-start">
-                    <div className="bg-tech-blue/10 p-3 rounded-full text-tech-blue mr-4">
+                    <div className="bg-tech-blue/10 dark:bg-primary/20 p-3 rounded-full text-tech-blue dark:text-primary mr-4">
                       <Phone size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">Teléfono</h3>
-                      <p className="text-gray-600">+52 (962) 214-8546</p>
+                      <h3 className="text-lg font-semibold text-foreground">Teléfono</h3>
+                      <p className="text-muted-foreground">+52 (962) 214-8546</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start">
-                    <div className="bg-tech-blue/10 p-3 rounded-full text-tech-blue mr-4">
+                    <div className="bg-tech-blue/10 dark:bg-primary/20 p-3 rounded-full text-tech-blue dark:text-primary mr-4">
                       <Mail size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">Email</h3>
-                      <p className="text-gray-600">info@compuchiapas.com</p>
+                      <h3 className="text-lg font-semibold text-foreground">Email</h3>
+                      <p className="text-muted-foreground">info@compuchiapas.com</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start">
-                    <div className="bg-tech-blue/10 p-3 rounded-full text-tech-blue mr-4">
+                    <div className="bg-tech-blue/10 dark:bg-primary/20 p-3 rounded-full text-tech-blue dark:text-primary mr-4">
                       <MapPin size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">Ubicación</h3>
-                      <p className="text-gray-600">
-                        <a href="https://maps.app.goo.gl/jp9mgSQvwcNeHM1U9" target="_blank" rel="noopener noreferrer" className="hover:text-tech-blue">
+                      <h3 className="text-lg font-semibold text-foreground">Ubicación</h3>
+                      <p className="text-muted-foreground">
+                        <a href="https://maps.app.goo.gl/jp9mgSQvwcNeHM1U9" target="_blank" rel="noopener noreferrer" className="hover:text-tech-blue dark:hover:text-primary">
                           6a. Avenida Sur, Centro, 30700 Tapachula de Córdova y Ordóñez, Chis.
                         </a>
                       </p>
@@ -194,13 +194,13 @@ const Index: React.FC = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
                         Nombre
                       </label>
                       <input
                         type="text"
                         id="name"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
+                        className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         placeholder="Tu nombre"
                         required
                         value={formData.name}
@@ -209,13 +209,13 @@ const Index: React.FC = () => {
                     </div>
                     
                     <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">
                         Teléfono
                       </label>
                       <input
                         type="tel"
                         id="phone"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
+                        className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         placeholder="Tu teléfono"
                         required
                         value={formData.phone}
@@ -225,12 +225,12 @@ const Index: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label htmlFor="device" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="device" className="block text-sm font-medium text-foreground mb-1">
                       Tipo de dispositivo
                     </label>
                     <select
                       id="device"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
+                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       required
                       value={formData.device}
                       onChange={handleChange}
@@ -245,13 +245,13 @@ const Index: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="message" className="block text-sm font-medium text-foreground mb-1">
                       Describe tu problema
                     </label>
                     <textarea
                       id="message"
                       rows={4}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent"
+                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Detalla el problema que estás experimentando..."
                       required
                       value={formData.message}
@@ -263,12 +263,12 @@ const Index: React.FC = () => {
                     <input
                       type="checkbox"
                       id="privacy"
-                      className="h-4 w-4 text-tech-blue focus:ring-tech-blue border-gray-300 rounded"
+                      className="h-4 w-4 text-primary focus:ring-primary border-input rounded"
                       required
                       checked={formData.privacy}
                       onChange={handleChange}
                     />
-                    <label htmlFor="privacy" className="ml-2 block text-sm text-gray-700">
+                    <label htmlFor="privacy" className="ml-2 block text-sm text-muted-foreground">
                       Acepto la política de privacidad
                     </label>
                   </div>

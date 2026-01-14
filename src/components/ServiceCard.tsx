@@ -28,21 +28,21 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <div 
       className={cn(
-        "glass-card rounded-2xl p-6 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl flex flex-col h-full",
+        "glass-card dark:bg-card/80 rounded-2xl p-6 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl flex flex-col h-full",
         className
       )}
       style={style}
     >
-      <div className="w-16 h-16 mb-6 flex items-center justify-center rounded-xl bg-tech-blue/10 text-tech-blue">
+      <div className="w-16 h-16 mb-6 flex items-center justify-center rounded-xl bg-tech-blue/10 dark:bg-primary/20 text-tech-blue dark:text-primary">
         {icon}
       </div>
       
-      <h3 className="text-xl font-semibold mb-3">{title}</h3>
-      <p className="text-gray-600 mb-6 flex-grow">{description}</p>
+      <h3 className="text-xl font-semibold mb-3 text-foreground">{title}</h3>
+      <p className="text-muted-foreground mb-6 flex-grow">{description}</p>
       
       <button 
         onClick={handleWhatsAppClick}
-        className="group flex items-center text-tech-blue font-medium hover:underline mt-auto"
+        className="group flex items-center text-tech-blue dark:text-primary font-medium hover:underline mt-auto"
       >
         Cotizar por WhatsApp
         <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />

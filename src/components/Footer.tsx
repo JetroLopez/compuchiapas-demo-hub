@@ -5,7 +5,7 @@ import { Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-tech-gray text-white">
+    <footer className="bg-tech-gray dark:bg-gray-900 text-white transition-colors duration-300">
       <div className="container-padding max-w-7xl mx-auto py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Column 1 */}

@@ -71,11 +71,11 @@ const ProductCategories: React.FC = () => {
   ];
 
   return (
-    <section className="section-padding bg-tech-lightGray">
+    <section className="section-padding bg-tech-lightGray dark:bg-muted/30">
       <div className="container-padding max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Categorías de Productos</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">Categorías de Productos</h2>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Ofrecemos una amplia gama de soluciones tecnológicas para satisfacer todas tus necesidades
           </p>
         </div>

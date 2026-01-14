@@ -28,11 +28,11 @@ const FeaturedServices: React.FC = () => {
   ];
 
   return (
-    <section id="servicios-destacados" className="section-padding">
+    <section id="servicios-destacados" className="section-padding bg-background">
       <div className="container-padding max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestros Servicios</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">Nuestros Servicios</h2>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Ofrecemos soluciones tecnológicas profesionales para particulares y empresas
           </p>
         </div>
