@@ -1,13 +1,77 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import ServiceCard from '../components/ServiceCard';
-import { Laptop, Printer, Database, Monitor, Settings, Shield, Clock, Download, Cpu, MessageCircle, Camera } from 'lucide-react';
+import { Laptop, Printer, Database, Monitor, Settings, Shield, Clock, Download, Cpu, MessageCircle, Camera, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
 const Servicios: React.FC = () => {
+  const [folio, setFolio] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState<{
+    found: boolean;
+    clave?: string;
+    fecha_elaboracion?: string;
+    estatus_interno?: string;
+    comentarios?: string;
+  } | null>(null);
+
   useEffect(() => {
-    // Para el SEO
     document.title = "Servicios Técnicos | Compuchiapas";
   }, []);
+
+  const handleSearchFolio = async () => {
+    if (!folio.trim()) return;
+    
+    setIsSearching(true);
+    setSearchResult(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('clave, fecha_elaboracion, estatus_interno, comentarios')
+        .eq('clave', folio.trim())
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setSearchResult({
+          found: true,
+          clave: data.clave,
+          fecha_elaboracion: data.fecha_elaboracion,
+          estatus_interno: data.estatus_interno,
+          comentarios: data.comentarios
+        });
+      } else {
+        setSearchResult({ found: false });
+      }
+    } catch (error) {
+      console.error('Error searching folio:', error);
+      setSearchResult({ found: false });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const getStatusMessage = (estatusInterno: string) => {
+    switch (estatusInterno) {
+      case 'En tienda':
+        return 'por revisar';
+      case 'En proceso':
+        return 'en proceso';
+      case 'Listo y avisado a cliente':
+        return 'listo y puede pasar a recogerlo';
+      default:
+        return estatusInterno;
+    }
+  };
+
   const services = [{
     title: 'Reparación de Laptops',
     description: 'Solucionamos problemas de hardware y software en todas las marcas con diagnóstico el mismo día.',
@@ -57,17 +121,80 @@ const Servicios: React.FC = () => {
     description: 'Análisis detallado para identificar problemas complejos en tus equipos.',
     icon: <Cpu size={32} />
   }];
-  return <Layout>
+
+  return (
+    <Layout>
       {/* Hero Section */}
-      <section className="pt-24 pb-12 md:pt-28 md:pb-16 bg-gradient-to-b from-tech-lightGray to-white py-[66px] px-0 my-0 mx-[35px]">
+      <section className="pt-24 pb-12 md:pt-28 md:pb-16 bg-gradient-to-b from-tech-lightGray to-white dark:from-slate-900 dark:to-slate-800 py-[66px] px-0 my-0 mx-[35px]">
         <div className="container-padding max-w-7xl mx-auto text-center my-[29px]">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Servicios Técnicos Profesionales</h1>
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">Soluciones confiables para todos tus problemas tecnológicos</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 dark:text-white">Servicios Técnicos Profesionales</h1>
+          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Soluciones confiables para todos tus problemas tecnológicos</p>
+          
+          {/* Status Lookup Box */}
+          <div className="mt-8 max-w-xl mx-auto">
+            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-2 border-tech-blue/20">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-2 text-tech-blue dark:text-blue-400">
+                  ¿Tienes en servicio un equipo con nosotros?
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Consulta su estado aquí
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ingresa tu número de folio"
+                    value={folio}
+                    onChange={(e) => setFolio(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchFolio()}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleSearchFolio} disabled={isSearching || !folio.trim()}>
+                    {isSearching ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                
+                {searchResult && (
+                  <div className={cn(
+                    "mt-4 p-4 rounded-lg text-left",
+                    searchResult.found 
+                      ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" 
+                      : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                  )}>
+                    {searchResult.found ? (
+                      <div>
+                        <p className="text-green-800 dark:text-green-300">
+                          Tu equipo con folio <strong>#{searchResult.clave}</strong> recepcionado el día{' '}
+                          <strong>
+                            {searchResult.fecha_elaboracion && format(new Date(searchResult.fecha_elaboracion + 'T12:00:00'), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                          </strong>{' '}
+                          se encuentra en tienda y está <strong>{getStatusMessage(searchResult.estatus_interno || 'En tienda')}</strong>.
+                        </p>
+                        {searchResult.comentarios && (
+                          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                            <strong>Comentarios:</strong> {searchResult.comentarios}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-red-800 dark:text-red-300">
+                        No se encontró ningún servicio con el folio <strong>#{folio}</strong>. 
+                        Verifica el número e intenta de nuevo.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
       
       {/* Services Grid */}
-      <section className="py-10 md:py-0 mx-0 px-0 my-0">
+      <section className="py-10 md:py-0 mx-0 px-0 my-0 bg-white dark:bg-slate-900">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => <ServiceCard key={index} title={service.title} description={service.description} icon={service.icon} className={cn("animate-fade-up h-full")} style={{
@@ -78,11 +205,11 @@ const Servicios: React.FC = () => {
       </section>
       
       {/* Process Section */}
-      <section className="py-16 md:py-24 bg-tech-lightGray">
+      <section className="py-16 md:py-24 bg-tech-lightGray dark:bg-slate-800">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestro Proceso</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 dark:text-white">Nuestro Proceso</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               Trabajamos de manera sistemática para ofrecer la mejor solución
             </p>
           </div>
@@ -104,23 +231,23 @@ const Servicios: React.FC = () => {
             number: "04",
             title: "Garantía",
             description: "Entregamos tu equipo funcionando y con garantía por escrito."
-          }].map((step, index) => <div key={index} className="glass-card rounded-2xl p-8 text-center">
+          }].map((step, index) => <div key={index} className="glass-card dark:bg-slate-700/50 dark:border-slate-600 rounded-2xl p-8 text-center">
                 <div className="w-16 h-16 bg-tech-blue text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-6">
                   {step.number}
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
+                <h3 className="text-xl font-semibold mb-3 dark:text-white">{step.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300">{step.description}</p>
               </div>)}
           </div>
         </div>
       </section>
       
       {/* FAQ Section */}
-      <section className="py-16 md:py-[31px]">
+      <section className="py-16 md:py-[31px] bg-white dark:bg-slate-900">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Preguntas Frecuentes</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 dark:text-white">Preguntas Frecuentes</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               Respuestas a las consultas más comunes sobre nuestros servicios
             </p>
           </div>
@@ -142,9 +269,9 @@ const Servicios: React.FC = () => {
             }, {
               question: "¿Trabajan con todas las marcas de computadoras?",
               answer: "Sí, nuestros técnicos están capacitados para trabajar con todas las marcas principales como HP, Dell, Lenovo, Apple, Asus, Acer, entre otras, tanto en laptops como en computadoras de escritorio."
-            }].map((faq, index) => <div key={index} className="glass-card rounded-2xl p-6">
-                  <h3 className="text-lg font-semibold mb-3 text-tech-blue">{faq.question}</h3>
-                  <p className="text-gray-600">{faq.answer}</p>
+            }].map((faq, index) => <div key={index} className="glass-card dark:bg-slate-800/50 dark:border-slate-700 rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold mb-3 text-tech-blue dark:text-blue-400">{faq.question}</h3>
+                  <p className="text-gray-600 dark:text-gray-300">{faq.answer}</p>
                 </div>)}
             </div>
           </div>
@@ -171,13 +298,13 @@ const Servicios: React.FC = () => {
       </section>
       
       {/* Contact Form Section */}
-      <section id="contacto" className="py-16 md:py-24">
+      <section id="contacto" className="py-16 md:py-24 bg-white dark:bg-slate-900">
         <div className="container-padding max-w-7xl mx-auto">
-          <div className="glass-card rounded-2xl overflow-hidden">
+          <div className="glass-card dark:bg-slate-800/50 dark:border-slate-700 rounded-2xl overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2">
               <div className="p-8 md:p-12">
-                <h2 className="text-3xl font-bold mb-6">Solicita tu servicio</h2>
-                <p className="text-gray-600 mb-8">
+                <h2 className="text-3xl font-bold mb-6 dark:text-white">Solicita tu servicio</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-8">
                   Completa el formulario para solicitar una cotización o diagnóstico. 
                   Nos comunicaremos contigo a la brevedad posible.
                 </p>
@@ -185,25 +312,25 @@ const Servicios: React.FC = () => {
                 <form className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Nombre completo
                       </label>
-                      <input type="text" id="name" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu nombre" required />
+                      <input type="text" id="name" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu nombre" required />
                     </div>
                     
                     <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Teléfono
                       </label>
-                      <input type="tel" id="phone" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu teléfono" required />
+                      <input type="tel" id="phone" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu teléfono" required />
                     </div>
                   </div>
                   
                   <div>
-                    <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="service" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Tipo de servicio
                     </label>
-                    <select id="service" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" required>
+                    <select id="service" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" required>
                       <option value="">Selecciona un servicio</option>
                       <option value="repair">Reparación de equipo</option>
                       <option value="maintenance">Mantenimiento preventivo</option>
@@ -218,10 +345,10 @@ const Servicios: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label htmlFor="device-type" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="device-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Tipo de dispositivo
                     </label>
-                    <select id="device-type" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" required>
+                    <select id="device-type" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" required>
                       <option value="">Selecciona un dispositivo</option>
                       <option value="laptop">Laptop</option>
                       <option value="desktop">Computadora de escritorio</option>
@@ -234,10 +361,10 @@ const Servicios: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label htmlFor="issue" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="issue" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Describe el problema
                     </label>
-                    <textarea id="issue" rows={4} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Detalla el problema que estás experimentando..." required></textarea>
+                    <textarea id="issue" rows={4} className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Detalla el problema que estás experimentando..." required></textarea>
                   </div>
                   
                   <button type="submit" className="w-full btn-primary">
@@ -254,6 +381,8 @@ const Servicios: React.FC = () => {
           </div>
         </div>
       </section>
-    </Layout>;
+    </Layout>
+  );
 };
+
 export default Servicios;

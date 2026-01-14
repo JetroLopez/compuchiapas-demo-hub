@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 
 type ServiceStatus = 'Emitida' | 'Remitida' | 'Facturada' | 'Cancelada';
+type EstatusInterno = 'En tienda' | 'En proceso' | 'Listo y avisado a cliente';
 
 interface ParsedService {
   clave: string;
@@ -47,6 +48,8 @@ interface Service {
   estatus: ServiceStatus;
   fecha_elaboracion: string;
   condicion: string;
+  estatus_interno: EstatusInterno;
+  comentarios: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +61,7 @@ const AdminServices: React.FC = () => {
   const [parseError, setParseError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [estatusInternoFilter, setEstatusInternoFilter] = useState<string>('all');
 
   // Fetch existing services
   const { data: services, isLoading: servicesLoading } = useQuery({
@@ -78,19 +82,12 @@ const AdminServices: React.FC = () => {
     const lines = text.trim().split('\n');
     const services: ParsedService[] = [];
     
-    // Regex to parse: [spaces][0000CLAVE][spaces/tab][CLIENTE][spaces/tab][ESTATUS][spaces/tab][FECHA][spaces/tab][CONDICION opcional]
-    // CLAVE: starts with 000000 followed by digits
-    // CLIENTE: alphanumeric (can be numeric like 762 or text like MOSTR)
-    // ESTATUS: Emitida|Remitida|Facturada|Cancelada
-    // FECHA: DD/MM/YYYY
-    // CONDICION: everything after fecha (optional, can contain spaces)
     const lineRegex = /^\s*(0+\d+)\s+(\S+)\s+(Emitida|Remitida|Facturada|Cancelada)\s+(\d{1,2}\/\d{1,2}\/\d{4})(?:\s+(.*))?$/i;
     
     for (const line of lines) {
       const trimmedLine = line.trim();
       if (!trimmedLine) continue;
       
-      // Skip header line
       if (trimmedLine.toLowerCase().includes('clave') && trimmedLine.toLowerCase().includes('cliente')) {
         continue;
       }
@@ -100,13 +97,9 @@ const AdminServices: React.FC = () => {
       
       const [, claveRaw, clienteRaw, estatusRaw, fechaRaw, condicionRaw] = match;
       
-      // Remove leading zeros from clave
       const clave = claveRaw.replace(/^0+/, '') || '0';
-      
-      // Cliente as-is, trimmed
       const cliente = clienteRaw.trim();
       
-      // Normalize status
       let estatus: ServiceStatus = 'Emitida';
       const estatusLower = estatusRaw.toLowerCase();
       if (estatusLower === 'emitida') estatus = 'Emitida';
@@ -114,7 +107,6 @@ const AdminServices: React.FC = () => {
       else if (estatusLower === 'facturada') estatus = 'Facturada';
       else if (estatusLower === 'cancelada') estatus = 'Cancelada';
       
-      // Parse date (DD/MM/YYYY to YYYY-MM-DD)
       let fecha_elaboracion = new Date().toISOString().split('T')[0];
       const dateParts = fechaRaw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       if (dateParts) {
@@ -122,7 +114,6 @@ const AdminServices: React.FC = () => {
         fecha_elaboracion = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       }
       
-      // Condicion is everything after fecha, can be empty
       const condicion = condicionRaw?.trim() || '';
 
       services.push({
@@ -153,31 +144,51 @@ const AdminServices: React.FC = () => {
     }
   };
 
-  // Sync mutation
+  // Sync mutation - preserves estatus_interno and comentarios for existing claves
   const syncMutation = useMutation({
-    mutationFn: async (services: ParsedService[]) => {
-      // First, upsert ALL services with their correct status
+    mutationFn: async (newServices: ParsedService[]) => {
+      // First, get existing services with their estatus_interno and comentarios
+      const { data: existingServices, error: fetchError } = await supabase
+        .from('services')
+        .select('clave, estatus_interno, comentarios');
+      
+      if (fetchError) throw fetchError;
+
+      // Create a map of existing data
+      const existingDataMap = new Map<string, { estatus_interno: string; comentarios: string | null }>();
+      existingServices?.forEach(s => {
+        existingDataMap.set(s.clave, { 
+          estatus_interno: s.estatus_interno, 
+          comentarios: s.comentarios 
+        });
+      });
+
+      // Prepare services for upsert, preserving existing estatus_interno and comentarios
+      const servicesToUpsert = newServices.map(s => {
+        const existing = existingDataMap.get(s.clave);
+        return {
+          clave: s.clave,
+          cliente: s.cliente,
+          estatus: s.estatus,
+          fecha_elaboracion: s.fecha_elaboracion,
+          condicion: s.condicion,
+          // Preserve existing values or use defaults
+          estatus_interno: existing?.estatus_interno || 'En tienda',
+          comentarios: existing?.comentarios || null
+        };
+      });
+
       const { error: upsertError } = await supabase
         .from('services')
-        .upsert(
-          services.map(s => ({
-            clave: s.clave,
-            cliente: s.cliente,
-            estatus: s.estatus,
-            fecha_elaboracion: s.fecha_elaboracion,
-            condicion: s.condicion
-          })),
-          { onConflict: 'clave' }
-        );
+        .upsert(servicesToUpsert, { onConflict: 'clave' });
       
       if (upsertError) throw upsertError;
       
-      // Count for reporting
-      const activeServices = services.filter(s => s.estatus === 'Emitida');
-      const inactiveServices = services.filter(s => s.estatus !== 'Emitida');
+      const activeServices = newServices.filter(s => s.estatus === 'Emitida');
+      const inactiveServices = newServices.filter(s => s.estatus !== 'Emitida');
       
       return {
-        total: services.length,
+        total: newServices.length,
         active: activeServices.length,
         inactive: inactiveServices.length
       };
@@ -187,7 +198,6 @@ const AdminServices: React.FC = () => {
       setPastedData('');
       setParsedServices([]);
       
-      // After a short delay, delete all non-Emitida services
       toast.info('Limpiando servicios no activos...');
       
       setTimeout(async () => {
@@ -242,7 +252,7 @@ const AdminServices: React.FC = () => {
       const { error } = await supabase
         .from('services')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+        .neq('id', '00000000-0000-0000-0000-000000000000');
       
       if (error) throw error;
     },
@@ -258,7 +268,6 @@ const AdminServices: React.FC = () => {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, estatus }: { id: string; estatus: ServiceStatus }) => {
-      // If status is not "Emitida", delete the service
       if (estatus !== 'Emitida') {
         const { error } = await supabase
           .from('services')
@@ -290,6 +299,44 @@ const AdminServices: React.FC = () => {
     }
   });
 
+  // Update estatus_interno mutation
+  const updateEstatusInternoMutation = useMutation({
+    mutationFn: async ({ id, estatus_interno }: { id: string; estatus_interno: EstatusInterno }) => {
+      const { error } = await supabase
+        .from('services')
+        .update({ estatus_interno })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-services'] });
+      toast.success('Estatus interno actualizado');
+    },
+    onError: () => {
+      toast.error('Error al actualizar estatus interno');
+    }
+  });
+
+  // Update comentarios mutation
+  const updateComentariosMutation = useMutation({
+    mutationFn: async ({ id, comentarios }: { id: string; comentarios: string }) => {
+      const { error } = await supabase
+        .from('services')
+        .update({ comentarios: comentarios || null })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-services'] });
+      toast.success('Comentarios actualizados');
+    },
+    onError: () => {
+      toast.error('Error al actualizar comentarios');
+    }
+  });
+
   const getStatusBadge = (status: ServiceStatus) => {
     const variants: Record<ServiceStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       'Emitida': 'default',
@@ -300,6 +347,19 @@ const AdminServices: React.FC = () => {
     return <Badge variant={variants[status]}>{status}</Badge>;
   };
 
+  const getEstatusInternoBadge = (estatus: EstatusInterno) => {
+    switch (estatus) {
+      case 'En tienda':
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500">En tienda</Badge>;
+      case 'En proceso':
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500">En proceso</Badge>;
+      case 'Listo y avisado a cliente':
+        return <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500">Listo</Badge>;
+      default:
+        return <Badge variant="outline">{estatus}</Badge>;
+    }
+  };
+
   // Filter services
   const filteredServices = services?.filter(service => {
     const matchesSearch = 
@@ -308,8 +368,9 @@ const AdminServices: React.FC = () => {
       service.condicion.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || service.estatus === statusFilter;
+    const matchesEstatusInterno = estatusInternoFilter === 'all' || service.estatus_interno === estatusInternoFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesEstatusInterno;
   }) || [];
 
   return (
@@ -322,7 +383,7 @@ const AdminServices: React.FC = () => {
             Sincronizar Servicios
           </CardTitle>
           <CardDescription>
-            Pega los datos de servicios para sincronizar. Los servicios con estatus Remitida, Facturada o Cancelada serán eliminados automáticamente.
+            Pega los datos de servicios para sincronizar. Los valores de estatus interno y comentarios se conservarán para servicios existentes.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -470,6 +531,17 @@ Ejemplo:
                 <SelectItem value="Cancelada">Cancelada</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={estatusInternoFilter} onValueChange={setEstatusInternoFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Filtrar por estatus interno" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="En tienda">En tienda</SelectItem>
+                <SelectItem value="En proceso">En proceso</SelectItem>
+                <SelectItem value="Listo y avisado a cliente">Listo</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {servicesLoading ? (
@@ -481,15 +553,17 @@ Ejemplo:
               No hay servicios registrados
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Clave</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Estatus</TableHead>
+                    <TableHead>Estatus Interno</TableHead>
                     <TableHead>Fecha</TableHead>
                     <TableHead>Condición</TableHead>
+                    <TableHead>Comentarios</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -517,10 +591,47 @@ Ejemplo:
                         </Select>
                       </TableCell>
                       <TableCell>
+                        <Select
+                          value={service.estatus_interno}
+                          onValueChange={(value: EstatusInterno) => 
+                            updateEstatusInternoMutation.mutate({ id: service.id, estatus_interno: value })
+                          }
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            {getEstatusInternoBadge(service.estatus_interno)}
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="En tienda">En tienda</SelectItem>
+                            <SelectItem value="En proceso">En proceso</SelectItem>
+                            <SelectItem value="Listo y avisado a cliente">Listo y avisado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
                         {format(new Date(service.fecha_elaboracion + 'T12:00:00'), 'dd/MM/yyyy', { locale: es })}
                       </TableCell>
-                      <TableCell className="max-w-xs">
+                      <TableCell className="max-w-[150px]">
                         <span className="line-clamp-2">{service.condicion}</span>
+                      </TableCell>
+                      <TableCell className="min-w-[200px]">
+                        <Input
+                          placeholder="Agregar comentario..."
+                          defaultValue={service.comentarios || ''}
+                          className="h-8 text-xs"
+                          onBlur={(e) => {
+                            if (e.target.value !== (service.comentarios || '')) {
+                              updateComentariosMutation.mutate({ 
+                                id: service.id, 
+                                comentarios: e.target.value 
+                              });
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                        />
                       </TableCell>
                       <TableCell className="text-right">
                         <AlertDialog>

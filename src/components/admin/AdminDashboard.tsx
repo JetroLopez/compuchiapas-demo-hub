@@ -19,11 +19,15 @@ import {
   Bell,
   Warehouse,
   Volume2,
-  VolumeX
+  VolumeX,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+
+type EstatusInterno = 'En tienda' | 'En proceso' | 'Listo y avisado a cliente';
 
 interface Service {
   id: string;
@@ -32,6 +36,8 @@ interface Service {
   estatus: 'Emitida' | 'Remitida' | 'Facturada' | 'Cancelada';
   fecha_elaboracion: string;
   condicion: string;
+  estatus_interno: EstatusInterno;
+  comentarios: string | null;
   created_at: string;
 }
 
@@ -73,6 +79,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
   const previousContactsCount = useRef<number>(0);
 
   // Update current time every minute
@@ -131,7 +138,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (error) throw error;
       return (data || []) as Service[];
     },
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 60000,
   });
 
   // Fetch pending contacts
@@ -147,7 +154,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (error) throw error;
       return (data || []) as ContactSubmission[];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
 
   // Play sound when contacts change
@@ -176,7 +183,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { data: warehouseInfo = [], isLoading: warehousesLoading } = useQuery({
     queryKey: ['dashboard-warehouses'],
     queryFn: async () => {
-      // Get warehouses with their latest stock update
       const { data: warehouses, error: wError } = await supabase
         .from('warehouses')
         .select('id, name');
@@ -229,6 +235,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return 'bg-green-500 hover:bg-green-600';
   };
 
+  const getEstatusInternoBadge = (estatus: EstatusInterno) => {
+    switch (estatus) {
+      case 'En tienda':
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-xs">Por revisar</Badge>;
+      case 'En proceso':
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500 text-xs">En proceso</Badge>;
+      case 'Listo y avisado a cliente':
+        return <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-xs">Listo</Badge>;
+      default:
+        return <Badge variant="outline" className="text-xs">{estatus}</Badge>;
+    }
+  };
+
   const formatTimeAgo = (dateString: string) => {
     if (!dateString) return 'Sin datos';
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: es });
@@ -246,12 +265,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const sortedServices = [...services].sort((a, b) => {
     const daysA = differenceInDays(currentTime, new Date(a.fecha_elaboracion));
     const daysB = differenceInDays(currentTime, new Date(b.fecha_elaboracion));
-    return daysB - daysA; // Oldest first
+    return daysB - daysA;
   });
 
   const containerClass = isFullscreen 
     ? 'fixed inset-0 z-50 bg-background p-4 overflow-auto' 
     : '';
+
+  const toggleServiceExpand = (serviceId: string) => {
+    setExpandedServiceId(expandedServiceId === serviceId ? null : serviceId);
+  };
 
   return (
     <div className={containerClass}>
@@ -408,22 +431,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="space-y-2 pr-4">
                   {sortedServices.map((service) => {
                     const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
+                    const isExpanded = expandedServiceId === service.id;
                     return (
                       <div
                         key={service.id}
                         className={cn(
-                          "p-3 rounded-lg border-2 transition-all",
+                          "p-3 rounded-lg border-2 transition-all cursor-pointer",
                           getServiceColor(service.fecha_elaboracion),
                           getUrgencyClass(service.fecha_elaboracion)
                         )}
+                        onClick={() => toggleServiceExpand(service.id)}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="font-bold text-lg">#{service.clave}</span>
                               <Badge variant="secondary" className="text-xs">
                                 {service.estatus}
                               </Badge>
+                              {getEstatusInternoBadge(service.estatus_interno)}
                               {service.cliente !== 'MOSTR' && (
                                 <Badge variant="outline" className="text-xs">
                                   Cliente: {service.cliente}
@@ -444,8 +470,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             {days >= 5 && (
                               <AlertTriangle className="h-5 w-5 text-red-500 animate-pulse" />
                             )}
+                            {service.comentarios && (
+                              isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />
+                            )}
                           </div>
                         </div>
+                        
+                        {/* Expanded comments section */}
+                        {isExpanded && service.comentarios && (
+                          <div className="mt-3 pt-3 border-t border-current/20">
+                            <p className="text-xs font-medium mb-1">Comentarios:</p>
+                            <p className="text-sm opacity-90">{service.comentarios}</p>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
