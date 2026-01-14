@@ -181,8 +181,16 @@ const Servicios: React.FC = () => {
                       </div>
                     ) : (
                       <p className="text-red-800 dark:text-red-300">
-                        No se encontró ningún servicio con el folio <strong>#{folio}</strong>. 
-                        Verifica el número e intenta de nuevo.
+                        No se encontró ningún servicio pendiente con el folio <strong>#{folio}</strong>. 
+                        Verifica el número e intenta de nuevo o{' '}
+                        <a 
+                          href="https://wa.me/529622148546?text=Tengo%20dudas%20respecto%20a%20un%20servicio."
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline font-medium hover:text-red-600 dark:hover:text-red-200"
+                        >
+                          comunícate con nosotros
+                        </a>.
                       </p>
                     )}
                   </div>
