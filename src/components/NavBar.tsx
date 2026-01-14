@@ -64,7 +64,7 @@ const NavBar: React.FC = () => {
       className={cn(
         'fixed w-full z-50 transition-all duration-300 ease-in-out',
         isScrolled 
-          ? 'bg-white/80 backdrop-blur-lg shadow-sm' 
+          ? 'bg-background/80 backdrop-blur-lg shadow-sm dark:bg-background/90' 
           : needsDarkHeader 
             ? 'bg-tech-blue' 
             : 'bg-transparent'
@@ -76,7 +76,7 @@ const NavBar: React.FC = () => {
             <img src={logo} alt="Compuchiapas Logo" className="h-12 w-12 object-contain" />
             <span className={cn(
               "text-2xl font-bold flex items-baseline transition-colors duration-300",
-              isScrolled ? "text-tech-blue" : "text-white"
+              isScrolled ? "text-tech-blue dark:text-white" : "text-white"
             )}>
               Compuchiapas<span className="text-sm ml-0.5">.com.mx</span>
             </span>
@@ -91,7 +91,7 @@ const NavBar: React.FC = () => {
                 className={cn(
                   'font-medium transition-colors',
                   isScrolled 
-                    ? (location.pathname === link.path ? 'text-tech-blue' : 'text-gray-600 hover:text-tech-blue')
+                    ? (location.pathname === link.path ? 'text-tech-blue dark:text-primary' : 'text-gray-600 dark:text-gray-300 hover:text-tech-blue dark:hover:text-primary')
                     : (location.pathname === link.path ? 'text-white' : 'text-white/80 hover:text-white')
                 )}
               >
@@ -111,7 +111,7 @@ const NavBar: React.FC = () => {
           <button 
             className={cn(
               "md:hidden p-2 transition-colors duration-300",
-              isScrolled ? "text-gray-800" : "text-white"
+              isScrolled ? "text-gray-800 dark:text-white" : "text-white"
             )}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
@@ -123,7 +123,7 @@ const NavBar: React.FC = () => {
 
       {/* Mobile Navigation */}
       {menuOpen && (
-        <div className="md:hidden bg-white">
+        <div className="md:hidden bg-background border-t border-border">
           <nav className="flex flex-col px-4 py-6 space-y-4 animate-fade-in">
             {navLinks.map((link) => (
               <Link 
@@ -132,8 +132,8 @@ const NavBar: React.FC = () => {
                 className={cn(
                   'font-medium py-2 transition-colors',
                   location.pathname === link.path 
-                    ? 'text-tech-blue' 
-                    : 'text-gray-600'
+                    ? 'text-tech-blue dark:text-primary' 
+                    : 'text-gray-600 dark:text-gray-300'
                 )}
               >
                 {link.name}
