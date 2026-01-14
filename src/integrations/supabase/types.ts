@@ -338,9 +338,11 @@ export type Database = {
         Row: {
           clave: string
           cliente: string
+          comentarios: string | null
           condicion: string
           created_at: string
           estatus: Database["public"]["Enums"]["service_status"]
+          estatus_interno: string
           fecha_elaboracion: string
           id: string
           updated_at: string
@@ -348,9 +350,11 @@ export type Database = {
         Insert: {
           clave: string
           cliente?: string
+          comentarios?: string | null
           condicion: string
           created_at?: string
           estatus?: Database["public"]["Enums"]["service_status"]
+          estatus_interno?: string
           fecha_elaboracion?: string
           id?: string
           updated_at?: string
@@ -358,9 +362,11 @@ export type Database = {
         Update: {
           clave?: string
           cliente?: string
+          comentarios?: string | null
           condicion?: string
           created_at?: string
           estatus?: Database["public"]["Enums"]["service_status"]
+          estatus_interno?: string
           fecha_elaboracion?: string
           id?: string
           updated_at?: string
