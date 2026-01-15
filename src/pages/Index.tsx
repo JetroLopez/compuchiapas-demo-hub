@@ -5,10 +5,16 @@ import FeaturedServices from '../components/FeaturedServices';
 import ProductCategories from '../components/ProductCategories';
 import OfferPopup from '../components/OfferPopup';
 import PromotionsCarousel from '../components/PromotionsCarousel';
-import { ArrowRight, Phone, Mail, MapPin, Calendar, User } from 'lucide-react';
+import { ArrowRight, Phone, Mail, MapPin, Calendar, User, Search, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const Index: React.FC = () => {
   const { toast } = useToast();
@@ -20,6 +26,17 @@ const Index: React.FC = () => {
     privacy: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Estado para consulta de folios
+  const [folio, setFolio] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState<{
+    found: boolean;
+    clave?: string;
+    fecha_elaboracion?: string;
+    estatus_interno?: string;
+    comentarios?: string;
+  } | null>(null);
 
   useEffect(() => {
     // Para el SEO
@@ -28,6 +45,53 @@ const Index: React.FC = () => {
 
   const scrollToContact = () => {
     document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSearchFolio = async () => {
+    if (!folio.trim()) return;
+    
+    setIsSearching(true);
+    setSearchResult(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('clave, fecha_elaboracion, estatus_interno, comentarios')
+        .eq('clave', folio.trim())
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setSearchResult({
+          found: true,
+          clave: data.clave,
+          fecha_elaboracion: data.fecha_elaboracion,
+          estatus_interno: data.estatus_interno,
+          comentarios: data.comentarios
+        });
+      } else {
+        setSearchResult({ found: false });
+      }
+    } catch (error) {
+      console.error('Error searching folio:', error);
+      setSearchResult({ found: false });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const getStatusMessage = (estatusInterno: string) => {
+    switch (estatusInterno) {
+      case 'En tienda':
+        return 'por revisar';
+      case 'En proceso':
+        return 'en proceso';
+      case 'Listo y avisado a cliente':
+        return 'listo y puede pasar a recogerlo';
+      default:
+        return estatusInterno;
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -86,6 +150,77 @@ const Index: React.FC = () => {
       <Hero />
       
       <PromotionsCarousel />
+      
+      {/* Status Lookup Box - Antes de Servicios */}
+      <section className="section-padding bg-background">
+        <div className="container-padding max-w-3xl mx-auto">
+          <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-2 border-tech-blue/20 dark:border-blue-500/30">
+            <CardContent className="p-6 md:p-8">
+              <h3 className="text-xl font-semibold mb-2 text-tech-blue dark:text-blue-400 text-center">
+                ¿Tienes en servicio un equipo con nosotros?
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center">
+                Consulta el estado de tu servicio ingresando tu número de folio
+              </p>
+              <div className="flex gap-2 max-w-md mx-auto">
+                <Input
+                  placeholder="Ingresa tu número de folio"
+                  value={folio}
+                  onChange={(e) => setFolio(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchFolio()}
+                  className="flex-1"
+                />
+                <Button onClick={handleSearchFolio} disabled={isSearching || !folio.trim()}>
+                  {isSearching ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              
+              {searchResult && (
+                <div className={cn(
+                  "mt-4 p-4 rounded-lg text-left max-w-md mx-auto",
+                  searchResult.found 
+                    ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" 
+                    : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                )}>
+                  {searchResult.found ? (
+                    <div>
+                      <p className="text-green-800 dark:text-green-300">
+                        Tu equipo con folio <strong>#{searchResult.clave}</strong> recepcionado el día{' '}
+                        <strong>
+                          {searchResult.fecha_elaboracion && format(new Date(searchResult.fecha_elaboracion + 'T12:00:00'), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                        </strong>{' '}
+                        se encuentra en tienda y está <strong>{getStatusMessage(searchResult.estatus_interno || 'En tienda')}</strong>.
+                      </p>
+                      {searchResult.comentarios && (
+                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                          <strong>Comentarios:</strong> {searchResult.comentarios}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-red-800 dark:text-red-300">
+                      No se encontró ningún servicio pendiente con el folio <strong>#{folio}</strong>. 
+                      Verifica el número e intenta de nuevo o{' '}
+                      <a 
+                        href="https://wa.me/529622148546?text=Tengo%20dudas%20respecto%20a%20un%20servicio."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-medium hover:text-red-600 dark:hover:text-red-200"
+                      >
+                        comunícate con nosotros
+                      </a>.
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
       
       <FeaturedServices />
       
