@@ -37,7 +37,13 @@ interface WarehouseType {
   name: string;
 }
 
-const ProductSync: React.FC = () => {
+type AppRole = 'admin' | 'tecnico' | 'ventas' | 'user';
+
+interface ProductSyncProps {
+  userRole?: AppRole | null;
+}
+
+const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
   const queryClient = useQueryClient();
   const [pastedData, setPastedData] = useState('');
   const [parsedProducts, setParsedProducts] = useState<ParsedProduct[]>([]);

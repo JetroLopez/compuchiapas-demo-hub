@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Shield, ShieldOff, Loader2 } from 'lucide-react';
+import { Shield, Loader2, UserPlus, Wrench, ShoppingCart, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { z } from 'zod';
+
+type AppRole = 'admin' | 'tecnico' | 'ventas' | 'user';
 
 interface Profile {
   id: string;
@@ -18,12 +25,22 @@ interface Profile {
 
 interface UserRole {
   user_id: string;
-  role: 'admin' | 'user';
+  role: AppRole;
 }
+
+const emailSchema = z.string().email('Correo electrónico inválido');
+const passwordSchema = z.string().min(6, 'La contraseña debe tener al menos 6 caracteres');
 
 const AdminUsers: React.FC = () => {
   const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, signUp } = useAuth();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form states
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
 
   // Fetch profiles
   const { data: profiles = [], isLoading: loadingProfiles } = useQuery({
@@ -48,28 +65,24 @@ const AdminUsers: React.FC = () => {
         .select('user_id, role');
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as UserRole[];
     },
   });
 
-  // Toggle admin role mutation
-  const toggleAdminMutation = useMutation({
-    mutationFn: async ({ userId, isCurrentlyAdmin }: { userId: string; isCurrentlyAdmin: boolean }) => {
-      if (isCurrentlyAdmin) {
-        // Remove admin role
-        const { error } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId)
-          .eq('role', 'admin');
-        if (error) throw error;
-      } else {
-        // Add admin role
-        const { error } = await supabase
-          .from('user_roles')
-          .insert({ user_id: userId, role: 'admin' });
-        if (error) throw error;
-      }
+  // Change role mutation
+  const changeRoleMutation = useMutation({
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: AppRole }) => {
+      // First delete existing role
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      
+      // Then insert new role
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
@@ -80,16 +93,140 @@ const AdminUsers: React.FC = () => {
     },
   });
 
-  const isAdmin = (userId: string) => {
-    return userRoles.some(r => r.user_id === userId && r.role === 'admin');
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      emailSchema.parse(newUserEmail);
+      passwordSchema.parse(newUserPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
+    
+    if (!newUserName.trim()) {
+      toast.error('El nombre es requerido');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    const { error } = await signUp(newUserEmail, newUserPassword, newUserName);
+    
+    if (error) {
+      if (error.message.includes('User already registered')) {
+        toast.error('Este correo ya está registrado');
+      } else {
+        toast.error('Error al crear usuario: ' + error.message);
+      }
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Note: The role will be set to 'user' by default via the trigger
+    // Admin needs to change it after creation if needed
+    toast.success('Usuario creado correctamente. Asigna el rol correspondiente.');
+    setIsDialogOpen(false);
+    setNewUserName('');
+    setNewUserEmail('');
+    setNewUserPassword('');
+    setIsSubmitting(false);
+    
+    // Refresh data
+    queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
+  };
+
+  const getUserRole = (userId: string): AppRole => {
+    const role = userRoles.find(r => r.user_id === userId);
+    return role?.role || 'user';
+  };
+
+  const getRoleBadge = (role: AppRole) => {
+    switch (role) {
+      case 'admin':
+        return <Badge className="bg-primary"><Shield size={12} className="mr-1" /> Admin</Badge>;
+      case 'tecnico':
+        return <Badge className="bg-orange-500"><Wrench size={12} className="mr-1" /> Técnico</Badge>;
+      case 'ventas':
+        return <Badge className="bg-green-500"><ShoppingCart size={12} className="mr-1" /> Ventas</Badge>;
+      default:
+        return <Badge variant="secondary"><User size={12} className="mr-1" /> Usuario</Badge>;
+    }
   };
 
   const isLoading = loadingProfiles || loadingRoles;
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Gestión de Usuarios</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Gestión de Usuarios</CardTitle>
+          <CardDescription>Administra usuarios y asigna roles</CardDescription>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <UserPlus size={16} />
+              Nuevo Usuario
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+              <DialogDescription>
+                Ingresa los datos del nuevo usuario. El rol se puede asignar después de la creación.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-user-name">Nombre completo</Label>
+                <Input
+                  id="new-user-name"
+                  type="text"
+                  placeholder="Juan Pérez"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-user-email">Correo electrónico</Label>
+                <Input
+                  id="new-user-email"
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-user-password">Contraseña</Label>
+                <Input
+                  id="new-user-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando usuario...
+                  </>
+                ) : (
+                  'Crear Usuario'
+                )}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -105,7 +242,7 @@ const AdminUsers: React.FC = () => {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead>Fecha de registro</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="text-right">Cambiar Rol</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -117,7 +254,7 @@ const AdminUsers: React.FC = () => {
                   </TableRow>
                 ) : (
                   profiles.map((profile) => {
-                    const userIsAdmin = isAdmin(profile.id);
+                    const currentRole = getUserRole(profile.id);
                     const isCurrentUser = profile.id === currentUser?.id;
                     
                     return (
@@ -125,33 +262,30 @@ const AdminUsers: React.FC = () => {
                         <TableCell>{profile.email || '-'}</TableCell>
                         <TableCell>{profile.full_name || '-'}</TableCell>
                         <TableCell>
-                          {userIsAdmin ? (
-                            <Badge className="bg-primary">Admin</Badge>
-                          ) : (
-                            <Badge variant="secondary">Usuario</Badge>
-                          )}
+                          {getRoleBadge(currentRole)}
                         </TableCell>
                         <TableCell>
                           {new Date(profile.created_at).toLocaleDateString('es-MX')}
                         </TableCell>
                         <TableCell className="text-right">
                           {!isCurrentUser && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleAdminMutation.mutate({ 
-                                userId: profile.id, 
-                                isCurrentlyAdmin: userIsAdmin 
-                              })}
-                              disabled={toggleAdminMutation.isPending}
-                              title={userIsAdmin ? 'Quitar admin' : 'Hacer admin'}
+                            <Select
+                              value={currentRole}
+                              onValueChange={(value: AppRole) => 
+                                changeRoleMutation.mutate({ userId: profile.id, newRole: value })
+                              }
+                              disabled={changeRoleMutation.isPending}
                             >
-                              {userIsAdmin ? (
-                                <ShieldOff size={16} className="text-destructive" />
-                              ) : (
-                                <Shield size={16} className="text-primary" />
-                              )}
-                            </Button>
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="tecnico">Técnico</SelectItem>
+                                <SelectItem value="ventas">Ventas</SelectItem>
+                                <SelectItem value="user">Usuario</SelectItem>
+                              </SelectContent>
+                            </Select>
                           )}
                         </TableCell>
                       </TableRow>
@@ -162,6 +296,16 @@ const AdminUsers: React.FC = () => {
             </Table>
           </div>
         )}
+        
+        <div className="mt-6 p-4 bg-muted rounded-lg">
+          <h4 className="font-semibold mb-2">Permisos por Rol:</h4>
+          <ul className="text-sm text-muted-foreground space-y-1">
+            <li><strong>Admin:</strong> Acceso completo a todas las funciones</li>
+            <li><strong>Técnico:</strong> Sincronizar y gestionar servicios únicamente</li>
+            <li><strong>Ventas:</strong> Productos, promociones, contacto y blog (sin eliminar todo/exportar)</li>
+            <li><strong>Usuario:</strong> Solo visualización del dashboard</li>
+          </ul>
+        </div>
         
         <p className="text-sm text-muted-foreground mt-4">
           Total: {profiles.length} usuarios
