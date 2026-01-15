@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import Hero from '../components/Hero';
@@ -6,7 +5,8 @@ import FeaturedServices from '../components/FeaturedServices';
 import ProductCategories from '../components/ProductCategories';
 import OfferPopup from '../components/OfferPopup';
 import PromotionsCarousel from '../components/PromotionsCarousel';
-import { ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
+import { ArrowRight, Phone, Mail, MapPin, Calendar, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -141,6 +141,72 @@ const Index: React.FC = () => {
       
       <ProductCategories />
       
+      {/* Blog Preview Section */}
+      <section className="section-padding bg-background">
+        <div className="container-padding max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Últimas del Blog
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Consejos, tutoriales y novedades del mundo tecnológico
+            </p>
+          </div>
+          
+          <div className="glass-card dark:bg-card/80 rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              {/* Featured Blog Image */}
+              <div className="relative h-64 lg:h-auto min-h-[300px]">
+                <img 
+                  src="https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                  alt="Artículo destacado del blog" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <span className="inline-block bg-tech-blue text-white text-xs font-medium px-3 py-1 rounded-full mb-2">
+                    Destacado
+                  </span>
+                </div>
+              </div>
+              
+              {/* Blog Content Preview */}
+              <div className="p-8 md:p-12 flex flex-col justify-center">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={14} />
+                    15 de Enero, 2026
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <User size={14} />
+                    Equipo Compuchiapas
+                  </span>
+                </div>
+                
+                <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                  5 señales de que tu computadora necesita mantenimiento
+                </h3>
+                
+                <p className="text-muted-foreground mb-6 line-clamp-3">
+                  ¿Tu computadora está más lenta de lo normal? ¿Escuchas ruidos extraños o se calienta demasiado? 
+                  Descubre las señales más comunes que indican que es hora de dar mantenimiento a tu equipo 
+                  y cómo prevenir problemas mayores.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link 
+                    to="/blog" 
+                    className="btn-primary inline-flex items-center justify-center"
+                  >
+                    Ver blog completo <ArrowRight size={18} className="ml-2" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Contact Form */}
       <section id="contacto" className="section-padding bg-tech-lightGray dark:bg-muted/30">
         <div className="container-padding max-w-7xl mx-auto">

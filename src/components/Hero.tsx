@@ -33,7 +33,9 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 dark"
+      style={{ colorScheme: 'dark' }}
+    >
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 -z-20" />
       
