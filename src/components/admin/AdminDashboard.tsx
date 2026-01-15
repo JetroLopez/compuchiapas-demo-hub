@@ -21,7 +21,8 @@ import {
   Volume2,
   VolumeX,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ShoppingBag
 } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -63,6 +64,27 @@ interface WarehouseStock {
   name: string;
   updated_at: string;
   product_count: number;
+}
+
+type SpecialOrderStatus = 'Notificado con Esdras' | 'Pedido' | 'En tienda' | 'Entregado';
+
+interface SpecialOrder {
+  id: string;
+  fecha: string;
+  cliente: string;
+  telefono: string | null;
+  producto: string;
+  clave: string | null;
+  precio: number | null;
+  anticipo: number | null;
+  resta: number | null;
+  folio_ingreso: string | null;
+  fecha_aprox_entrega: string | null;
+  estatus: SpecialOrderStatus;
+  fecha_entrega: string | null;
+  folio_servicio: string | null;
+  remision: string | null;
+  created_at: string;
 }
 
 interface AdminDashboardProps {
@@ -214,6 +236,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     },
   });
 
+  // Fetch special orders (pending - not delivered)
+  const { data: specialOrders = [], isLoading: specialOrdersLoading, refetch: refetchSpecialOrders } = useQuery({
+    queryKey: ['dashboard-special-orders'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('special_orders')
+        .select('*')
+        .neq('estatus', 'Entregado')
+        .order('fecha', { ascending: true });
+      if (error) throw error;
+      return (data || []) as SpecialOrder[];
+    },
+    refetchInterval: 60000,
+  });
+
   // Get service age color and urgency class
   const getServiceColor = (fechaElaboracion: string) => {
     const days = differenceInDays(currentTime, new Date(fechaElaboracion));
@@ -261,11 +298,55 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }).format(price);
   };
 
+  // Get special order urgency based on fecha_aprox_entrega
+  const getSpecialOrderColor = (fechaAprox: string | null) => {
+    if (!fechaAprox) return 'bg-muted/50 border-border text-foreground';
+    const daysUntilDelivery = differenceInDays(new Date(fechaAprox), currentTime);
+    if (daysUntilDelivery < 0) return 'bg-red-500/20 border-red-500 text-red-700 dark:text-red-300'; // Overdue
+    if (daysUntilDelivery <= 1) return 'bg-red-500/20 border-red-500 text-red-700 dark:text-red-300'; // Today or tomorrow
+    if (daysUntilDelivery <= 3) return 'bg-yellow-500/20 border-yellow-500 text-yellow-700 dark:text-yellow-300'; // 2-3 days
+    return 'bg-green-500/20 border-green-500 text-green-700 dark:text-green-300'; // More than 3 days
+  };
+
+  const getSpecialOrderUrgencyClass = (fechaAprox: string | null) => {
+    if (!fechaAprox) return '';
+    const daysUntilDelivery = differenceInDays(new Date(fechaAprox), currentTime);
+    if (daysUntilDelivery < 0) return 'animate-urgency'; // Overdue
+    if (daysUntilDelivery <= 1) return 'animate-urgency'; // Today or tomorrow
+    if (daysUntilDelivery <= 3) return 'animate-urgency-pulse'; // 2-3 days
+    return '';
+  };
+
+  const getSpecialOrderStatusBadge = (estatus: SpecialOrderStatus) => {
+    switch (estatus) {
+      case 'Notificado con Esdras':
+        return <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500 text-xs">Notificado</Badge>;
+      case 'Pedido':
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500 text-xs">Pedido</Badge>;
+      case 'En tienda':
+        return <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-xs">En tienda</Badge>;
+      default:
+        return <Badge variant="outline" className="text-xs">{estatus}</Badge>;
+    }
+  };
+
   // Sort services by age (oldest first) and priority
   const sortedServices = [...services].sort((a, b) => {
     const daysA = differenceInDays(currentTime, new Date(a.fecha_elaboracion));
     const daysB = differenceInDays(currentTime, new Date(b.fecha_elaboracion));
     return daysB - daysA;
+  });
+
+  // Sort special orders by fecha (oldest first for priority) and then by fecha_aprox_entrega urgency
+  const sortedSpecialOrders = [...specialOrders].sort((a, b) => {
+    // First priority: orders with fecha_aprox_entrega that are overdue or close
+    const daysA = a.fecha_aprox_entrega ? differenceInDays(new Date(a.fecha_aprox_entrega), currentTime) : 999;
+    const daysB = b.fecha_aprox_entrega ? differenceInDays(new Date(b.fecha_aprox_entrega), currentTime) : 999;
+    
+    if (daysA !== daysB) return daysA - daysB; // Most urgent first
+    
+    // Second priority: oldest fecha first
+    return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
   });
 
   const containerClass = isFullscreen 
@@ -311,7 +392,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -321,6 +402,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div>
                 <p className="text-2xl font-bold">{services.length}</p>
                 <p className="text-xs text-muted-foreground">Servicios en tienda</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 transition-colors relative",
+            specialOrders.length > 0 && "ring-2 ring-cyan-500"
+          )} 
+          onClick={() => onNavigateToTab('special-orders')}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-cyan-500/10 relative">
+                <ShoppingBag className="h-5 w-5 text-cyan-500" />
+                {sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="h-3 w-3 text-white" />
+                  </span>
+                )}
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{specialOrders.length}</p>
+                <p className="text-xs text-muted-foreground">Pedidos especiales</p>
               </div>
             </div>
           </CardContent>
@@ -491,6 +597,105 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Right Column */}
         <div className="space-y-6">
+          {/* Special Orders Monitor */}
+          <Card className={cn(
+            sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
+          )}>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-base">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag size={18} />
+                  Pedidos Especiales
+                </div>
+                <div className="flex gap-2">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-xs">
+                    +3 días
+                  </Badge>
+                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-xs">
+                    2-3 días
+                  </Badge>
+                  <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-xs">
+                    Urgente
+                  </Badge>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {specialOrdersLoading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : sortedSpecialOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShoppingBag className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                  <p>No hay pedidos especiales pendientes</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[250px]">
+                  <div className="space-y-2 pr-4">
+                    {sortedSpecialOrders.map((order) => {
+                      const daysUntilDelivery = order.fecha_aprox_entrega 
+                        ? differenceInDays(new Date(order.fecha_aprox_entrega), currentTime)
+                        : null;
+                      const isOverdue = daysUntilDelivery !== null && daysUntilDelivery < 0;
+                      
+                      return (
+                        <div
+                          key={order.id}
+                          className={cn(
+                            "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                            getSpecialOrderColor(order.fecha_aprox_entrega),
+                            getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
+                          )}
+                          onClick={() => onNavigateToTab('special-orders')}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="font-bold">{order.producto}</span>
+                                {getSpecialOrderStatusBadge(order.estatus)}
+                              </div>
+                              <p className="text-sm truncate">
+                                Cliente: {order.cliente}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                <span>Pedido: {format(new Date(order.fecha), "d MMM", { locale: es })}</span>
+                                {order.fecha_aprox_entrega && (
+                                  <span>• Entrega: {format(new Date(order.fecha_aprox_entrega), "d MMM", { locale: es })}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              {daysUntilDelivery !== null ? (
+                                <Badge className={cn(
+                                  "text-white",
+                                  isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
+                                )}>
+                                  {isOverdue 
+                                    ? `${Math.abs(daysUntilDelivery)}d atrasado` 
+                                    : daysUntilDelivery === 0 
+                                      ? 'Hoy' 
+                                      : `${daysUntilDelivery}d restante${daysUntilDelivery > 1 ? 's' : ''}`}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">Sin fecha</Badge>
+                              )}
+                              {isOverdue && (
+                                <AlertTriangle className="h-5 w-5 text-red-500 animate-pulse" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Warehouse Sync Status */}
           <Card>
             <CardHeader className="pb-3">
