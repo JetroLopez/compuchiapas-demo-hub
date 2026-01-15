@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag } from 'lucide-react';
 import AdminProducts from '@/components/admin/AdminProducts';
 import AdminUsers from '@/components/admin/AdminUsers';
 import ProductSync from '@/components/admin/ProductSync';
@@ -14,6 +14,7 @@ import AdminContacts from '@/components/admin/AdminContacts';
 import AdminServices from '@/components/admin/AdminServices';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminBlog from '@/components/admin/AdminBlog';
+import AdminSpecialOrders from '@/components/admin/AdminSpecialOrders';
 import { Badge } from '@/components/ui/badge';
 
 const Admin: React.FC = () => {
@@ -38,6 +39,7 @@ const Admin: React.FC = () => {
   const canAccessContacts = hasAccess(['admin', 'ventas']);
   const canAccessServices = hasAccess(['admin', 'tecnico']);
   const canAccessBlog = hasAccess(['admin', 'ventas']);
+  const canAccessSpecialOrders = hasAccess(['admin', 'ventas', 'tecnico']);
 
   // Initialize dark mode
   useEffect(() => {
@@ -130,8 +132,9 @@ const Admin: React.FC = () => {
       if (activeTab === 'contacts' && !canAccessContacts) setActiveTab('dashboard');
       if (activeTab === 'services' && !canAccessServices) setActiveTab('dashboard');
       if (activeTab === 'blog' && !canAccessBlog) setActiveTab('dashboard');
+      if (activeTab === 'special-orders' && !canAccessSpecialOrders) setActiveTab('dashboard');
     }
-  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog]);
+  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -281,6 +284,13 @@ const Admin: React.FC = () => {
                   Blog
                 </TabsTrigger>
               )}
+              
+              {canAccessSpecialOrders && (
+                <TabsTrigger value="special-orders" className="gap-2">
+                  <ShoppingBag size={16} />
+                  Pedidos Especiales
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -330,6 +340,12 @@ const Admin: React.FC = () => {
             {canAccessBlog && (
               <TabsContent value="blog">
                 <AdminBlog />
+              </TabsContent>
+            )}
+
+            {canAccessSpecialOrders && (
+              <TabsContent value="special-orders">
+                <AdminSpecialOrders />
               </TabsContent>
             )}
           </Tabs>
