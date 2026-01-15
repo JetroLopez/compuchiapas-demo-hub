@@ -496,145 +496,138 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Main Grid */}
       <div className={cn(
-        "grid gap-6",
+        "grid gap-4",
         isFullscreen ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2"
       )}>
-        {/* Services Panel */}
-        <Card className={isFullscreen ? "lg:col-span-2" : ""}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wrench size={18} />
-                Servicios en Tienda
-              </div>
-              <div className="flex gap-2">
-                <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500">
-                  Nuevo
-                </Badge>
-                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500">
-                  3+ días
-                </Badge>
-                <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500">
-                  5+ días
-                </Badge>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {servicesLoading ? (
-              <div className="space-y-2">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : sortedServices.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Wrench className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                <p>No hay servicios activos en tienda</p>
-              </div>
-            ) : (
-              <ScrollArea className={isFullscreen ? "h-[calc(100vh-400px)]" : "h-[400px]"}>
-                <div className="space-y-2 pr-4">
-                  {sortedServices.map((service) => {
-                    const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
-                    const isExpanded = expandedServiceId === service.id;
-                    return (
-                      <div
-                        key={service.id}
-                        className={cn(
-                          "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
-                          getServiceColor(service.fecha_elaboracion),
-                          getUrgencyClass(service.fecha_elaboracion)
-                        )}
-                        onClick={() => toggleServiceExpand(service.id)}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-bold text-lg">#{service.clave}</span>
-                              {getEstatusInternoBadge(service.estatus_interno)}
-                              {service.cliente !== 'MOSTR' && (
-                                <Badge variant="outline" className="text-xs">
-                                  Cliente: {service.cliente}
-                                </Badge>
+        {/* Left Column - Services + Special Orders */}
+        <div className="space-y-4">
+          {/* Services Panel - Compact */}
+          <Card>
+            <CardHeader className="pb-2 pt-3">
+              <CardTitle className="flex items-center justify-between text-base">
+                <div className="flex items-center gap-2">
+                  <Wrench size={16} />
+                  Servicios en Tienda
+                </div>
+                <div className="flex gap-1">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-[10px] px-1.5">
+                    Nuevo
+                  </Badge>
+                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">
+                    3+d
+                  </Badge>
+                  <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[10px] px-1.5">
+                    5+d
+                  </Badge>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-3">
+              {servicesLoading ? (
+                <div className="space-y-1">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : sortedServices.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  <Wrench className="h-8 w-8 mx-auto mb-1 opacity-30" />
+                  <p className="text-sm">No hay servicios activos</p>
+                </div>
+              ) : (
+                <ScrollArea className={isFullscreen ? "h-[calc(50vh-180px)]" : "h-[200px]"}>
+                  <div className="space-y-1.5 pr-4">
+                    {sortedServices.map((service) => {
+                      const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
+                      const isExpanded = expandedServiceId === service.id;
+                      return (
+                        <div
+                          key={service.id}
+                          className={cn(
+                            "p-2 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                            getServiceColor(service.fecha_elaboracion),
+                            getUrgencyClass(service.fecha_elaboracion)
+                          )}
+                          onClick={() => toggleServiceExpand(service.id)}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-sm">#{service.clave}</span>
+                                {getEstatusInternoBadge(service.estatus_interno)}
+                                {service.cliente !== 'MOSTR' && (
+                                  <span className="text-xs opacity-75">• {service.cliente}</span>
+                                )}
+                              </div>
+                              <p className="text-xs truncate opacity-80">
+                                {service.condicion || 'Sin descripción'}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Badge className={cn("text-white text-xs px-1.5 py-0", getServiceBadgeColor(days))}>
+                                {days === 0 ? 'Hoy' : `${days}d`}
+                              </Badge>
+                              {days >= 5 && (
+                                <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                              )}
+                              {service.comentarios && (
+                                isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />
                               )}
                             </div>
-                            <p className="text-sm truncate">
-                              {service.condicion || 'Sin descripción'}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Ingreso: {format(new Date(service.fecha_elaboracion), "d MMM yyyy", { locale: es })}
-                            </p>
                           </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <Badge className={cn("text-white", getServiceBadgeColor(days))}>
-                              {days === 0 ? 'Hoy' : `${days} día${days > 1 ? 's' : ''}`}
-                            </Badge>
-                            {days >= 5 && (
-                              <AlertTriangle className="h-5 w-5 text-red-500 animate-pulse" />
-                            )}
-                            {service.comentarios && (
-                              isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />
-                            )}
-                          </div>
+                          
+                          {isExpanded && service.comentarios && (
+                            <div className="mt-2 pt-2 border-t border-current/20">
+                              <p className="text-xs opacity-90">{service.comentarios}</p>
+                            </div>
+                          )}
                         </div>
-                        
-                        {/* Expanded comments section */}
-                        {isExpanded && service.comentarios && (
-                          <div className="mt-3 pt-3 border-t border-current/20">
-                            <p className="text-xs font-medium mb-1">Comentarios:</p>
-                            <p className="text-sm opacity-90">{service.comentarios}</p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            )}
-          </CardContent>
-        </Card>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Special Orders Monitor */}
+          {/* Special Orders Monitor - Below Services */}
           <Card className={cn(
             sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
           )}>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2 pt-3">
               <CardTitle className="flex items-center justify-between text-base">
                 <div className="flex items-center gap-2">
-                  <ShoppingBag size={18} />
+                  <ShoppingBag size={16} />
                   Pedidos Especiales
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-xs">
-                    +3 días
+                <div className="flex gap-1">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-[10px] px-1.5">
+                    +3d
                   </Badge>
-                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-xs">
-                    2-3 días
+                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">
+                    2-3d
                   </Badge>
-                  <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-xs">
+                  <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[10px] px-1.5">
                     Urgente
                   </Badge>
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-3">
               {specialOrdersLoading ? (
-                <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
+                <div className="space-y-1">
+                  {[...Array(2)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
               ) : sortedSpecialOrders.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <ShoppingBag className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                  <p>No hay pedidos especiales pendientes</p>
+                <div className="text-center py-4 text-muted-foreground">
+                  <ShoppingBag className="h-8 w-8 mx-auto mb-1 opacity-30" />
+                  <p className="text-sm">No hay pedidos pendientes</p>
                 </div>
               ) : (
-                <ScrollArea className="h-[250px]">
-                  <div className="space-y-2 pr-4">
+                <ScrollArea className={isFullscreen ? "h-[calc(50vh-180px)]" : "h-[200px]"}>
+                  <div className="space-y-1.5 pr-4">
                     {sortedSpecialOrders.map((order) => {
                       const daysUntilDelivery = order.fecha_aprox_entrega 
                         ? differenceInDays(new Date(order.fecha_aprox_entrega), currentTime)
@@ -645,45 +638,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <div
                           key={order.id}
                           className={cn(
-                            "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                            "p-2 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
                             getSpecialOrderColor(order.fecha_aprox_entrega),
                             getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
                           )}
                           onClick={() => onNavigateToTab('special-orders')}
                         >
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="font-bold">{order.producto}</span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-sm">{order.producto}</span>
                                 {getSpecialOrderStatusBadge(order.estatus)}
                               </div>
-                              <p className="text-sm truncate">
-                                Cliente: {order.cliente}
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                <span>Pedido: {format(new Date(order.fecha), "d MMM", { locale: es })}</span>
+                              <div className="flex items-center gap-1 text-xs opacity-75">
+                                <span>{order.cliente}</span>
                                 {order.fecha_aprox_entrega && (
-                                  <span>• Entrega: {format(new Date(order.fecha_aprox_entrega), "d MMM", { locale: es })}</span>
+                                  <span>• {format(new Date(order.fecha_aprox_entrega), "d MMM", { locale: es })}</span>
                                 )}
                               </div>
                             </div>
-                            <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-1">
                               {daysUntilDelivery !== null ? (
                                 <Badge className={cn(
-                                  "text-white",
+                                  "text-white text-xs px-1.5 py-0",
                                   isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
                                 )}>
                                   {isOverdue 
-                                    ? `${Math.abs(daysUntilDelivery)}d atrasado` 
+                                    ? `-${Math.abs(daysUntilDelivery)}d` 
                                     : daysUntilDelivery === 0 
                                       ? 'Hoy' 
-                                      : `${daysUntilDelivery}d restante${daysUntilDelivery > 1 ? 's' : ''}`}
+                                      : `${daysUntilDelivery}d`}
                                 </Badge>
                               ) : (
-                                <Badge variant="outline" className="text-xs">Sin fecha</Badge>
+                                <Badge variant="outline" className="text-[10px] px-1.5">S/F</Badge>
                               )}
                               {isOverdue && (
-                                <AlertTriangle className="h-5 w-5 text-red-500 animate-pulse" />
+                                <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
                               )}
                             </div>
                           </div>
@@ -695,6 +685,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-4">
 
           {/* Warehouse Sync Status */}
           <Card>
