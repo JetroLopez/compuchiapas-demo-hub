@@ -373,6 +373,66 @@ export type Database = {
         }
         Relationships: []
       }
+      special_orders: {
+        Row: {
+          anticipo: number | null
+          clave: string | null
+          cliente: string
+          created_at: string
+          estatus: Database["public"]["Enums"]["special_order_status"]
+          fecha: string
+          fecha_aprox_entrega: string | null
+          fecha_entrega: string | null
+          folio_ingreso: string | null
+          folio_servicio: string | null
+          id: string
+          precio: number | null
+          producto: string
+          remision: string | null
+          resta: number | null
+          telefono: string | null
+          updated_at: string
+        }
+        Insert: {
+          anticipo?: number | null
+          clave?: string | null
+          cliente: string
+          created_at?: string
+          estatus?: Database["public"]["Enums"]["special_order_status"]
+          fecha?: string
+          fecha_aprox_entrega?: string | null
+          fecha_entrega?: string | null
+          folio_ingreso?: string | null
+          folio_servicio?: string | null
+          id?: string
+          precio?: number | null
+          producto: string
+          remision?: string | null
+          resta?: number | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anticipo?: number | null
+          clave?: string | null
+          cliente?: string
+          created_at?: string
+          estatus?: Database["public"]["Enums"]["special_order_status"]
+          fecha?: string
+          fecha_aprox_entrega?: string | null
+          fecha_entrega?: string | null
+          folio_ingreso?: string | null
+          folio_servicio?: string | null
+          id?: string
+          precio?: number | null
+          producto?: string
+          remision?: string | null
+          resta?: number | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -428,6 +488,11 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user" | "tecnico" | "ventas"
       service_status: "Emitida" | "Remitida" | "Facturada" | "Cancelada"
+      special_order_status:
+        | "Notificado con Esdras"
+        | "Pedido"
+        | "En tienda"
+        | "Entregado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -557,6 +622,12 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user", "tecnico", "ventas"],
       service_status: ["Emitida", "Remitida", "Facturada", "Cancelada"],
+      special_order_status: [
+        "Notificado con Esdras",
+        "Pedido",
+        "En tienda",
+        "Entregado",
+      ],
     },
   },
 } as const
