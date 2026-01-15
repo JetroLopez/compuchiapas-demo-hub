@@ -51,19 +51,19 @@ const Blog: React.FC = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="pt-24 pb-4 md:pt-28 md:pb-8 bg-gradient-to-b from-tech-lightGray to-white">
+      <section className="pt-24 pb-4 md:pt-28 md:pb-8 bg-gradient-to-b from-tech-lightGray to-white dark:from-slate-900 dark:to-slate-800">
         <div className="container-padding max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Blog Tecnológico</h1>
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 dark:text-white">Blog Tecnológico</h1>
+          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             Artículos, guías y consejos para mantenerte al día con la tecnología
           </p>
         </div>
       </section>
       
       {/* Featured Article - Moved higher */}
-      <section className="py-6">
+      <section className="py-6 dark:bg-slate-900">
         <div className="container-padding max-w-7xl mx-auto">
-          <div className="glass-card rounded-2xl overflow-hidden">
+          <div className="glass-card dark:bg-slate-800/80 dark:border-slate-700 rounded-2xl overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="relative h-64 md:h-auto">
                 <img 
@@ -74,7 +74,7 @@ const Blog: React.FC = () => {
               </div>
               
               <div className="p-8 md:p-12 flex flex-col justify-center">
-                <div className="flex items-center text-sm text-gray-500 mb-4">
+                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
                   <Calendar size={16} className="mr-2" />
                   <span>15 de mayo, 2024</span>
                   <span className="mx-2">•</span>
@@ -82,14 +82,14 @@ const Blog: React.FC = () => {
                   <span>Equipo Técnico</span>
                 </div>
                 
-                <h2 className="text-2xl md:text-3xl font-bold mb-4">5 señales de que tu computadora necesita mantenimiento preventivo</h2>
-                <p className="text-gray-600 mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold mb-4 dark:text-white">5 señales de que tu computadora necesita mantenimiento preventivo</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
                   Descubre las señales que indican que es momento de realizar un mantenimiento a tu equipo para evitar problemas mayores y extender su vida útil.
                 </p>
                 
                 <Link 
                   to="/blog/mantenimiento-preventivo" 
-                  className="group flex items-center text-tech-blue font-medium hover:underline mt-auto"
+                  className="group flex items-center text-tech-blue dark:text-blue-400 font-medium hover:underline mt-auto"
                 >
                   Leer artículo completo
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -101,13 +101,13 @@ const Blog: React.FC = () => {
       </section>
       
       {/* Blog Posts Grid */}
-      <section className="py-12 bg-tech-lightGray">
+      <section className="py-12 bg-tech-lightGray dark:bg-slate-800">
         <div className="container-padding max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8">Artículos recientes</h2>
+          <h2 className="text-3xl font-bold mb-8 dark:text-white">Artículos recientes</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {blogPosts.slice(1).map((post) => (
-              <div key={post.id} className="glass-card rounded-2xl overflow-hidden transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl h-full">
+              <div key={post.id} className="glass-card dark:bg-slate-700/80 dark:border-slate-600 rounded-2xl overflow-hidden transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl h-full">
                 <div className="relative h-48">
                   <img 
                     src={post.image} 
@@ -117,17 +117,17 @@ const Blog: React.FC = () => {
                 </div>
                 
                 <div className="p-6 flex flex-col h-[calc(100%-12rem)]">
-                  <div className="flex items-center text-sm text-gray-500 mb-3">
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                     <Calendar size={14} className="mr-1" />
                     <span>{post.date}</span>
                   </div>
                   
-                  <h3 className="text-xl font-semibold mb-3">{post.title}</h3>
-                  <p className="text-gray-600 mb-6 line-clamp-3 flex-grow">{post.excerpt}</p>
+                  <h3 className="text-xl font-semibold mb-3 dark:text-white">{post.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-6 line-clamp-3 flex-grow">{post.excerpt}</p>
                   
                   <Link 
                     to={`/blog/${post.slug}`} 
-                    className="group flex items-center text-tech-blue font-medium hover:underline mt-auto"
+                    className="group flex items-center text-tech-blue dark:text-blue-400 font-medium hover:underline mt-auto"
                   >
                     Leer más
                     <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -138,25 +138,25 @@ const Blog: React.FC = () => {
           </div>
           
           <div className="mt-8 text-center">
-            <a href="#" className="btn-outline">Cargar más artículos</a>
+            <a href="#" className="btn-outline dark:border-slate-500 dark:text-gray-300 dark:hover:bg-slate-700">Cargar más artículos</a>
           </div>
         </div>
       </section>
       
       {/* Archive Section - Making it more compact */}
-      <section className="py-12">
+      <section className="py-12 dark:bg-slate-900">
         <div className="container-padding max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8">Archivo de artículos</h2>
+          <h2 className="text-3xl font-bold mb-8 dark:text-white">Archivo de artículos</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {['Mayo 2024', 'Abril 2024', 'Marzo 2024', 'Febrero 2024', 'Enero 2024', 'Diciembre 2023'].map((month, index) => (
               <a 
                 key={index}
                 href="#" 
-                className="glass-card rounded-2xl p-6 flex justify-between items-center transition-all duration-300 hover:bg-tech-blue/5"
+                className="glass-card dark:bg-slate-800/80 dark:border-slate-700 rounded-2xl p-6 flex justify-between items-center transition-all duration-300 hover:bg-tech-blue/5 dark:hover:bg-slate-700"
               >
-                <span className="font-medium">{month}</span>
-                <ArrowRight className="h-4 w-4" />
+                <span className="font-medium dark:text-white">{month}</span>
+                <ArrowRight className="h-4 w-4 dark:text-gray-400" />
               </a>
             ))}
           </div>
