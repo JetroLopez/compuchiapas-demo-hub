@@ -33,11 +33,15 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 dark"
-      style={{ colorScheme: 'dark' }}
+    <section 
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20"
+      style={{ 
+        background: 'linear-gradient(to bottom right, #0f172a, #172554, #0f172a)',
+        colorScheme: 'dark' 
+      }}
     >
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 -z-20" />
+      {/* Animated gradient background - force dark colors */}
+      <div className="absolute inset-0 -z-20" style={{ background: 'linear-gradient(to bottom right, #0f172a, #172554, #0f172a)' }} />
       
       {/* Animated mesh gradient overlay */}
       <motion.div
@@ -235,7 +239,7 @@ const Hero: React.FC = () => {
       >
         <ArrowDown className="h-8 w-8 text-white/60" />
       </motion.button>
-    </div>
+    </section>
   );
 };
 
