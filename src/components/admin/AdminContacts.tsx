@@ -9,7 +9,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { MessageCircle, Mail, Phone, User, Calendar, FileText, ChevronDown, Copy, Check } from 'lucide-react';
+import { MessageCircle, Mail, Phone, User, Calendar, FileText, ChevronDown, Copy, Check, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ContactSubmission {
@@ -28,6 +28,7 @@ const AdminContacts: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchContacts();
@@ -39,6 +40,7 @@ const AdminContacts: React.FC = () => {
       const { data, error } = await supabase
         .from('contact_submissions')
         .select('*')
+        .neq('status', 'contacted')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -48,6 +50,26 @@ const AdminContacts: React.FC = () => {
       toast.error('Error al cargar los contactos');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleMarkAsContacted = async (contactId: string) => {
+    setUpdatingId(contactId);
+    try {
+      const { error } = await supabase
+        .from('contact_submissions')
+        .update({ status: 'contacted' })
+        .eq('id', contactId);
+
+      if (error) throw error;
+      
+      setContacts(contacts.filter(c => c.id !== contactId));
+      toast.success('Solicitud marcada como contactada');
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      toast.error('Error al actualizar el estado');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -228,7 +250,24 @@ const AdminContacts: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                        {getStatusBadge(contact.status)}
+                        <Button
+                          size="sm"
+                          onClick={() => handleMarkAsContacted(contact.id)}
+                          disabled={updatingId === contact.id}
+                          className="gap-2"
+                        >
+                          {updatingId === contact.id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Actualizando...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4" />
+                              Marcar como Contactado
+                            </>
+                          )}
+                        </Button>
                       </div>
                     </div>
                   </CollapsibleContent>
