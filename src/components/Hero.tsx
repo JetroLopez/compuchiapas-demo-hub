@@ -34,7 +34,7 @@ const Hero: React.FC = () => {
 
   return (
     <section 
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20"
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-28 md:pt-32"
       style={{ 
         background: 'linear-gradient(to bottom right, #0f172a, #172554, #0f172a)',
         colorScheme: 'dark' 
