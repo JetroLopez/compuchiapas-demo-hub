@@ -278,15 +278,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     },
   });
 
-  // Get time-based glow/shadow color class
-  const getTimeBasedGlowClass = (fechaElaboracion: string) => {
+  // Get time-based glow/shadow color class (only the glow, not the border)
+  const getTimeBasedGlowClass = (fechaElaboracion: string, estatusInterno: EstatusInterno) => {
+    if (estatusInterno === 'Listo y avisado a cliente') return ''; // No glow for "Listo"
     const days = differenceInDays(currentTime, new Date(fechaElaboracion));
-    if (days >= 5) return 'shadow-[0_0_12px_rgba(239,68,68,0.5)] border-red-500';
-    if (days >= 3) return 'shadow-[0_0_12px_rgba(234,179,8,0.5)] border-yellow-500';
-    return 'shadow-[0_0_12px_rgba(34,197,94,0.5)] border-green-500';
+    if (days >= 5) return 'shadow-[0_0_12px_rgba(239,68,68,0.5)]';
+    if (days >= 3) return 'shadow-[0_0_12px_rgba(234,179,8,0.5)]';
+    return 'shadow-[0_0_12px_rgba(34,197,94,0.5)]';
   };
 
-  // Get service background color based on estatus_interno
+  // Get service background and border color based on estatus_interno
   const getServiceBackgroundColor = (estatusInterno: EstatusInterno, fechaElaboracion: string) => {
     const days = differenceInDays(currentTime, new Date(fechaElaboracion));
     
@@ -295,13 +296,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return 'bg-gray-200 dark:bg-gray-700 border-gray-400 text-gray-600 dark:text-gray-300';
     }
     if (estatusInterno === 'En proceso') {
-      // Light blue background, but keep time-based glow
-      return 'bg-sky-200 dark:bg-sky-900/60 text-sky-800 dark:text-sky-200';
+      // Full celeste/sky styling (background + border) matching format of others
+      return 'bg-sky-500/20 border-sky-500 text-sky-700 dark:text-sky-300';
     }
-    // Default "En tienda" - time-based background
-    if (days >= 5) return 'bg-red-500/20 text-red-700 dark:text-red-300';
-    if (days >= 3) return 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300';
-    return 'bg-green-500/20 text-green-700 dark:text-green-300';
+    // Default "En tienda" - time-based background and border
+    if (days >= 5) return 'bg-red-500/20 border-red-500 text-red-700 dark:text-red-300';
+    if (days >= 3) return 'bg-yellow-500/20 border-yellow-500 text-yellow-700 dark:text-yellow-300';
+    return 'bg-green-500/20 border-green-500 text-green-700 dark:text-green-300';
   };
 
   // Get urgency class (glow animation) - only for non-"Listo" items
@@ -649,7 +650,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             className={cn(
                               "p-3 rounded-lg border-2 transition-all cursor-pointer",
                               getServiceBackgroundColor(service.estatus_interno, service.fecha_elaboracion),
-                              service.estatus_interno !== 'Listo y avisado a cliente' && getTimeBasedGlowClass(service.fecha_elaboracion),
+                              getTimeBasedGlowClass(service.fecha_elaboracion, service.estatus_interno),
                               getUrgencyClass(service.fecha_elaboracion, service.estatus_interno)
                             )}
                             onClick={() => toggleServiceExpand(service.id)}
@@ -869,7 +870,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             className={cn(
                               "p-3 rounded-lg border-2 transition-all cursor-pointer",
                               getServiceBackgroundColor(service.estatus_interno, service.fecha_elaboracion),
-                              service.estatus_interno !== 'Listo y avisado a cliente' && getTimeBasedGlowClass(service.fecha_elaboracion),
+                              getTimeBasedGlowClass(service.fecha_elaboracion, service.estatus_interno),
                               getUrgencyClass(service.fecha_elaboracion, service.estatus_interno)
                             )}
                             onClick={() => toggleServiceExpand(service.id)}
