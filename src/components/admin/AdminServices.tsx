@@ -360,8 +360,8 @@ const AdminServices: React.FC = () => {
     }
   };
 
-  // Filter services
-  const filteredServices = services?.filter(service => {
+  // Filter and sort services - ordered by clave ascending (lower clave at top = oldest)
+  const filteredServices = (services?.filter(service => {
     const matchesSearch = 
       service.clave.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -371,7 +371,11 @@ const AdminServices: React.FC = () => {
     const matchesEstatusInterno = estatusInternoFilter === 'all' || service.estatus_interno === estatusInternoFilter;
     
     return matchesSearch && matchesStatus && matchesEstatusInterno;
-  }) || [];
+  }) || []).sort((a, b) => {
+    const claveA = parseInt(a.clave) || 0;
+    const claveB = parseInt(b.clave) || 0;
+    return claveA - claveB; // Ascending order: lower clave (older) at top
+  });
 
   return (
     <div className="space-y-6">

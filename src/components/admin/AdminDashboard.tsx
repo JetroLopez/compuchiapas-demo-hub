@@ -278,15 +278,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     },
   });
 
-  // Get service age color and urgency class
-  const getServiceColor = (fechaElaboracion: string) => {
+  // Get time-based glow/shadow color class
+  const getTimeBasedGlowClass = (fechaElaboracion: string) => {
     const days = differenceInDays(currentTime, new Date(fechaElaboracion));
-    if (days >= 5) return 'bg-red-500/20 border-red-500 text-red-700 dark:text-red-300';
-    if (days >= 3) return 'bg-yellow-500/20 border-yellow-500 text-yellow-700 dark:text-yellow-300';
-    return 'bg-green-500/20 border-green-500 text-green-700 dark:text-green-300';
+    if (days >= 5) return 'shadow-[0_0_12px_rgba(239,68,68,0.5)] border-red-500';
+    if (days >= 3) return 'shadow-[0_0_12px_rgba(234,179,8,0.5)] border-yellow-500';
+    return 'shadow-[0_0_12px_rgba(34,197,94,0.5)] border-green-500';
   };
 
-  const getUrgencyClass = (fechaElaboracion: string) => {
+  // Get service background color based on estatus_interno
+  const getServiceBackgroundColor = (estatusInterno: EstatusInterno, fechaElaboracion: string) => {
+    const days = differenceInDays(currentTime, new Date(fechaElaboracion));
+    
+    if (estatusInterno === 'Listo y avisado a cliente') {
+      // Gray, no glow
+      return 'bg-gray-200 dark:bg-gray-700 border-gray-400 text-gray-600 dark:text-gray-300';
+    }
+    if (estatusInterno === 'En proceso') {
+      // Light blue background, but keep time-based glow
+      return 'bg-sky-200 dark:bg-sky-900/60 text-sky-800 dark:text-sky-200';
+    }
+    // Default "En tienda" - time-based background
+    if (days >= 5) return 'bg-red-500/20 text-red-700 dark:text-red-300';
+    if (days >= 3) return 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300';
+    return 'bg-green-500/20 text-green-700 dark:text-green-300';
+  };
+
+  // Get urgency class (glow animation) - only for non-"Listo" items
+  const getUrgencyClass = (fechaElaboracion: string, estatusInterno: EstatusInterno) => {
+    if (estatusInterno === 'Listo y avisado a cliente') return ''; // No animation for "Listo"
     const days = differenceInDays(currentTime, new Date(fechaElaboracion));
     if (days >= 5) return 'animate-urgency';
     if (days >= 3) return 'animate-urgency-pulse';
@@ -357,11 +377,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // Sort services by age (oldest first) and priority
+  // Sort services: "Listo y avisado" at bottom, then by clave (descending - highest clave first means oldest at bottom, newest at top)
   const sortedServices = [...services].sort((a, b) => {
-    const daysA = differenceInDays(currentTime, new Date(a.fecha_elaboracion));
-    const daysB = differenceInDays(currentTime, new Date(b.fecha_elaboracion));
-    return daysB - daysA;
+    // "Listo y avisado" items go to bottom
+    const aIsListo = a.estatus_interno === 'Listo y avisado a cliente';
+    const bIsListo = b.estatus_interno === 'Listo y avisado a cliente';
+    
+    if (aIsListo && !bIsListo) return 1; // a goes after b
+    if (!aIsListo && bIsListo) return -1; // b goes after a
+    
+    // Within same status group, sort by clave descending (lower clave = older, should be at bottom)
+    // So we sort ascending to have lower claves at top when we want them at bottom visually
+    const claveA = parseInt(a.clave) || 0;
+    const claveB = parseInt(b.clave) || 0;
+    return claveA - claveB; // Lower claves first (older items at top which will be at bottom visually in scroll)
   });
 
   // Sort special orders by fecha (oldest first for priority) and then by fecha_aprox_entrega urgency
@@ -618,9 +647,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div
                             key={service.id}
                             className={cn(
-                              "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
-                              getServiceColor(service.fecha_elaboracion),
-                              getUrgencyClass(service.fecha_elaboracion)
+                              "p-3 rounded-lg border-2 transition-all cursor-pointer",
+                              getServiceBackgroundColor(service.estatus_interno, service.fecha_elaboracion),
+                              service.estatus_interno !== 'Listo y avisado a cliente' && getTimeBasedGlowClass(service.fecha_elaboracion),
+                              getUrgencyClass(service.fecha_elaboracion, service.estatus_interno)
                             )}
                             onClick={() => toggleServiceExpand(service.id)}
                           >
@@ -837,9 +867,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div
                             key={service.id}
                             className={cn(
-                              "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
-                              getServiceColor(service.fecha_elaboracion),
-                              getUrgencyClass(service.fecha_elaboracion)
+                              "p-3 rounded-lg border-2 transition-all cursor-pointer",
+                              getServiceBackgroundColor(service.estatus_interno, service.fecha_elaboracion),
+                              service.estatus_interno !== 'Listo y avisado a cliente' && getTimeBasedGlowClass(service.fecha_elaboracion),
+                              getUrgencyClass(service.fecha_elaboracion, service.estatus_interno)
                             )}
                             onClick={() => toggleServiceExpand(service.id)}
                           >
