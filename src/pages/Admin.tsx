@@ -35,6 +35,7 @@ const Admin: React.FC = () => {
   const canAccessSync = hasAccess(['admin', 'ventas']);
   const canAccessProducts = hasAccess(['admin', 'ventas']);
   const canAccessPromotions = hasAccess(['admin', 'ventas']);
+  const isTecnico = userRole === 'tecnico';
   const canAccessUsers = hasAccess(['admin']);
   const canAccessContacts = hasAccess(['admin', 'ventas']);
   const canAccessServices = hasAccess(['admin', 'tecnico']);
@@ -298,6 +299,7 @@ const Admin: React.FC = () => {
                 onNavigateToTab={setActiveTab}
                 pendingContactsCount={pendingContactsCount}
                 onContactsViewed={handleContactsViewed}
+                isTecnico={isTecnico}
               />
             </TabsContent>
             
