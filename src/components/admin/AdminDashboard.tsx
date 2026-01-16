@@ -94,12 +94,14 @@ interface AdminDashboardProps {
   onNavigateToTab: (tab: string) => void;
   pendingContactsCount: number;
   onContactsViewed: () => void;
+  isTecnico?: boolean;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
   onNavigateToTab, 
   pendingContactsCount,
-  onContactsViewed 
+  onContactsViewed,
+  isTecnico = false
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -421,503 +423,764 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Wrench className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{services.length}</p>
-                <p className="text-xs text-muted-foreground">Servicios en tienda</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={cn(
-            "cursor-pointer hover:bg-muted/50 transition-colors relative",
-            specialOrders.length > 0 && "ring-2 ring-cyan-500"
-          )} 
-          onClick={() => onNavigateToTab('special-orders')}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-cyan-500/10 relative">
-                <ShoppingBag className="h-5 w-5 text-cyan-500" />
-                {sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="h-3 w-3 text-white" />
-                  </span>
-                )}
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{specialOrders.length}</p>
-                <p className="text-xs text-muted-foreground">Pedidos especiales</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={cn(
-            "cursor-pointer hover:bg-muted/50 transition-colors relative",
-            pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
-          )} 
-          onClick={() => {
-            onNavigateToTab('contacts');
-            onContactsViewed();
-          }}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-500/10 relative">
-                <MessageCircle className="h-5 w-5 text-orange-500" />
-                {pendingContactsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-notification-bounce">
-                    {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
-                  </span>
-                )}
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{contacts.length}</p>
-                <p className="text-xs text-muted-foreground">Contactos pendientes</p>
-              </div>
-            </div>
-            {pendingContactsCount > 0 && (
-              <div className="absolute top-1 right-1">
-                <Bell className="h-5 w-5 text-orange-500 animate-bounce" />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('promotions')}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <Tag className="h-5 w-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{promotions.length}</p>
-                <p className="text-xs text-muted-foreground">Promociones activas</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('sync')}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <Warehouse className="h-5 w-5 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{warehouseInfo.length}</p>
-                <p className="text-xs text-muted-foreground">Almacenes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Grid */}
-      <div className={cn(
-        "grid gap-4",
-        isFullscreen ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2"
-      )}>
-        {/* Left Column - Services + Special Orders */}
-        <div className="space-y-4">
-          {/* Services Panel - Expanded */}
-          <Card className="flex flex-col">
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle className="flex items-center justify-between text-base">
-                <div className="flex items-center gap-2">
-                  <Wrench size={16} />
-                  Servicios en Tienda
-                  <Badge variant="secondary" className="text-xs">{services.length}</Badge>
+      {/* Stats Overview - Hide some for tecnico */}
+      {isTecnico ? (
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Wrench className="h-5 w-5 text-blue-500" />
                 </div>
-                <div className="flex gap-1">
-                  <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-[10px] px-1.5">
-                    Nuevo
-                  </Badge>
-                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">
-                    3+d
-                  </Badge>
-                  <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[10px] px-1.5">
-                    5+d
-                  </Badge>
+                <div>
+                  <p className="text-2xl font-bold">{services.length}</p>
+                  <p className="text-xs text-muted-foreground">Servicios en tienda</p>
                 </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-3 flex-1">
-              {servicesLoading ? (
-                <div className="space-y-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-14 w-full" />
-                  ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={cn(
+              "cursor-pointer hover:bg-muted/50 transition-colors relative",
+              specialOrders.length > 0 && "ring-2 ring-cyan-500"
+            )} 
+            onClick={() => onNavigateToTab('special-orders')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-cyan-500/10 relative">
+                  <ShoppingBag className="h-5 w-5 text-cyan-500" />
+                  {sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                      <AlertTriangle className="h-3 w-3 text-white" />
+                    </span>
+                  )}
                 </div>
-              ) : sortedServices.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Wrench className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No hay servicios activos</p>
+                <div>
+                  <p className="text-2xl font-bold">{specialOrders.length}</p>
+                  <p className="text-xs text-muted-foreground">Pedidos especiales</p>
                 </div>
-              ) : (
-                <ScrollArea className={isFullscreen ? "h-[calc(60vh-180px)]" : "h-[350px] min-h-[250px]"}>
-                  <div className="space-y-2 pr-4">
-                    {sortedServices.map((service) => {
-                      const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
-                      const isExpanded = expandedServiceId === service.id;
-                      return (
-                        <div
-                          key={service.id}
-                          className={cn(
-                            "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
-                            getServiceColor(service.fecha_elaboracion),
-                            getUrgencyClass(service.fecha_elaboracion)
-                          )}
-                          onClick={() => toggleServiceExpand(service.id)}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-sm">#{service.clave}</span>
-                                {canEditServices ? (
-                                  <Select
-                                    value={service.estatus_interno}
-                                    onValueChange={(value: EstatusInterno) => {
-                                      updateEstatusInternoMutation.mutate({ 
-                                        serviceId: service.id, 
-                                        estatusInterno: value 
-                                      });
-                                    }}
-                                  >
-                                    <SelectTrigger 
-                                      className="h-5 w-auto text-[10px] px-1.5 py-0 border-0 bg-transparent hover:bg-muted/50"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent onClick={(e) => e.stopPropagation()}>
-                                      <SelectItem value="En tienda">Por revisar</SelectItem>
-                                      <SelectItem value="En proceso">En proceso</SelectItem>
-                                      <SelectItem value="Listo y avisado a cliente">Listo</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  getEstatusInternoBadge(service.estatus_interno)
-                                )}
-                                {service.cliente !== 'MOSTR' && (
-                                  <span className="text-xs opacity-75">• {service.cliente}</span>
-                                )}
-                              </div>
-                              <p className="text-xs truncate opacity-80 mt-0.5">
-                                {service.condicion || 'Sin descripción'}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Badge className={cn("text-white text-xs px-2 py-0.5", getServiceBadgeColor(days))}>
-                                {days === 0 ? 'Hoy' : `${days}d`}
-                              </Badge>
-                              {days >= 5 && (
-                                <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
-                              )}
-                              {(service.comentarios || canEditServices) && (
-                                isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />
-                              )}
-                            </div>
-                          </div>
-                          
-                          {isExpanded && (
-                            <div className="mt-2 pt-2 border-t border-current/20 space-y-2">
-                              {service.comentarios && (
-                                <p className="text-xs opacity-90">{service.comentarios}</p>
-                              )}
-                              <div className="text-xs opacity-75">
-                                <span>Ingreso: {format(new Date(service.fecha_elaboracion), "d MMM yyyy", { locale: es })}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Wrench className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{services.length}</p>
+                  <p className="text-xs text-muted-foreground">Servicios en tienda</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={cn(
+              "cursor-pointer hover:bg-muted/50 transition-colors relative",
+              specialOrders.length > 0 && "ring-2 ring-cyan-500"
+            )} 
+            onClick={() => onNavigateToTab('special-orders')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-cyan-500/10 relative">
+                  <ShoppingBag className="h-5 w-5 text-cyan-500" />
+                  {sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                      <AlertTriangle className="h-3 w-3 text-white" />
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{specialOrders.length}</p>
+                  <p className="text-xs text-muted-foreground">Pedidos especiales</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={cn(
+              "cursor-pointer hover:bg-muted/50 transition-colors relative",
+              pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
+            )} 
+            onClick={() => {
+              onNavigateToTab('contacts');
+              onContactsViewed();
+            }}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-500/10 relative">
+                  <MessageCircle className="h-5 w-5 text-orange-500" />
+                  {pendingContactsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-notification-bounce">
+                      {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{contacts.length}</p>
+                  <p className="text-xs text-muted-foreground">Contactos pendientes</p>
+                </div>
+              </div>
+              {pendingContactsCount > 0 && (
+                <div className="absolute top-1 right-1">
+                  <Bell className="h-5 w-5 text-orange-500 animate-bounce" />
+                </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Special Orders Monitor - Below Services */}
-          <Card className={cn(
-            "flex flex-col",
-            sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
-          )}>
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle className="flex items-center justify-between text-base">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag size={16} />
-                  Pedidos Especiales
-                  <Badge variant="secondary" className="text-xs">{specialOrders.length}</Badge>
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('promotions')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <Tag className="h-5 w-5 text-green-500" />
                 </div>
-                <div className="flex gap-1">
-                  <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-[10px] px-1.5">
-                    +3d
-                  </Badge>
-                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">
-                    2-3d
-                  </Badge>
-                  <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[10px] px-1.5">
-                    Urgente
-                  </Badge>
+                <div>
+                  <p className="text-2xl font-bold">{promotions.length}</p>
+                  <p className="text-xs text-muted-foreground">Promociones activas</p>
                 </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-3 flex-1">
-              {specialOrdersLoading ? (
-                <div className="space-y-1">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('sync')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Warehouse className="h-5 w-5 text-purple-500" />
                 </div>
-              ) : sortedSpecialOrders.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  <ShoppingBag className="h-8 w-8 mx-auto mb-1 opacity-30" />
-                  <p className="text-sm">No hay pedidos pendientes</p>
+                <div>
+                  <p className="text-2xl font-bold">{warehouseInfo.length}</p>
+                  <p className="text-xs text-muted-foreground">Almacenes</p>
                 </div>
-              ) : (
-                <ScrollArea className={isFullscreen ? "h-[calc(40vh-150px)]" : "h-[250px] min-h-[180px]"}>
-                  <div className="space-y-2 pr-4">
-                    {sortedSpecialOrders.map((order) => {
-                      const daysUntilDelivery = order.fecha_aprox_entrega 
-                        ? differenceInDays(new Date(order.fecha_aprox_entrega), currentTime)
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Main Grid - Different layout for tecnico */}
+      {isTecnico ? (
+        // Tecnico layout: Services left (wider), Special Orders right (narrower)
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+          {/* Left Column - Services (2/3 width) */}
+          <div className="lg:col-span-2">
+            <Card className="flex flex-col h-full">
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <Wrench size={16} />
+                    Servicios en Tienda
+                    <Badge variant="secondary" className="text-xs">{services.length}</Badge>
+                  </div>
+                  <div className="flex gap-1">
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-[10px] px-1.5">
+                      Nuevo
+                    </Badge>
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">
+                      3+d
+                    </Badge>
+                    <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[10px] px-1.5">
+                      5+d
+                    </Badge>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-3 flex-1">
+                {servicesLoading ? (
+                  <div className="space-y-1">
+                    {[...Array(8)].map((_, i) => (
+                      <Skeleton key={i} className="h-14 w-full" />
+                    ))}
+                  </div>
+                ) : sortedServices.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Wrench className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No hay servicios activos</p>
+                  </div>
+                ) : (
+                  <ScrollArea className={isFullscreen ? "h-[calc(100vh-280px)]" : "h-[calc(100vh-350px)] min-h-[400px]"}>
+                    <div className="space-y-2 pr-4">
+                      {sortedServices.map((service) => {
+                        const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
+                        const isExpanded = expandedServiceId === service.id;
+                        return (
+                          <div
+                            key={service.id}
+                            className={cn(
+                              "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                              getServiceColor(service.fecha_elaboracion),
+                              getUrgencyClass(service.fecha_elaboracion)
+                            )}
+                            onClick={() => toggleServiceExpand(service.id)}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-sm">#{service.clave}</span>
+                                  {canEditServices ? (
+                                    <Select
+                                      value={service.estatus_interno}
+                                      onValueChange={(value: EstatusInterno) => {
+                                        updateEstatusInternoMutation.mutate({ 
+                                          serviceId: service.id, 
+                                          estatusInterno: value 
+                                        });
+                                      }}
+                                    >
+                                      <SelectTrigger 
+                                        className="h-5 w-auto text-[10px] px-1.5 py-0 border-0 bg-transparent hover:bg-muted/50"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent onClick={(e) => e.stopPropagation()}>
+                                        <SelectItem value="En tienda">Por revisar</SelectItem>
+                                        <SelectItem value="En proceso">En proceso</SelectItem>
+                                        <SelectItem value="Listo y avisado a cliente">Listo</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    getEstatusInternoBadge(service.estatus_interno)
+                                  )}
+                                  {service.cliente !== 'MOSTR' && (
+                                    <span className="text-xs opacity-75">• {service.cliente}</span>
+                                  )}
+                                </div>
+                                <p className="text-xs opacity-80 mt-0.5">
+                                  {service.condicion || 'Sin descripción'}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Badge className={cn("text-white text-xs px-2 py-0.5", getServiceBadgeColor(days))}>
+                                  {days === 0 ? 'Hoy' : `${days}d`}
+                                </Badge>
+                                {days >= 5 && (
+                                  <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                                )}
+                                {(service.comentarios || canEditServices) && (
+                                  isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />
+                                )}
+                              </div>
+                            </div>
+                            
+                            {isExpanded && (
+                              <div className="mt-2 pt-2 border-t border-current/20 space-y-2">
+                                {service.comentarios && (
+                                  <p className="text-xs opacity-90">{service.comentarios}</p>
+                                )}
+                                <div className="text-xs opacity-75">
+                                  <span>Ingreso: {format(new Date(service.fecha_elaboracion), "d MMM yyyy", { locale: es })}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Special Orders (1/3 width) */}
+          <div className="lg:col-span-1">
+            <Card className={cn(
+              "flex flex-col h-full",
+              sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
+            )}>
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag size={16} />
+                    Pedidos
+                    <Badge variant="secondary" className="text-xs">{specialOrders.length}</Badge>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[9px] px-1">
+                      Urgente
+                    </Badge>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-3 flex-1">
+                {specialOrdersLoading ? (
+                  <div className="space-y-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : sortedSpecialOrders.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <ShoppingBag className="h-8 w-8 mx-auto mb-1 opacity-30" />
+                    <p className="text-sm">No hay pedidos</p>
+                  </div>
+                ) : (
+                  <ScrollArea className={isFullscreen ? "h-[calc(100vh-280px)]" : "h-[calc(100vh-350px)] min-h-[400px]"}>
+                    <div className="space-y-2 pr-2">
+                      {sortedSpecialOrders.map((order) => {
+                        const daysUntilDelivery = order.fecha_aprox_entrega 
+                          ? differenceInDays(new Date(order.fecha_aprox_entrega), currentTime)
+                          : null;
+                        const isOverdue = daysUntilDelivery !== null && daysUntilDelivery < 0;
+                        
+                        return (
+                          <div
+                            key={order.id}
+                            className={cn(
+                              "p-2 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                              getSpecialOrderColor(order.fecha_aprox_entrega),
+                              getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
+                            )}
+                            onClick={() => onNavigateToTab('special-orders')}
+                          >
+                            <div className="flex items-center justify-between gap-1">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  <span className="font-bold text-xs truncate">{order.producto}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] opacity-75 mt-0.5">
+                                  <span className="truncate">{order.cliente}</span>
+                                  {getSpecialOrderStatusBadge(order.estatus)}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {daysUntilDelivery !== null ? (
+                                  <Badge className={cn(
+                                    "text-white text-[10px] px-1.5 py-0",
+                                    isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
+                                  )}>
+                                    {isOverdue 
+                                      ? `-${Math.abs(daysUntilDelivery)}d` 
+                                      : daysUntilDelivery === 0 
+                                        ? 'Hoy' 
+                                        : `${daysUntilDelivery}d`}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[9px] px-1">S/F</Badge>
+                                )}
+                                {isOverdue && (
+                                  <AlertTriangle className="h-3 w-3 text-red-500 animate-pulse" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        // Default layout for admin/ventas
+        <div className={cn(
+          "grid gap-4",
+          isFullscreen ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2"
+        )}>
+          {/* Left Column - Services + Special Orders */}
+          <div className="space-y-4">
+            {/* Services Panel - Expanded */}
+            <Card className="flex flex-col">
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <Wrench size={16} />
+                    Servicios en Tienda
+                    <Badge variant="secondary" className="text-xs">{services.length}</Badge>
+                  </div>
+                  <div className="flex gap-1">
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-[10px] px-1.5">
+                      Nuevo
+                    </Badge>
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">
+                      3+d
+                    </Badge>
+                    <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[10px] px-1.5">
+                      5+d
+                    </Badge>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-3 flex-1">
+                {servicesLoading ? (
+                  <div className="space-y-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-14 w-full" />
+                    ))}
+                  </div>
+                ) : sortedServices.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Wrench className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No hay servicios activos</p>
+                  </div>
+                ) : (
+                  <ScrollArea className={isFullscreen ? "h-[calc(60vh-180px)]" : "h-[350px] min-h-[250px]"}>
+                    <div className="space-y-2 pr-4">
+                      {sortedServices.map((service) => {
+                        const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
+                        const isExpanded = expandedServiceId === service.id;
+                        return (
+                          <div
+                            key={service.id}
+                            className={cn(
+                              "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                              getServiceColor(service.fecha_elaboracion),
+                              getUrgencyClass(service.fecha_elaboracion)
+                            )}
+                            onClick={() => toggleServiceExpand(service.id)}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-sm">#{service.clave}</span>
+                                  {canEditServices ? (
+                                    <Select
+                                      value={service.estatus_interno}
+                                      onValueChange={(value: EstatusInterno) => {
+                                        updateEstatusInternoMutation.mutate({ 
+                                          serviceId: service.id, 
+                                          estatusInterno: value 
+                                        });
+                                      }}
+                                    >
+                                      <SelectTrigger 
+                                        className="h-5 w-auto text-[10px] px-1.5 py-0 border-0 bg-transparent hover:bg-muted/50"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent onClick={(e) => e.stopPropagation()}>
+                                        <SelectItem value="En tienda">Por revisar</SelectItem>
+                                        <SelectItem value="En proceso">En proceso</SelectItem>
+                                        <SelectItem value="Listo y avisado a cliente">Listo</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    getEstatusInternoBadge(service.estatus_interno)
+                                  )}
+                                  {service.cliente !== 'MOSTR' && (
+                                    <span className="text-xs opacity-75">• {service.cliente}</span>
+                                  )}
+                                </div>
+                                <p className="text-xs truncate opacity-80 mt-0.5">
+                                  {service.condicion || 'Sin descripción'}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Badge className={cn("text-white text-xs px-2 py-0.5", getServiceBadgeColor(days))}>
+                                  {days === 0 ? 'Hoy' : `${days}d`}
+                                </Badge>
+                                {days >= 5 && (
+                                  <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                                )}
+                                {(service.comentarios || canEditServices) && (
+                                  isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />
+                                )}
+                              </div>
+                            </div>
+                            
+                            {isExpanded && (
+                              <div className="mt-2 pt-2 border-t border-current/20 space-y-2">
+                                {service.comentarios && (
+                                  <p className="text-xs opacity-90">{service.comentarios}</p>
+                                )}
+                                <div className="text-xs opacity-75">
+                                  <span>Ingreso: {format(new Date(service.fecha_elaboracion), "d MMM yyyy", { locale: es })}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Special Orders Monitor - Below Services */}
+            <Card className={cn(
+              "flex flex-col",
+              sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
+            )}>
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag size={16} />
+                    Pedidos Especiales
+                    <Badge variant="secondary" className="text-xs">{specialOrders.length}</Badge>
+                  </div>
+                  <div className="flex gap-1">
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-[10px] px-1.5">
+                      +3d
+                    </Badge>
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">
+                      2-3d
+                    </Badge>
+                    <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[10px] px-1.5">
+                      Urgente
+                    </Badge>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-3 flex-1">
+                {specialOrdersLoading ? (
+                  <div className="space-y-1">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : sortedSpecialOrders.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <ShoppingBag className="h-8 w-8 mx-auto mb-1 opacity-30" />
+                    <p className="text-sm">No hay pedidos pendientes</p>
+                  </div>
+                ) : (
+                  <ScrollArea className={isFullscreen ? "h-[calc(40vh-150px)]" : "h-[250px] min-h-[180px]"}>
+                    <div className="space-y-2 pr-4">
+                      {sortedSpecialOrders.map((order) => {
+                        const daysUntilDelivery = order.fecha_aprox_entrega 
+                          ? differenceInDays(new Date(order.fecha_aprox_entrega), currentTime)
+                          : null;
+                        const isOverdue = daysUntilDelivery !== null && daysUntilDelivery < 0;
+                        
+                        return (
+                          <div
+                            key={order.id}
+                            className={cn(
+                              "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                              getSpecialOrderColor(order.fecha_aprox_entrega),
+                              getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
+                            )}
+                            onClick={() => onNavigateToTab('special-orders')}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-sm">{order.producto}</span>
+                                  {getSpecialOrderStatusBadge(order.estatus)}
+                                </div>
+                                <div className="flex items-center gap-1 text-xs opacity-75 mt-0.5">
+                                  <span>{order.cliente}</span>
+                                  {order.fecha_aprox_entrega && (
+                                    <span>• {format(new Date(order.fecha_aprox_entrega), "d MMM", { locale: es })}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {daysUntilDelivery !== null ? (
+                                  <Badge className={cn(
+                                    "text-white text-xs px-2 py-0.5",
+                                    isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
+                                  )}>
+                                    {isOverdue 
+                                      ? `-${Math.abs(daysUntilDelivery)}d` 
+                                      : daysUntilDelivery === 0 
+                                        ? 'Hoy' 
+                                        : `${daysUntilDelivery}d`}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[10px] px-1.5">S/F</Badge>
+                                )}
+                                {isOverdue && (
+                                  <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-4">
+
+            {/* Warehouse Sync Status */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Warehouse size={18} />
+                  Última Sincronización
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {warehousesLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(2)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : warehouseInfo.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay almacenes configurados
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {warehouseInfo.map((warehouse) => {
+                      const hoursAgo = warehouse.updated_at 
+                        ? differenceInHours(currentTime, new Date(warehouse.updated_at))
                         : null;
-                      const isOverdue = daysUntilDelivery !== null && daysUntilDelivery < 0;
+                      const isStale = hoursAgo !== null && hoursAgo > 24;
                       
                       return (
                         <div
-                          key={order.id}
+                          key={warehouse.id}
                           className={cn(
-                            "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
-                            getSpecialOrderColor(order.fecha_aprox_entrega),
-                            getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
+                            "flex items-center justify-between p-3 rounded-lg border",
+                            isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
                           )}
-                          onClick={() => onNavigateToTab('special-orders')}
                         >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-sm">{order.producto}</span>
-                                {getSpecialOrderStatusBadge(order.estatus)}
-                              </div>
-                              <div className="flex items-center gap-1 text-xs opacity-75 mt-0.5">
-                                <span>{order.cliente}</span>
-                                {order.fecha_aprox_entrega && (
-                                  <span>• {format(new Date(order.fecha_aprox_entrega), "d MMM", { locale: es })}</span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              {daysUntilDelivery !== null ? (
-                                <Badge className={cn(
-                                  "text-white text-xs px-2 py-0.5",
-                                  isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
-                                )}>
-                                  {isOverdue 
-                                    ? `-${Math.abs(daysUntilDelivery)}d` 
-                                    : daysUntilDelivery === 0 
-                                      ? 'Hoy' 
-                                      : `${daysUntilDelivery}d`}
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-[10px] px-1.5">S/F</Badge>
-                              )}
-                              {isOverdue && (
-                                <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-4">
-
-          {/* Warehouse Sync Status */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Warehouse size={18} />
-                Última Sincronización
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {warehousesLoading ? (
-                <div className="space-y-2">
-                  {[...Array(2)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : warehouseInfo.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay almacenes configurados
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {warehouseInfo.map((warehouse) => {
-                    const hoursAgo = warehouse.updated_at 
-                      ? differenceInHours(currentTime, new Date(warehouse.updated_at))
-                      : null;
-                    const isStale = hoursAgo !== null && hoursAgo > 24;
-                    
-                    return (
-                      <div
-                        key={warehouse.id}
-                        className={cn(
-                          "flex items-center justify-between p-3 rounded-lg border",
-                          isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
-                        )}
-                      >
-                        <div>
-                          <p className="font-medium">{warehouse.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {warehouse.product_count} productos con stock
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-1">
-                            <Clock size={14} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
-                            <span className={cn(
-                              "text-sm",
-                              isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
-                            )}>
-                              {formatTimeAgo(warehouse.updated_at)}
-                            </span>
-                          </div>
-                          {isStale && (
-                            <p className="text-xs text-yellow-600 dark:text-yellow-400">Requiere sincronización</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Active Promotions */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Tag size={18} />
-                Promociones Activas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {promotionsLoading ? (
-                <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : promotions.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay promociones activas
-                </p>
-              ) : (
-                <ScrollArea className="h-[200px]">
-                  <div className="space-y-2 pr-4">
-                    {promotions.map((promo) => {
-                      const daysActive = differenceInDays(currentTime, new Date(promo.created_at));
-                      return (
-                        <div
-                          key={promo.id}
-                          className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{promo.nombre}</p>
+                          <div>
+                            <p className="font-medium">{warehouse.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {formatPrice(promo.precio)} • {promo.existencias || 0} en stock
+                              {warehouse.product_count} productos con stock
                             </p>
                           </div>
-                          <Badge variant="outline" className="text-xs ml-2">
-                            {daysActive === 0 ? 'Hoy' : `${daysActive}d activa`}
-                          </Badge>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1">
+                              <Clock size={14} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
+                              <span className={cn(
+                                "text-sm",
+                                isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
+                              )}>
+                                {formatTimeAgo(warehouse.updated_at)}
+                              </span>
+                            </div>
+                            {isStale && (
+                              <p className="text-xs text-yellow-600 dark:text-yellow-400">Requiere sincronización</p>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Contact Requests */}
-          <Card className={cn(
-            pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
-          )}>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-base">
-                <div className="flex items-center gap-2">
-                  <MessageCircle size={18} />
-                  Contactos Recientes
-                </div>
-                {pendingContactsCount > 0 && (
-                  <Badge className="bg-orange-500 animate-notification-bounce">
-                    {pendingContactsCount} nuevo{pendingContactsCount > 1 ? 's' : ''}
-                  </Badge>
                 )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contactsLoading ? (
-                <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : contacts.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay contactos pendientes
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {contacts.slice(0, 5).map((contact) => (
-                    <div
-                      key={contact.id}
-                      className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => {
-                        onNavigateToTab('contacts');
-                        onContactsViewed();
-                      }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{contact.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {contact.subject || 'Sin asunto'}
-                        </p>
-                      </div>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {formatTimeAgo(contact.created_at)}
-                      </span>
+              </CardContent>
+            </Card>
+
+            {/* Active Promotions */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Tag size={18} />
+                  Promociones Activas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {promotionsLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : promotions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay promociones activas
+                  </p>
+                ) : (
+                  <ScrollArea className="h-[200px]">
+                    <div className="space-y-2 pr-4">
+                      {promotions.map((promo) => {
+                        const daysActive = differenceInDays(currentTime, new Date(promo.created_at));
+                        return (
+                          <div
+                            key={promo.id}
+                            className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{promo.nombre}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatPrice(promo.precio)} • {promo.existencias || 0} en stock
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="text-xs ml-2">
+                              {daysActive === 0 ? 'Hoy' : `${daysActive}d activa`}
+                            </Badge>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recent Contact Requests */}
+            <Card className={cn(
+              pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
+            )}>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle size={18} />
+                    Contactos Recientes
+                  </div>
+                  {pendingContactsCount > 0 && (
+                    <Badge className="bg-orange-500 animate-notification-bounce">
+                      {pendingContactsCount} nuevo{pendingContactsCount > 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {contactsLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : contacts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay contactos pendientes
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {contacts.slice(0, 5).map((contact) => (
+                      <div
+                        key={contact.id}
+                        className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          onNavigateToTab('contacts');
+                          onContactsViewed();
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{contact.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {contact.subject || 'Sin asunto'}
+                          </p>
+                        </div>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {formatTimeAgo(contact.created_at)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
