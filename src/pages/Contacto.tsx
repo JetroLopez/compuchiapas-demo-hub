@@ -48,7 +48,7 @@ const Contacto: React.FC = () => {
 
   const checkPhoneExists = async (phone: string): Promise<boolean> => {
     // Usar la función de base de datos que tiene permisos elevados
-    const { data, error } = await supabase.rpc('check_phone_exists', {
+    const { data, error } = await (supabase as any).rpc('check_phone_exists', {
       phone_to_check: phone
     });
     
@@ -256,7 +256,7 @@ const Contacto: React.FC = () => {
                 </div>
                 
                 <button type="submit" className="w-full bg-tech-blue hover:bg-tech-blue/90 text-white py-3 px-8 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2" disabled={isSubmitting}>
-                  {isSubmitting ? 'Enviando...' : 'Enviar mensaje'}
+                  {isSubmitting ? 'Espere un momento' : 'Enviar mensaje'}
                   {!isSubmitting && <ArrowRight size={18} />}
                 </button>
               </form>
@@ -370,7 +370,7 @@ const Contacto: React.FC = () => {
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Este código es único y personal. Válido para tu próxima visita.
+              Este código tendrá validez verificando el número de teléfono por WhatsApp.
             </p>
           </div>
         </DialogContent>
