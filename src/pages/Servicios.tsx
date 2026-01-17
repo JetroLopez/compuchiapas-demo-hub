@@ -270,7 +270,7 @@ const Servicios: React.FC = () => {
               answer: "Sí, todos nuestros servicios técnicos cuentan con garantía. Dependiendo del tipo de servicio, la garantía puede variar de 30 días a 1 año. Te proporcionamos un certificado de garantía detallado al entregar tu equipo."
             }, {
               question: "¿Realizan visitas a domicilio?",
-              answer: "Sí, ofrecemos servicio a domicilio para empresas y particulares. El costo adicional depende de la ubicación y tipo de servicio. Contáctanos para más detalles y para programar una visita técnica."
+              answer: "Ofrecemos servicio de recolección a domicilio y una vez hecha la reparación, entrega de vuelta al domicilio. El costo adicional depende de la ubicación y tipo de servicio. Contáctanos para más detalles y para programar una recolección."
             }, {
               question: "¿Qué pasa si no pueden reparar mi equipo?",
               answer: "Si después del diagnóstico determinamos que el equipo no tiene reparación viable, solo se cobra la tarifa de diagnóstico (que en muchos casos es gratuita). Además, te ofrecemos opciones y asesoría para reemplazar tu equipo si es necesario."
