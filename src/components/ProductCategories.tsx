@@ -51,22 +51,22 @@ const ProductCategories: React.FC = () => {
     {
       title: 'Laptops',
       image: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      slug: 'laptops'
+      slug: 'LAPTO'
     },
     {
       title: 'Computadoras de Escritorio',
       image: 'https://tecnotraffic.net/wp-content/uploads/2022/04/Las-mejores-computadoras-de-escritorio-de-2022.jpg',
-      slug: 'desktops'
+      slug: 'COMPU'
     },
     {
       title: 'Accesorios',
       image: 'https://tse1.mm.bing.net/th/id/OIP.jXpHOwODKsL2zXMM92p_QgHaEq?rs=1&pid=ImgDetMain&o=7&rm=3',
-      slug: 'accesorios'
+      slug: 'ACCES'
     },
     {
       title: 'Punto de Venta',
       image: 'https://cervantes.srv.br/lz/getfile.php?file=&id=0337b072bf67d2d155103851a4f90466',
-      slug: 'pos'
+      slug: 'PTVTA'
     }
   ];
 
