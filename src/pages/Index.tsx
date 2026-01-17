@@ -562,7 +562,7 @@ const Index: React.FC = () => {
       {/* Popup offer with close button that minimizes to bottom */}
       <OfferPopup
         title="¡Oferta especial!"
-        description="10% de descuento en tu primer servicio técnico. Menciona esta promoción al contactarnos."
+        description="10% de descuento en tu primer servicio técnico. Completa el formulario y obtén tu código de descuento."
         ctaText="¡Aprovecha ahora!"
         onCtaClick={scrollToContact}
       />
