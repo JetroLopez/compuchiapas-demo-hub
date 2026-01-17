@@ -488,6 +488,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      submit_contact: {
+        Args: {
+          p_email: string
+          p_message: string
+          p_name: string
+          p_phone: string
+          p_subject: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "tecnico" | "ventas"
