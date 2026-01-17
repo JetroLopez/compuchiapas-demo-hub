@@ -5,7 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import AdminProducts from '@/components/admin/AdminProducts';
 import AdminUsers from '@/components/admin/AdminUsers';
 import ProductSync from '@/components/admin/ProductSync';
@@ -226,7 +232,98 @@ const Admin: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         {hasAnyRole ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-6 flex-wrap bg-muted/50">
+            {/* Mobile dropdown menu */}
+            <div className="md:hidden mb-6">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span className="flex items-center gap-2">
+                      <Menu size={16} />
+                      {activeTab === 'dashboard' && 'Compusistemas de Chiapas'}
+                      {activeTab === 'sync' && 'Sincronizar'}
+                      {activeTab === 'products' && 'Productos'}
+                      {activeTab === 'promotions' && 'Promociones'}
+                      {activeTab === 'users' && 'Usuarios'}
+                      {activeTab === 'contacts' && 'Contacto'}
+                      {activeTab === 'services' && 'Servicios'}
+                      {activeTab === 'blog' && 'Blog'}
+                      {activeTab === 'special-orders' && 'Pedidos Especiales'}
+                    </span>
+                    <ChevronDown size={16} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[calc(100vw-2rem)] bg-background border border-border">
+                  <DropdownMenuItem onClick={() => setActiveTab('dashboard')} className="gap-2">
+                    <LayoutDashboard size={16} />
+                    Compusistemas de Chiapas
+                  </DropdownMenuItem>
+                  
+                  {canAccessSync && (
+                    <DropdownMenuItem onClick={() => setActiveTab('sync')} className="gap-2">
+                      <RefreshCw size={16} />
+                      Sincronizar
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessProducts && (
+                    <DropdownMenuItem onClick={() => setActiveTab('products')} className="gap-2">
+                      <Package size={16} />
+                      Productos
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessPromotions && (
+                    <DropdownMenuItem onClick={() => setActiveTab('promotions')} className="gap-2">
+                      <Tag size={16} />
+                      Promociones
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessUsers && (
+                    <DropdownMenuItem onClick={() => setActiveTab('users')} className="gap-2">
+                      <Users size={16} />
+                      Usuarios
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessContacts && (
+                    <DropdownMenuItem onClick={() => setActiveTab('contacts')} className="gap-2 relative">
+                      <MessageCircle size={16} />
+                      Contacto
+                      {pendingContactsCount > 0 && (
+                        <span className="ml-auto h-5 w-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+                          {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
+                        </span>
+                      )}
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessServices && (
+                    <DropdownMenuItem onClick={() => setActiveTab('services')} className="gap-2">
+                      <Wrench size={16} />
+                      Servicios
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessBlog && (
+                    <DropdownMenuItem onClick={() => setActiveTab('blog')} className="gap-2">
+                      <FileText size={16} />
+                      Blog
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessSpecialOrders && (
+                    <DropdownMenuItem onClick={() => setActiveTab('special-orders')} className="gap-2">
+                      <ShoppingBag size={16} />
+                      Pedidos Especiales
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Desktop tabs */}
+            <TabsList className="mb-6 flex-wrap bg-muted/50 hidden md:flex">
               <TabsTrigger value="dashboard" className="gap-2">
                 <LayoutDashboard size={16} />
                 Compusistemas de Chiapas
