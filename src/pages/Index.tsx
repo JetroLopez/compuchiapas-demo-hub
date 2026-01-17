@@ -5,13 +5,19 @@ import FeaturedServices from '../components/FeaturedServices';
 import ProductCategories from '../components/ProductCategories';
 import OfferPopup from '../components/OfferPopup';
 import PromotionsCarousel from '../components/PromotionsCarousel';
-import { ArrowRight, Phone, Mail, MapPin, Calendar, User, Search, Loader2 } from 'lucide-react';
+import { ArrowRight, Phone, Mail, MapPin, Calendar, User, Search, Loader2, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -26,8 +32,9 @@ const Index: React.FC = () => {
     privacy: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDiscountPopup, setShowDiscountPopup] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
   
-  // Estado para consulta de folios
   const [folio, setFolio] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<{
@@ -103,6 +110,21 @@ const Index: React.FC = () => {
     }
   };
 
+  const checkPhoneExists = async (phone: string): Promise<boolean> => {
+    const { data, error } = await (supabase as any).rpc('check_phone_exists', {
+      phone_to_check: phone
+    });
+
+    if (error) {
+      console.error('Error checking phone:', error);
+      // Fallback seguro: si no podemos validar, tratamos como NO existente
+      // para no bloquear al cliente; el descuento se valida luego por WhatsApp.
+      return false;
+    }
+
+    return data === true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.privacy) {
@@ -113,16 +135,26 @@ const Index: React.FC = () => {
       });
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('contact_submissions').insert([{
-        name: formData.name,
-        email: '', // No hay campo de email en este formulario
-        phone: formData.phone,
-        subject: `Solicitud desde landing - ${formData.device}`,
-        message: formData.message
-      }]);
+      // 1) Validar si el teléfono ya existe
+      const phoneExists = await checkPhoneExists(formData.phone);
+
+      // 2) Enviar el mensaje
+      const { data, error } = await supabase
+        .from('contact_submissions')
+        .insert([
+          {
+            name: formData.name,
+            email: '', // No hay campo de email en este formulario
+            phone: formData.phone,
+            subject: `Solicitud desde landing - ${formData.device}`,
+            message: formData.message
+          }
+        ])
+        .select('id')
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -131,6 +163,12 @@ const Index: React.FC = () => {
         description: "Nos pondremos en contacto contigo lo antes posible.",
         variant: "default"
       });
+
+      // 3) Si es teléfono nuevo, mostrar el descuento con el ID como código
+      if (!phoneExists && data?.id) {
+        setDiscountCode(data.id);
+        setShowDiscountPopup(true);
+      }
 
       setFormData({ name: '', phone: '', device: '', message: '', privacy: false });
     } catch (error) {
@@ -479,7 +517,14 @@ const Index: React.FC = () => {
                     className="w-full btn-primary"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Enviando...' : 'Enviar mensaje'}
+                    {isSubmitting ? (
+                      <span className="inline-flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Espere un momento
+                      </span>
+                    ) : (
+                      'Enviar mensaje'
+                    )}
                   </button>
                 </form>
               </div>
@@ -488,6 +533,38 @@ const Index: React.FC = () => {
         </div>
       </section>
       
+      {/* Popup de descuento (solo si el teléfono es único) */}
+      <Dialog open={showDiscountPopup} onOpenChange={setShowDiscountPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl text-center justify-center">
+              <Gift className="text-green-500" size={32} />
+              ¡Felicidades!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center space-y-4 py-4">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-6">
+              <p className="text-lg font-semibold mb-2">Ganaste</p>
+              <p className="text-4xl font-bold">10% de descuento</p>
+              <p className="text-sm mt-2 opacity-90">en tu próximo servicio</p>
+            </div>
+
+            <div className="bg-muted rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-2">
+                Presenta el siguiente código en mostrador:
+              </p>
+              <p className="font-mono text-lg font-bold text-foreground bg-background border border-border rounded px-4 py-2 inline-block select-all">
+                {discountCode}
+              </p>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Este código tendrá validez verificando el número de teléfono por WhatsApp.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Popup offer with close button that minimizes to bottom */}
       <OfferPopup
         title="¡Oferta especial!"
