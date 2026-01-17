@@ -16,13 +16,14 @@ interface OrderResult {
   estatus: string;
   fecha_aprox_entrega: string | null;
   producto: string;
+  comentarios: string | null;
 }
 
 const OrderStatusSearch: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
+  const [orderResults, setOrderResults] = useState<OrderResult[]>([]);
   const [notFound, setNotFound] = useState(false);
 
   const handleSearch = async () => {
@@ -32,26 +33,26 @@ const OrderStatusSearch: React.FC = () => {
     }
 
     setIsSearching(true);
-    setOrderResult(null);
+    setOrderResults([]);
     setNotFound(false);
 
     try {
-      // Buscar por folio_ingreso, remision o folio_servicio
+      // Buscar por folio_ingreso, remision o folio_servicio - sin limit para obtener todos
       const { data, error } = await supabase
         .from('special_orders')
-        .select('folio_ingreso, folio_servicio, remision, estatus, fecha_aprox_entrega, producto')
-        .or(`folio_ingreso.ilike.%${searchTerm.trim()}%,remision.ilike.%${searchTerm.trim()}%,folio_servicio.ilike.%${searchTerm.trim()}%`)
-        .limit(1)
-        .single();
+        .select('folio_ingreso, folio_servicio, remision, estatus, fecha_aprox_entrega, producto, comentarios')
+        .or(`folio_ingreso.ilike.%${searchTerm.trim()}%,remision.ilike.%${searchTerm.trim()}%,folio_servicio.ilike.%${searchTerm.trim()}%`);
 
-      if (error || !data) {
+      if (error || !data || data.length === 0) {
         setNotFound(true);
       } else {
-        // Si el estatus es "Entregado", lo tratamos como no encontrado (pedido ya no pendiente)
-        if (data.estatus === 'Entregado') {
+        // Filtrar pedidos que no estén entregados
+        const pendingOrders = data.filter(order => order.estatus !== 'Entregado');
+        
+        if (pendingOrders.length === 0) {
           setNotFound(true);
         } else {
-          setOrderResult(data);
+          setOrderResults(pendingOrders);
         }
       }
     } catch (err) {
@@ -119,7 +120,7 @@ const OrderStatusSearch: React.FC = () => {
         <div
           className={cn(
             "overflow-hidden transition-all duration-300 ease-in-out",
-            isExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+            isExpanded ? "max-h-[600px] opacity-100 overflow-y-auto" : "max-h-0 opacity-0"
           )}
         >
           <div className="px-6 pb-6 space-y-4 border-t">
@@ -146,26 +147,35 @@ const OrderStatusSearch: React.FC = () => {
             </div>
 
             {/* Result Display */}
-            {orderResult && (
-              <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-                <p className="text-green-800 dark:text-green-200">
-                  Tu pedido con folio{' '}
-                  <span className="font-bold">
-                    #{orderResult.folio_ingreso || orderResult.folio_servicio || orderResult.remision}
-                  </span>{' '}
-                  se encuentra{' '}
-                  <span className="font-bold">{getStatusDisplay(orderResult.estatus)}</span>
-                  {!isInStore(orderResult.estatus) && orderResult.fecha_aprox_entrega && (
-                    <>
-                      {' '}y tiene como fecha estimada de entrega el día{' '}
-                      <span className="font-bold">{formatDate(orderResult.fecha_aprox_entrega)}</span>
-                    </>
-                  )}
-                  .
-                </p>
-                <p className="text-sm text-green-600 dark:text-green-400 mt-2">
-                  Producto: {orderResult.producto}
-                </p>
+            {orderResults.length > 0 && (
+              <div className="space-y-3">
+                {orderResults.map((order, index) => (
+                  <div key={index} className="p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                    <p className="text-green-800 dark:text-green-200">
+                      Tu pedido con folio{' '}
+                      <span className="font-bold">
+                        #{order.folio_ingreso || order.folio_servicio || order.remision}
+                      </span>{' '}
+                      se encuentra{' '}
+                      <span className="font-bold">{getStatusDisplay(order.estatus)}</span>
+                      {!isInStore(order.estatus) && order.fecha_aprox_entrega && (
+                        <>
+                          {' '}y tiene como fecha estimada de entrega el día{' '}
+                          <span className="font-bold">{formatDate(order.fecha_aprox_entrega)}</span>
+                        </>
+                      )}
+                      .
+                    </p>
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                      Producto: {order.producto}
+                    </p>
+                    {order.comentarios && (
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1 italic">
+                        Nota: {order.comentarios}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
