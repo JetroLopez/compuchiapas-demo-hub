@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import * as XLSX from 'xlsx';
+import ExhibitedWarehousesToggle from './ExhibitedWarehousesToggle';
 
 interface Product {
   id: string;
@@ -566,6 +567,9 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+
+            {/* Exhibited Warehouses Toggle - Only for admin */}
+            {canExport && <ExhibitedWarehousesToggle />}
 
             {/* Delete All Button - Only for admin */}
             {canDeleteAll && (

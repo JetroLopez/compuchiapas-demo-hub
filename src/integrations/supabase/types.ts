@@ -122,6 +122,38 @@ export type Database = {
         }
         Relationships: []
       }
+      exhibited_warehouses: {
+        Row: {
+          created_at: string
+          id: string
+          is_exhibited: boolean
+          updated_at: string
+          warehouse_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_exhibited?: boolean
+          updated_at?: string
+          warehouse_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_exhibited?: boolean
+          updated_at?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exhibited_warehouses_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: true
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscriptions: {
         Row: {
           email: string
