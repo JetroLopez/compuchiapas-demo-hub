@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { Phone, Mail, MapPin, MessageCircle, Clock, ArrowRight } from 'lucide-react';
+import { Phone, Mail, MapPin, MessageCircle, Clock, ArrowRight, Gift, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+// Función para normalizar números de teléfono (quitar todo excepto dígitos)
+const normalizePhone = (phone: string): string => {
+  return phone.replace(/\D/g, '');
+};
+
 const Contacto: React.FC = () => {
   const {
     toast
@@ -15,10 +27,14 @@ const Contacto: React.FC = () => {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDiscountPopup, setShowDiscountPopup] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
+
   useEffect(() => {
     // Para el SEO
     document.title = "Contacto | Compuchiapas";
   }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {
       id,
@@ -29,27 +45,61 @@ const Contacto: React.FC = () => {
       [id]: value
     }));
   };
+
+  const checkPhoneExists = async (phone: string): Promise<boolean> => {
+    const normalizedPhone = normalizePhone(phone);
+    
+    // Obtener todos los contactos previos
+    const { data: contacts, error } = await supabase
+      .from('contact_submissions')
+      .select('phone');
+    
+    if (error || !contacts) {
+      return false;
+    }
+    
+    // Verificar si algún teléfono normalizado coincide
+    return contacts.some(contact => {
+      if (!contact.phone) return false;
+      const existingNormalized = normalizePhone(contact.phone);
+      return existingNormalized === normalizedPhone;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const {
-        error
-      } = await supabase.from('contact_submissions').insert([{
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        subject: formData.subject,
-        message: formData.message
-      }]);
+      // Verificar si el teléfono ya existe ANTES de insertar
+      const phoneExists = await checkPhoneExists(formData.phone);
+      
+      const { data, error } = await supabase
+        .from('contact_submissions')
+        .insert([{
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          subject: formData.subject,
+          message: formData.message
+        }])
+        .select('id')
+        .single();
+
       if (error) {
         throw error;
       }
+
       toast({
         title: "Mensaje enviado",
         description: "Nos pondremos en contacto contigo lo antes posible.",
         variant: "default"
       });
+
+      // Si es primera vez con este teléfono, mostrar popup de descuento
+      if (!phoneExists && data?.id) {
+        setDiscountCode(data.id);
+        setShowDiscountPopup(true);
+      }
 
       // Reset form
       setFormData({
@@ -301,6 +351,36 @@ const Contacto: React.FC = () => {
           </a>
         </div>
       </section>
+
+      {/* Discount Popup */}
+      <Dialog open={showDiscountPopup} onOpenChange={setShowDiscountPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl text-center justify-center">
+              <Gift className="text-green-500" size={32} />
+              ¡Felicidades!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center space-y-4 py-4">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-6">
+              <p className="text-lg font-semibold mb-2">Ganaste</p>
+              <p className="text-4xl font-bold">10% de descuento</p>
+              <p className="text-sm mt-2 opacity-90">en tu próximo servicio</p>
+            </div>
+            <div className="bg-muted rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-2">
+                Presenta el siguiente código en mostrador:
+              </p>
+              <p className="font-mono text-lg font-bold text-foreground bg-background border border-border rounded px-4 py-2 inline-block select-all">
+                {discountCode}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Este código es único y personal. Válido para tu próxima visita.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>;
 };
 export default Contacto;
