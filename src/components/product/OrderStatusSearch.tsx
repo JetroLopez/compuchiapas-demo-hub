@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 interface OrderResult {
   folio_ingreso: string | null;
+  folio_servicio: string | null;
   remision: string | null;
   estatus: string;
   fecha_aprox_entrega: string | null;
@@ -35,18 +36,23 @@ const OrderStatusSearch: React.FC = () => {
     setNotFound(false);
 
     try {
-      // Buscar por folio_ingreso o remision
+      // Buscar por folio_ingreso, remision o folio_servicio
       const { data, error } = await supabase
         .from('special_orders')
-        .select('folio_ingreso, remision, estatus, fecha_aprox_entrega, producto')
-        .or(`folio_ingreso.ilike.%${searchTerm.trim()}%,remision.ilike.%${searchTerm.trim()}%`)
+        .select('folio_ingreso, folio_servicio, remision, estatus, fecha_aprox_entrega, producto')
+        .or(`folio_ingreso.ilike.%${searchTerm.trim()}%,remision.ilike.%${searchTerm.trim()}%,folio_servicio.ilike.%${searchTerm.trim()}%`)
         .limit(1)
         .single();
 
       if (error || !data) {
         setNotFound(true);
       } else {
-        setOrderResult(data);
+        // Si el estatus es "Entregado", lo tratamos como no encontrado (pedido ya no pendiente)
+        if (data.estatus === 'Entregado') {
+          setNotFound(true);
+        } else {
+          setOrderResult(data);
+        }
       }
     } catch (err) {
       setNotFound(true);
@@ -56,17 +62,19 @@ const OrderStatusSearch: React.FC = () => {
   };
 
   const getStatusDisplay = (estatus: string) => {
-    if (estatus === 'Notificado con Esdras' || estatus === 'Pedido') {
+    if (estatus === 'Notificado con Esdras') {
       return 'en proceso';
     }
-    if (estatus === 'En tienda') {
-      return 'listo para recoger en tienda';
+    if (estatus === 'Pedido') {
+      return 'pedido y en camino';
     }
-    if (estatus === 'Entregado') {
-      return 'entregado';
+    if (estatus === 'En tienda') {
+      return 'en tienda y puede pasar a recogerlo';
     }
     return estatus.toLowerCase();
   };
+
+  const isInStore = (estatus: string) => estatus === 'En tienda';
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return null;
@@ -117,7 +125,7 @@ const OrderStatusSearch: React.FC = () => {
           <div className="px-6 pb-6 space-y-4 border-t">
             <div className="pt-4">
               <p className="text-sm text-muted-foreground mb-3">
-                Ingresa tu número de folio de ingreso o remisión para consultar el estatus de tu pedido:
+                Ingresa tu número de folio de ingreso, folio de servicio o remisión para consultar el estatus de tu pedido:
               </p>
               <div className="flex gap-2">
                 <Input
@@ -143,11 +151,11 @@ const OrderStatusSearch: React.FC = () => {
                 <p className="text-green-800 dark:text-green-200">
                   Tu pedido con folio{' '}
                   <span className="font-bold">
-                    #{orderResult.folio_ingreso || orderResult.remision}
+                    #{orderResult.folio_ingreso || orderResult.folio_servicio || orderResult.remision}
                   </span>{' '}
                   se encuentra{' '}
                   <span className="font-bold">{getStatusDisplay(orderResult.estatus)}</span>
-                  {orderResult.fecha_aprox_entrega && (
+                  {!isInStore(orderResult.estatus) && orderResult.fecha_aprox_entrega && (
                     <>
                       {' '}y tiene como fecha estimada de entrega el día{' '}
                       <span className="font-bold">{formatDate(orderResult.fecha_aprox_entrega)}</span>
@@ -164,8 +172,7 @@ const OrderStatusSearch: React.FC = () => {
             {notFound && (
               <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
                 <p className="text-yellow-800 dark:text-yellow-200">
-                  No encontramos ningún pedido con ese número de folio o remisión. 
-                  Por favor verifica el número e intenta de nuevo, o contáctanos para más información.
+                  No se encuentra ningún pedido pendiente. Verifica tu folio de ingreso, de servicio o remisión.
                 </p>
               </div>
             )}
