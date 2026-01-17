@@ -65,8 +65,9 @@ const Productos: React.FC = () => {
       
       {/* Special Banner */}
       <section className="py-8">
-        <div className="container-padding max-w-7xl mx-auto">
+        <div className="container-padding max-w-7xl mx-auto space-y-6">
           <CustomQuoteBanner />
+          <OrderStatusSearch />
         </div>
       </section>
       
@@ -93,9 +94,8 @@ const Productos: React.FC = () => {
       
       {/* Custom Builds CTA */}
       <section className="py-12 bg-tech-lightGray">
-        <div className="container-padding max-w-7xl mx-auto space-y-6">
+        <div className="container-padding max-w-7xl mx-auto">
           <CustomPCBuild />
-          <OrderStatusSearch />
         </div>
       </section>
     </Layout>
