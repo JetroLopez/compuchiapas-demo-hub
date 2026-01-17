@@ -47,23 +47,17 @@ const Contacto: React.FC = () => {
   };
 
   const checkPhoneExists = async (phone: string): Promise<boolean> => {
-    const normalizedPhone = normalizePhone(phone);
+    // Usar la función de base de datos que tiene permisos elevados
+    const { data, error } = await supabase.rpc('check_phone_exists', {
+      phone_to_check: phone
+    });
     
-    // Obtener todos los contactos previos
-    const { data: contacts, error } = await supabase
-      .from('contact_submissions')
-      .select('phone');
-    
-    if (error || !contacts) {
+    if (error) {
+      console.error('Error checking phone:', error);
       return false;
     }
     
-    // Verificar si algún teléfono normalizado coincide
-    return contacts.some(contact => {
-      if (!contact.phone) return false;
-      const existingNormalized = normalizePhone(contact.phone);
-      return existingNormalized === normalizedPhone;
-    });
+    return data === true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
