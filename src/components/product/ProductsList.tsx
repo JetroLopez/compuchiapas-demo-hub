@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import ProductCard from '../ProductCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +14,17 @@ interface Product {
   existencias: number | null;
 }
 
+interface ProductWarehouseStock {
+  product_id: string;
+  warehouse_id: string;
+  existencias: number;
+}
+
+interface ExhibitedWarehouse {
+  warehouse_id: string;
+  is_exhibited: boolean;
+}
+
 interface ProductsListProps {
   searchTerm: string;
   activeCategory: string;
@@ -22,7 +33,7 @@ interface ProductsListProps {
 
 const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory, resetFilters }) => {
   // Obtener productos de la base de datos
-  const { data: products = [], isLoading, error } = useQuery({
+  const { data: products = [], isLoading: isLoadingProducts, error: productsError } = useQuery({
     queryKey: ['products'],
     queryFn: async (): Promise<Product[]> => {
       const { data, error } = await supabase
@@ -38,9 +49,61 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
       return data || [];
     }
   });
+
+  // Obtener stock por almacén
+  const { data: warehouseStock = [] } = useQuery({
+    queryKey: ['product-warehouse-stock'],
+    queryFn: async (): Promise<ProductWarehouseStock[]> => {
+      const { data, error } = await supabase
+        .from('product_warehouse_stock')
+        .select('product_id, warehouse_id, existencias');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Obtener almacenes exhibidos
+  const { data: exhibitedWarehouses = [] } = useQuery({
+    queryKey: ['exhibited-warehouses'],
+    queryFn: async (): Promise<ExhibitedWarehouse[]> => {
+      const { data, error } = await supabase
+        .from('exhibited_warehouses')
+        .select('warehouse_id, is_exhibited');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Set de IDs de almacenes exhibidos
+  const exhibitedWarehouseIds = useMemo(() => {
+    return new Set(
+      exhibitedWarehouses
+        .filter(ew => ew.is_exhibited)
+        .map(ew => ew.warehouse_id)
+    );
+  }, [exhibitedWarehouses]);
+
+  // Filtrar productos según almacenes exhibidos
+  const productsInExhibitedWarehouses = useMemo(() => {
+    // Si no hay almacenes exhibidos configurados, no mostrar productos
+    if (exhibitedWarehouseIds.size === 0) {
+      return [];
+    }
+
+    // Obtener IDs de productos que tienen stock en almacenes exhibidos
+    const productIdsInExhibitedWarehouses = new Set(
+      warehouseStock
+        .filter(ws => exhibitedWarehouseIds.has(ws.warehouse_id) && ws.existencias > 0)
+        .map(ws => ws.product_id)
+    );
+
+    return products.filter(product => productIdsInExhibitedWarehouses.has(product.id));
+  }, [products, warehouseStock, exhibitedWarehouseIds]);
   
-  // Aplicar filtros
-  const filteredProducts = products.filter(product => {
+  // Aplicar filtros adicionales (categoría y búsqueda)
+  const filteredProducts = productsInExhibitedWarehouses.filter(product => {
     // Filtrar por categoría
     const categoryMatch = activeCategory === 'all' || product.category_id === activeCategory;
     
@@ -52,6 +115,9 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     
     return categoryMatch && searchMatch;
   });
+
+  const isLoading = isLoadingProducts;
+  const error = productsError;
 
   if (isLoading) {
     return (
