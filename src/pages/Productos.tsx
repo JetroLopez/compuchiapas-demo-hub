@@ -6,6 +6,7 @@ import CustomQuoteBanner from '../components/product/CustomQuoteBanner';
 import ProductFilters from '../components/product/ProductFilters';
 import ProductsList from '../components/product/ProductsList';
 import CustomPCBuild from '../components/product/CustomPCBuild';
+import OrderStatusSearch from '../components/product/OrderStatusSearch';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -92,8 +93,9 @@ const Productos: React.FC = () => {
       
       {/* Custom Builds CTA */}
       <section className="py-12 bg-tech-lightGray">
-        <div className="container-padding max-w-7xl mx-auto">
+        <div className="container-padding max-w-7xl mx-auto space-y-6">
           <CustomPCBuild />
+          <OrderStatusSearch />
         </div>
       </section>
     </Layout>
