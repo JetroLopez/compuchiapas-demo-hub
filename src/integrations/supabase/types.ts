@@ -378,6 +378,7 @@ export type Database = {
           anticipo: number | null
           clave: string | null
           cliente: string
+          comentarios: string | null
           created_at: string
           estatus: Database["public"]["Enums"]["special_order_status"]
           fecha: string
@@ -397,6 +398,7 @@ export type Database = {
           anticipo?: number | null
           clave?: string | null
           cliente: string
+          comentarios?: string | null
           created_at?: string
           estatus?: Database["public"]["Enums"]["special_order_status"]
           fecha?: string
@@ -416,6 +418,7 @@ export type Database = {
           anticipo?: number | null
           clave?: string | null
           cliente?: string
+          comentarios?: string | null
           created_at?: string
           estatus?: Database["public"]["Enums"]["special_order_status"]
           fecha?: string

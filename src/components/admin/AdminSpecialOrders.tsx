@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -66,6 +67,7 @@ interface SpecialOrder {
   fecha_entrega: string | null;
   folio_servicio: string | null;
   remision: string | null;
+  comentarios: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +103,7 @@ export default function AdminSpecialOrders() {
   const [estatus, setEstatus] = useState<SpecialOrderStatus>("Pedido");
   const [folioServicio, setFolioServicio] = useState("");
   const [remision, setRemision] = useState("");
+  const [comentarios, setComentarios] = useState("");
   
   // Delivery dialog state
   const [fechaEntrega, setFechaEntrega] = useState<Date>(new Date());
@@ -209,6 +212,7 @@ export default function AdminSpecialOrders() {
     setEstatus("Pedido");
     setFolioServicio("");
     setRemision("");
+    setComentarios("");
   };
 
   const handleEdit = (order: SpecialOrder) => {
@@ -226,6 +230,7 @@ export default function AdminSpecialOrders() {
     setEstatus(order.estatus);
     setFolioServicio(order.folio_servicio || "");
     setRemision(order.remision || "");
+    setComentarios(order.comentarios || "");
     setIsDialogOpen(true);
   };
 
@@ -273,6 +278,7 @@ export default function AdminSpecialOrders() {
       estatus,
       folio_servicio: folioServicio || null,
       remision: remision || null,
+      comentarios: comentarios || null,
     };
 
     if (editingOrder) {
@@ -308,6 +314,7 @@ export default function AdminSpecialOrders() {
       "Fecha de Entrega": order.fecha_entrega,
       "Folio de Servicio": order.folio_servicio,
       Remisión: order.remision,
+      Comentarios: order.comentarios,
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -543,6 +550,17 @@ export default function AdminSpecialOrders() {
                       onChange={(e) => setRemision(e.target.value)}
                     />
                   </div>
+                  
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="comentarios">Comentarios</Label>
+                    <Textarea
+                      id="comentarios"
+                      value={comentarios}
+                      onChange={(e) => setComentarios(e.target.value)}
+                      placeholder="Comentarios adicionales sobre el pedido..."
+                      className="min-h-[80px]"
+                    />
+                  </div>
                 </div>
                 
                 <DialogFooter>
@@ -631,6 +649,7 @@ export default function AdminSpecialOrders() {
                 <TableHead>Fecha Aprox.</TableHead>
                 <TableHead>Estatus</TableHead>
                 <TableHead>Folio Servicio</TableHead>
+                <TableHead>Comentarios</TableHead>
                 <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -665,6 +684,9 @@ export default function AdminSpecialOrders() {
                     </Select>
                   </TableCell>
                   <TableCell>{order.folio_servicio || "-"}</TableCell>
+                  <TableCell className="max-w-[200px] truncate" title={order.comentarios || ""}>
+                    {order.comentarios || "-"}
+                  </TableCell>
                   <TableCell>
                     <Button
                       variant="ghost"
