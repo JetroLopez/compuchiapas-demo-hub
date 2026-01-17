@@ -422,8 +422,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   return (
     <div className={containerClass}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
           <h2 className="text-2xl font-bold">Compusistemas de Chiapas</h2>
           <span className="text-sm text-muted-foreground">
             {format(currentTime, "EEEE d 'de' MMMM, HH:mm", { locale: es })}
@@ -439,7 +439,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => refetchServices()}>
+          <Button variant="outline" size="icon" className="md:hidden" onClick={() => refetchServices()} title="Actualizar">
+            <RefreshCw size={16} />
+          </Button>
+          <Button variant="outline" size="sm" className="hidden md:flex" onClick={() => refetchServices()}>
             <RefreshCw size={16} className="mr-2" />
             Actualizar
           </Button>
