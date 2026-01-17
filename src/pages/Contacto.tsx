@@ -67,17 +67,14 @@ const Contacto: React.FC = () => {
       // Verificar si el teléfono ya existe ANTES de insertar
       const phoneExists = await checkPhoneExists(formData.phone);
       
-      const { data, error } = await supabase
-        .from('contact_submissions')
-        .insert([{
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          subject: formData.subject,
-          message: formData.message
-        }])
-        .select('id')
-        .single();
+      // Usar función RPC que hace insert y devuelve el ID
+      const { data: newId, error } = await (supabase as any).rpc('submit_contact', {
+        p_name: formData.name,
+        p_email: formData.email,
+        p_phone: formData.phone,
+        p_subject: formData.subject,
+        p_message: formData.message
+      });
 
       if (error) {
         throw error;
@@ -90,8 +87,8 @@ const Contacto: React.FC = () => {
       });
 
       // Si es primera vez con este teléfono, mostrar popup de descuento
-      if (!phoneExists && data?.id) {
-        setDiscountCode(data.id);
+      if (!phoneExists && newId) {
+        setDiscountCode(newId);
         setShowDiscountPopup(true);
       }
 

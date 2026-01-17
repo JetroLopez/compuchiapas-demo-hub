@@ -141,20 +141,14 @@ const Index: React.FC = () => {
       // 1) Validar si el teléfono ya existe
       const phoneExists = await checkPhoneExists(formData.phone);
 
-      // 2) Enviar el mensaje
-      const { data, error } = await supabase
-        .from('contact_submissions')
-        .insert([
-          {
-            name: formData.name,
-            email: '', // No hay campo de email en este formulario
-            phone: formData.phone,
-            subject: `Solicitud desde landing - ${formData.device}`,
-            message: formData.message
-          }
-        ])
-        .select('id')
-        .maybeSingle();
+      // 2) Enviar el mensaje usando la función RPC que devuelve el ID
+      const { data: newId, error } = await (supabase as any).rpc('submit_contact', {
+        p_name: formData.name,
+        p_email: '',
+        p_phone: formData.phone,
+        p_subject: `Solicitud desde landing - ${formData.device}`,
+        p_message: formData.message
+      });
 
       if (error) throw error;
 
@@ -165,8 +159,8 @@ const Index: React.FC = () => {
       });
 
       // 3) Si es teléfono nuevo, mostrar el descuento con el ID como código
-      if (!phoneExists && data?.id) {
-        setDiscountCode(data.id);
+      if (!phoneExists && newId) {
+        setDiscountCode(newId);
         setShowDiscountPopup(true);
       }
 
