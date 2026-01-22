@@ -51,6 +51,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
   const [selectedWarehouse, setSelectedWarehouse] = useState<WarehouseType | null>(null);
   const [showNewWarehouseDialog, setShowNewWarehouseDialog] = useState(false);
   const [newWarehouseName, setNewWarehouseName] = useState('');
+  const [syncSuccess, setSyncSuccess] = useState(false);
 
   // Fetch warehouses
   const { data: warehouses = [], refetch: refetchWarehouses } = useQuery({
@@ -339,13 +340,15 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         });
       }
 
-      // Update existing products
-      for (const update of existingProductUpdates) {
-        const { error } = await supabase
-          .from('products')
-          .update(update.data)
-          .eq('clave', update.clave);
-        if (error) throw error;
+      // Update existing products in batches using upsert
+      if (existingProductUpdates.length > 0) {
+        for (let i = 0; i < existingProductUpdates.length; i += chunkSize) {
+          const chunk = existingProductUpdates.slice(i, i + chunkSize);
+          const { error } = await supabase
+            .from('products')
+            .upsert(chunk.map(u => u.data), { onConflict: 'clave' });
+          if (error) throw error;
+        }
       }
 
       // 6. Upsert stock for all products in this warehouse
@@ -406,13 +409,18 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product-warehouse-stock'] });
 
       const extra = result.duplicates > 0 ? ` (${result.duplicates} claves duplicadas fusionadas)` : '';
       toast.success(
         `Sincronización completada: ${result.synced} productos actualizados, ${result.deactivated} marcados sin existencias en este almacén${extra}`
       );
+      setSyncSuccess(true);
       setPastedData('');
       setParsedProducts([]);
+      
+      // Reset success state after 3 seconds
+      setTimeout(() => setSyncSuccess(false), 3000);
     },
     onError: (error) => {
       console.error('Sync error:', error);
@@ -524,7 +532,7 @@ CLAVE003    Laptop HP 15            Equipos        3`}
           {parsedProducts.length > 0 && (
             <>
               <Alert>
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <CheckCircle2 className="h-4 w-4 text-primary" />
                 <AlertDescription>
                   <strong>{parsedProducts.length}</strong> productos listos para sincronizar
                   {selectedWarehouse && (
@@ -568,17 +576,27 @@ CLAVE003    Laptop HP 15            Equipos        3`}
 
               <Button 
                 onClick={handleSave} 
-                className="w-full" 
+                className={`w-full transition-colors ${syncSuccess ? 'bg-primary/90 hover:bg-primary' : ''}`}
                 disabled={syncMutation.isPending || !selectedWarehouse}
               >
                 {syncMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Sincronizando... (puede tardar unos minutos)
+                  </>
+                ) : syncSuccess ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    ¡Sincronización completada!
+                  </>
                 ) : (
-                  <Save className="h-4 w-4 mr-2" />
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    {selectedWarehouse 
+                      ? `Guardar en ${selectedWarehouse.name}` 
+                      : 'Selecciona un almacén'}
+                  </>
                 )}
-                {selectedWarehouse 
-                  ? `Guardar en ${selectedWarehouse.name}` 
-                  : 'Selecciona un almacén'}
               </Button>
             </>
           )}
