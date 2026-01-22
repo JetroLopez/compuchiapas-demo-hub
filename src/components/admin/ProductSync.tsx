@@ -220,85 +220,51 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
 
   const syncMutation = useMutation({
     mutationFn: async ({ products, warehouseId }: { products: ParsedProduct[]; warehouseId: string }) => {
-      // Deduplicate by CLAVE to avoid Postgres error:
-      // "ON CONFLICT DO UPDATE command cannot affect row a second time"
+      // Deduplicate by CLAVE + DESCRIPCION to create unique product keys
+      // This ensures products are identified by both their code AND name
       const deduped = new Map<string, ParsedProduct>();
       let duplicates = 0;
+      
       for (const p of products) {
-        if (!p.clave) continue;
-        if (deduped.has(p.clave)) duplicates++;
+        if (!p.clave || !p.descripcion) continue;
+        // Create unique key from CLAVE + DESCRIPCION (normalized)
+        const uniqueKey = `${p.clave.trim().toLowerCase()}|||${p.descripcion.trim().toLowerCase()}`;
+        if (deduped.has(uniqueKey)) duplicates++;
         // Keep the last occurrence (usually the most recent inventory row)
-        deduped.set(p.clave, p);
+        deduped.set(uniqueKey, p);
       }
       const uniqueProducts = Array.from(deduped.values());
 
-      const newClaves = new Set(uniqueProducts.map((p) => p.clave).filter(Boolean));
-
-      // 1. Get all existing products
+      const chunkSize = 500;
       const pageSize = 1000;
-      const existingProducts: { id: string; clave: string }[] = [];
+
+      // 1. Get all existing products to check for CLAVE + NAME matches
+      const existingProducts: { id: string; clave: string | null; name: string }[] = [];
 
       for (let from = 0; ; from += pageSize) {
         const { data, error } = await supabase
           .from('products')
-          .select('id, clave')
+          .select('id, clave, name')
           .range(from, from + pageSize - 1);
 
         if (error) throw error;
-
         existingProducts.push(...(data || []));
-
         if (!data || data.length < pageSize) break;
       }
 
-      // 2. Get existing stock records for this warehouse
-      const existingStockMap = new Map<string, string>(); // product_id -> stock_id
-      
-      for (let from = 0; ; from += pageSize) {
-        const { data, error } = await supabase
-          .from('product_warehouse_stock')
-          .select('id, product_id')
-          .eq('warehouse_id', warehouseId)
-          .range(from, from + pageSize - 1);
-
-        if (error) throw error;
-
-        (data || []).forEach((s) => existingStockMap.set(s.product_id, s.id));
-
-        if (!data || data.length < pageSize) break;
-      }
-
-      // 3. Create a map of clave -> product_id for existing products
-      const claveToProductId = new Map<string, string>();
+      // 2. Create a map of CLAVE+NAME -> product_id for existing products
+      const claveNameToProductId = new Map<string, string>();
       existingProducts.forEach((p) => {
-        if (p.clave) claveToProductId.set(p.clave, p.id);
+        if (p.clave && p.name) {
+          const key = `${p.clave.trim().toLowerCase()}|||${p.name.trim().toLowerCase()}`;
+          claveNameToProductId.set(key, p.id);
+        }
       });
 
-      // 4. Find products not in the new list and set their stock to 0 for this warehouse
-      const productIdsNotInList = existingProducts
-        .filter((p) => p.clave && !newClaves.has(p.clave))
-        .map((p) => p.id);
-
-      // Update stock to 0 for products not in list (only for this warehouse)
-      const chunkSize = 500;
-      for (let i = 0; i < productIdsNotInList.length; i += chunkSize) {
-        const chunk = productIdsNotInList.slice(i, i + chunkSize);
-        const { error } = await supabase
-          .from('product_warehouse_stock')
-          .upsert(
-            chunk.map((productId) => ({
-              product_id: productId,
-              warehouse_id: warehouseId,
-              existencias: 0,
-            })),
-            { onConflict: 'product_id,warehouse_id' }
-          );
-        if (error) throw error;
-      }
-
-      // 5. Upsert products and their stock
+      // 3. Separate products into new vs existing
       const newProducts: any[] = [];
-      const existingProductUpdates: { clave: string; data: any }[] = [];
+      const existingProductIds: string[] = [];
+      const productToExistencias = new Map<string, number>(); // product_id -> existencias
 
       for (const product of uniqueProducts) {
         const category = categories.find(
@@ -318,48 +284,71 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           productData.image_url = product.imagen_url;
         }
 
-        if (claveToProductId.has(product.clave)) {
-          existingProductUpdates.push({ clave: product.clave, data: productData });
+        const uniqueKey = `${product.clave.trim().toLowerCase()}|||${product.descripcion.trim().toLowerCase()}`;
+        const existingProductId = claveNameToProductId.get(uniqueKey);
+
+        if (existingProductId) {
+          // Product exists - we'll update its stock for this warehouse
+          existingProductIds.push(existingProductId);
+          productToExistencias.set(existingProductId, product.existencias);
         } else {
-          newProducts.push(productData);
+          // New product - will be inserted
+          newProducts.push({ ...productData, existencias: product.existencias });
         }
       }
 
-      // Insert new products
-      if (newProducts.length > 0) {
+      // 4. Insert new products and get their IDs
+      const newProductIds: { id: string; clave: string; name: string; existencias: number }[] = [];
+      
+      for (let i = 0; i < newProducts.length; i += chunkSize) {
+        const chunk = newProducts.slice(i, i + chunkSize);
         const { data: insertedProducts, error: insertError } = await supabase
           .from('products')
-          .upsert(newProducts, { onConflict: 'clave' })
-          .select('id, clave');
+          .insert(chunk)
+          .select('id, clave, name');
 
         if (insertError) throw insertError;
 
-        // Add to claveToProductId map
+        // Map new products to their existencias
         (insertedProducts || []).forEach((p) => {
-          if (p.clave) claveToProductId.set(p.clave, p.id);
+          const originalProduct = chunk.find(
+            (c: any) => c.clave === p.clave && c.name === p.name
+          );
+          if (originalProduct) {
+            newProductIds.push({
+              id: p.id,
+              clave: p.clave || '',
+              name: p.name,
+              existencias: originalProduct.existencias,
+            });
+          }
         });
       }
 
-      // Update existing products in batches using upsert
-      if (existingProductUpdates.length > 0) {
-        for (let i = 0; i < existingProductUpdates.length; i += chunkSize) {
-          const chunk = existingProductUpdates.slice(i, i + chunkSize);
-          const { error } = await supabase
-            .from('products')
-            .upsert(chunk.map(u => u.data), { onConflict: 'clave' });
-          if (error) throw error;
-        }
+      // 5. Create/Update warehouse stock ONLY for the selected warehouse
+      // This is critical: we only touch stock records for the current warehouse
+      const stockUpserts: { product_id: string; warehouse_id: string; existencias: number }[] = [];
+
+      // Add stock for existing products
+      for (const productId of existingProductIds) {
+        const existencias = productToExistencias.get(productId) || 0;
+        stockUpserts.push({
+          product_id: productId,
+          warehouse_id: warehouseId,
+          existencias,
+        });
       }
 
-      // 6. Upsert stock for all products in this warehouse
-      const stockUpserts = uniqueProducts
-        .filter((p) => claveToProductId.has(p.clave))
-        .map((p) => ({
-          product_id: claveToProductId.get(p.clave)!,
+      // Add stock for new products
+      for (const newProduct of newProductIds) {
+        stockUpserts.push({
+          product_id: newProduct.id,
           warehouse_id: warehouseId,
-          existencias: p.existencias,
-        }));
+          existencias: newProduct.existencias,
+        });
+      }
 
+      // Upsert all stock records for this warehouse
       for (let i = 0; i < stockUpserts.length; i += chunkSize) {
         const chunk = stockUpserts.slice(i, i + chunkSize);
         const { error } = await supabase
@@ -368,12 +357,11 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         if (error) throw error;
       }
 
-      // 7. Update the main products table existencias with sum from all warehouses
-      // Get all stock for products that were updated
-      const updatedProductIds = [...new Set(stockUpserts.map((s) => s.product_id))];
+      // 6. Update the main products table existencias with sum from all warehouses
+      const allAffectedProductIds = [...existingProductIds, ...newProductIds.map((p) => p.id)];
       
-      for (let i = 0; i < updatedProductIds.length; i += chunkSize) {
-        const chunk = updatedProductIds.slice(i, i + chunkSize);
+      for (let i = 0; i < allAffectedProductIds.length; i += chunkSize) {
+        const chunk = allAffectedProductIds.slice(i, i + chunkSize);
         
         // Get sum of existencias for each product across all warehouses
         const { data: stockData, error: stockError } = await supabase
@@ -402,7 +390,8 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
 
       return {
         synced: uniqueProducts.length,
-        deactivated: productIdsNotInList.length,
+        newProducts: newProducts.length,
+        existingUpdated: existingProductIds.length,
         duplicates,
       };
     },
@@ -411,9 +400,9 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product-warehouse-stock'] });
 
-      const extra = result.duplicates > 0 ? ` (${result.duplicates} claves duplicadas fusionadas)` : '';
+      const extra = result.duplicates > 0 ? ` (${result.duplicates} duplicados fusionados)` : '';
       toast.success(
-        `Sincronización completada: ${result.synced} productos actualizados, ${result.deactivated} marcados sin existencias en este almacén${extra}`
+        `Sincronización completada: ${result.newProducts} nuevos, ${result.existingUpdated} actualizados${extra}`
       );
       setSyncSuccess(true);
       setPastedData('');
