@@ -32,36 +32,73 @@ interface ProductsListProps {
 }
 
 const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory, resetFilters }) => {
-  // Obtener productos de la base de datos
+  // Obtener productos de la base de datos con paginación para superar límite de 1000
   const { data: products = [], isLoading: isLoadingProducts, error: productsError } = useQuery({
     queryKey: ['products'],
     queryFn: async (): Promise<Product[]> => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, clave, name, category_id, image_url, existencias')
-        .order('created_at', { ascending: false })
-        .limit(10000);
+      const allProducts: Product[] = [];
+      const pageSize = 1000;
+      let page = 0;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
         
-      if (error) {
-        console.error('Error fetching products:', error);
-        throw error;
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, clave, name, category_id, image_url, existencias')
+          .order('created_at', { ascending: false })
+          .range(from, to);
+          
+        if (error) {
+          console.error('Error fetching products:', error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          allProducts.push(...data);
+          hasMore = data.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
       
-      return data || [];
+      return allProducts;
     }
   });
 
-  // Obtener stock por almacén
+  // Obtener stock por almacén con paginación
   const { data: warehouseStock = [] } = useQuery({
     queryKey: ['product-warehouse-stock'],
     queryFn: async (): Promise<ProductWarehouseStock[]> => {
-      const { data, error } = await supabase
-        .from('product_warehouse_stock')
-        .select('product_id, warehouse_id, existencias')
-        .limit(50000);
+      const allStock: ProductWarehouseStock[] = [];
+      const pageSize = 1000;
+      let page = 0;
+      let hasMore = true;
       
-      if (error) throw error;
-      return data || [];
+      while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data, error } = await supabase
+          .from('product_warehouse_stock')
+          .select('product_id, warehouse_id, existencias')
+          .range(from, to);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allStock.push(...data);
+          hasMore = data.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      return allStock;
     },
   });
 
