@@ -39,7 +39,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
       const { data, error } = await supabase
         .from('products')
         .select('id, clave, name, category_id, image_url, existencias')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10000);
         
       if (error) {
         console.error('Error fetching products:', error);
@@ -56,7 +57,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     queryFn: async (): Promise<ProductWarehouseStock[]> => {
       const { data, error } = await supabase
         .from('product_warehouse_stock')
-        .select('product_id, warehouse_id, existencias');
+        .select('product_id, warehouse_id, existencias')
+        .limit(50000);
       
       if (error) throw error;
       return data || [];

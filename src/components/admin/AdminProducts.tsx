@@ -89,7 +89,8 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10000);
       
       if (error) throw error;
       return data || [];
@@ -130,7 +131,8 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
     queryFn: async (): Promise<ProductWarehouseStock[]> => {
       const { data, error } = await supabase
         .from('product_warehouse_stock')
-        .select('product_id, warehouse_id, existencias');
+        .select('product_id, warehouse_id, existencias')
+        .limit(50000);
       
       if (error) throw error;
       return data || [];
