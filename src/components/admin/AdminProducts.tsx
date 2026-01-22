@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Switch } from '@/components/ui/switch';
 import * as XLSX from 'xlsx';
 import ExhibitedWarehousesToggle from './ExhibitedWarehousesToggle';
 
@@ -74,6 +75,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
   const [editedProducts, setEditedProducts] = useState<Record<string, EditedProduct>>({});
   const [showAll, setShowAll] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showZeroStock, setShowZeroStock] = useState(false);
   const [newProduct, setNewProduct] = useState({
     clave: '',
     name: '',
@@ -497,6 +499,13 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
       .map(ws => ws.warehouse_id);
   };
 
+  // Get total stock for a product across all warehouses
+  const getProductTotalStock = (productId: string): number => {
+    return warehouseStock
+      .filter(ws => ws.product_id === productId)
+      .reduce((sum, ws) => sum + ws.existencias, 0);
+  };
+
   // Get warehouses info for a product
   const getProductWarehouses = (productId: string): string => {
     const productWarehouses = warehouseStock
@@ -522,7 +531,11 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
     const matchesCategory = selectedCategory === 'all' || 
       p.category_id === selectedCategory;
     
-    return matchesSearch && matchesWarehouse && matchesCategory;
+    // Zero stock filter
+    const totalStock = getProductTotalStock(p.id);
+    const matchesStockFilter = showZeroStock || totalStock > 0;
+    
+    return matchesSearch && matchesWarehouse && matchesCategory && matchesStockFilter;
   });
 
   // Productos a mostrar según paginación
@@ -610,6 +623,18 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
 
             {/* Exhibited Warehouses Toggle - Only for admin */}
             {canExport && <ExhibitedWarehousesToggle />}
+
+            {/* Show Zero Stock Toggle */}
+            <div className="flex items-center gap-2 px-3 py-1 border rounded-md bg-background">
+              <Switch
+                id="show-zero-stock"
+                checked={showZeroStock}
+                onCheckedChange={setShowZeroStock}
+              />
+              <Label htmlFor="show-zero-stock" className="text-sm cursor-pointer whitespace-nowrap">
+                Mostrar sin existencias
+              </Label>
+            </div>
 
             {/* Delete All Button - Only for admin */}
             {canDeleteAll && (
