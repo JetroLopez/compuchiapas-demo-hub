@@ -492,10 +492,17 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
     });
   };
 
-  // Get product warehouse IDs for filtering
+  // Get product warehouse IDs for filtering (only with stock > 0)
   const getProductWarehouseIds = (productId: string): string[] => {
     return warehouseStock
       .filter(ws => ws.product_id === productId && ws.existencias > 0)
+      .map(ws => ws.warehouse_id);
+  };
+
+  // Get all warehouse IDs where a product exists (regardless of stock level)
+  const getProductWarehouseIdsAll = (productId: string): string[] => {
+    return warehouseStock
+      .filter(ws => ws.product_id === productId)
       .map(ws => ws.warehouse_id);
   };
 
@@ -523,9 +530,11 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (p.clave && p.clave.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    // Warehouse filter
+    // Warehouse filter - use different logic based on showZeroStock
     const matchesWarehouse = selectedWarehouse === 'all' || 
-      getProductWarehouseIds(p.id).includes(selectedWarehouse);
+      (showZeroStock 
+        ? getProductWarehouseIdsAll(p.id).includes(selectedWarehouse)
+        : getProductWarehouseIds(p.id).includes(selectedWarehouse));
     
     // Category filter
     const matchesCategory = selectedCategory === 'all' || 
