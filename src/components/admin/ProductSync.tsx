@@ -328,6 +328,9 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       // 5. Create/Update warehouse stock ONLY for the selected warehouse
       // This is critical: we only touch stock records for the current warehouse
       const stockUpserts: { product_id: string; warehouse_id: string; existencias: number }[] = [];
+      
+      // Track all product IDs that ARE in this sync (to detect missing ones later)
+      const syncedProductIds = new Set<string>();
 
       // Add stock for existing products
       for (const productId of existingProductIds) {
@@ -337,6 +340,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           warehouse_id: warehouseId,
           existencias,
         });
+        syncedProductIds.add(productId);
       }
 
       // Add stock for new products
@@ -346,6 +350,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           warehouse_id: warehouseId,
           existencias: newProduct.existencias,
         });
+        syncedProductIds.add(newProduct.id);
       }
 
       // Upsert all stock records for this warehouse
@@ -356,10 +361,42 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           .upsert(chunk, { onConflict: 'product_id,warehouse_id' });
         if (error) throw error;
       }
+      
+      // 5b. CRITICAL: Set stock to 0 for products that HAD stock in this warehouse 
+      // but are NOT in the current sync (they were removed from POS)
+      const { data: existingWarehouseStock, error: existingStockError } = await supabase
+        .from('product_warehouse_stock')
+        .select('product_id, existencias')
+        .eq('warehouse_id', warehouseId)
+        .gt('existencias', 0);
+      
+      if (existingStockError) throw existingStockError;
+      
+      // Find products that had stock but are NOT in current sync
+      const missingProducts: string[] = [];
+      (existingWarehouseStock || []).forEach((stock) => {
+        if (!syncedProductIds.has(stock.product_id)) {
+          missingProducts.push(stock.product_id);
+        }
+      });
+      
+      // Set their stock to 0 in this warehouse
+      if (missingProducts.length > 0) {
+        for (let i = 0; i < missingProducts.length; i += chunkSize) {
+          const chunk = missingProducts.slice(i, i + chunkSize);
+          const { error: zeroError } = await supabase
+            .from('product_warehouse_stock')
+            .update({ existencias: 0 })
+            .eq('warehouse_id', warehouseId)
+            .in('product_id', chunk);
+          if (zeroError) throw zeroError;
+        }
+      }
 
       // 6. Update the main products table existencias with sum from all warehouses
       // Also track products that become zero stock for "Por Surtir" list
-      const allAffectedProductIds = [...existingProductIds, ...newProductIds.map((p) => p.id)];
+      // IMPORTANT: Include products that were removed from sync (missingProducts)
+      const allAffectedProductIds = [...existingProductIds, ...newProductIds.map((p) => p.id), ...missingProducts];
       const zeroStockProducts: { id: string; clave: string; name: string }[] = [];
       const restoredProducts: string[] = []; // Products that went from 0 to >0
       
@@ -395,7 +432,12 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         });
 
         // Update products with total existencias and track zero stock
-        for (const [productId, totalExistencias] of productSums) {
+        // Important: Products might not be in productSums if they weren't in stock query results
+        // We need to handle all products in chunk
+        for (const product of currentProducts || []) {
+          const productId = product.id;
+          const totalExistencias = productSums.get(productId) || 0;
+          
           const { error: updateError } = await supabase
             .from('products')
             .update({ existencias: totalExistencias })
@@ -406,14 +448,11 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           
           // Product went to zero - add to Por Surtir
           if (totalExistencias === 0 && prevStock > 0) {
-            const product = (currentProducts || []).find((p) => p.id === productId);
-            if (product) {
-              zeroStockProducts.push({
-                id: product.id,
-                clave: product.clave || '',
-                name: product.name,
-              });
-            }
+            zeroStockProducts.push({
+              id: product.id,
+              clave: product.clave || '',
+              name: product.name,
+            });
           }
           
           // Product restored from zero - remove from Por Surtir
@@ -467,6 +506,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         duplicates,
         zeroStockAdded: zeroStockProducts.length,
         restoredFromZero: restoredProducts.length,
+        removedFromSync: missingProducts.length,
       };
     },
     onSuccess: (result) => {
@@ -477,6 +517,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
 
       const extras: string[] = [];
       if (result.duplicates > 0) extras.push(`${result.duplicates} duplicados fusionados`);
+      if (result.removedFromSync > 0) extras.push(`${result.removedFromSync} productos sin stock`);
       if (result.zeroStockAdded > 0) extras.push(`${result.zeroStockAdded} agregados a Por Surtir`);
       if (result.restoredFromZero > 0) extras.push(`${result.restoredFromZero} restaurados de Por Surtir`);
       
