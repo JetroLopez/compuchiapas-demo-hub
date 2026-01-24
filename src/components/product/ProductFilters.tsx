@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Search, Monitor, Laptop, Cpu, HardDrive, Printer, Droplets, Network, Zap, Volume2, Mouse, Shield, ShoppingCart, FileCode, Armchair, Wrench, Tag, Building2, ChevronDown, ChevronRight, Package } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, Monitor, Laptop, Cpu, HardDrive, Printer, Droplets, Network, Zap, Volume2, Mouse, Shield, ShoppingCart, FileCode, Armchair, Wrench, Tag, Building2, ChevronDown, ChevronRight, Package, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Category {
@@ -214,6 +214,9 @@ const catalogStructure = [
   }
 ];
 
+// Primeras 5 categorías que siempre se muestran
+const VISIBLE_CATEGORIES_COUNT = 5;
+
 const ProductFilters: React.FC<ProductFiltersProps> = ({
   categories,
   activeCategory,
@@ -222,12 +225,26 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   setSearchTerm
 }) => {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   // Mapear códigos de categoría a IDs de la base de datos
   const getMatchingCategoryIds = (codes: string[]): string[] => {
     return categories
       .filter(cat => codes.some(code => cat.id.toUpperCase().includes(code) || cat.name.toUpperCase().includes(code)))
       .map(cat => cat.id);
+  };
+
+  // Obtener todos los IDs de categoría para un padre
+  const getAllCategoryIdsForParent = (parentId: string): string[] => {
+    const parent = catalogStructure.find(p => p.id === parentId);
+    if (!parent) return [];
+    
+    const allIds: string[] = [];
+    parent.subcategories.forEach(sub => {
+      const matchingIds = getMatchingCategoryIds(sub.codes);
+      allIds.push(...matchingIds);
+    });
+    return allIds;
   };
 
   // Verificar si una categoría padre tiene categorías activas
@@ -240,17 +257,45 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     });
   };
 
-  // Obtener el conteo de productos para una subcategoría
-  const getSubcategoryCount = (codes: string[]): number => {
-    return getMatchingCategoryIds(codes).length;
+  // Verificar si hay categorías que coinciden con los códigos
+  const hasMatchingCategories = (codes: string[]): boolean => {
+    return getMatchingCategoryIds(codes).length > 0;
   };
 
-  // Manejar clic en categoría padre
+  // Filtrar categorías padre que tienen al menos una subcategoría visible
+  const visibleCatalogStructure = useMemo(() => {
+    return catalogStructure.filter(parent => 
+      parent.subcategories.some(sub => hasMatchingCategories(sub.codes))
+    );
+  }, [categories]);
+
+  // Categorías a mostrar según el estado
+  const categoriesToShow = showAllCategories 
+    ? visibleCatalogStructure 
+    : visibleCatalogStructure.slice(0, VISIBLE_CATEGORIES_COUNT);
+
+  const hasMoreCategories = visibleCatalogStructure.length > VISIBLE_CATEGORIES_COUNT;
+
+  // Manejar clic en categoría padre - selecciona automáticamente todos los productos de esa categoría
   const handleParentClick = (parentId: string) => {
+    const parent = catalogStructure.find(p => p.id === parentId);
+    if (!parent) return;
+
+    // Si ya está expandida, la colapsamos
     if (expandedCategory === parentId) {
       setExpandedCategory(null);
-    } else {
-      setExpandedCategory(parentId);
+      return;
+    }
+
+    // Expandir y seleccionar automáticamente la primera subcategoría con productos
+    setExpandedCategory(parentId);
+    
+    // Obtener todas las IDs de categoría para este padre
+    const allCategoryIds = getAllCategoryIdsForParent(parentId);
+    if (allCategoryIds.length > 0) {
+      // Si hay múltiples, usamos una selección especial con el prefijo del padre
+      // Por ahora seleccionamos la primera
+      setActiveCategory(allCategoryIds[0]);
     }
   };
 
@@ -268,9 +313,11 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     return matchingIds.includes(activeCategory);
   };
 
-  // Verificar si hay categorías que coinciden con los códigos
-  const hasMatchingCategories = (codes: string[]): boolean => {
-    return getMatchingCategoryIds(codes).length > 0;
+  // Filtrar subcategorías visibles (solo las que tienen productos)
+  const getVisibleSubcategories = (parentId: string) => {
+    const parent = catalogStructure.find(p => p.id === parentId);
+    if (!parent) return [];
+    return parent.subcategories.filter(sub => hasMatchingCategories(sub.codes));
   };
 
   return (
@@ -308,47 +355,63 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
       </div>
       
       {/* Grid de categorías padre */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        {catalogStructure.map((parent) => {
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {categoriesToShow.map((parent) => {
           const IconComponent = parent.icon;
           const isActive = isParentActive(parent.id);
           const isExpanded = expandedCategory === parent.id;
-          const hasCategories = parent.subcategories.some(sub => hasMatchingCategories(sub.codes));
           
           return (
             <button
               key={parent.id}
               onClick={() => handleParentClick(parent.id)}
-              disabled={!hasCategories}
-              className={`relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[110px] group ${
-                !hasCategories
-                  ? 'opacity-40 cursor-not-allowed bg-muted'
-                  : isActive
+              className={`relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[100px] group ${
+                isActive || isExpanded
                   ? `bg-gradient-to-br ${parent.color} text-white shadow-lg`
-                  : isExpanded
-                  ? 'bg-accent border-2 border-primary shadow-md'
                   : 'bg-card hover:bg-accent border border-border hover:shadow-md hover:border-primary/30'
               }`}
             >
               <div className={`p-2 rounded-lg mb-2 ${
-                isActive ? 'bg-white/20' : 'bg-muted group-hover:bg-primary/10'
+                isActive || isExpanded ? 'bg-white/20' : 'bg-muted group-hover:bg-primary/10'
               }`}>
-                <IconComponent size={24} className={isActive ? 'text-white' : 'text-foreground'} />
+                <IconComponent size={24} className={isActive || isExpanded ? 'text-white' : 'text-foreground'} />
               </div>
               <span className={`text-xs font-semibold text-center leading-tight ${
-                isActive ? 'text-white' : 'text-foreground'
+                isActive || isExpanded ? 'text-white' : 'text-foreground'
               }`}>
                 {parent.name}
               </span>
               <div className={`absolute top-2 right-2 transition-transform duration-200 ${
                 isExpanded ? 'rotate-90' : ''
               }`}>
-                <ChevronRight size={14} className={isActive ? 'text-white/70' : 'text-muted-foreground'} />
+                <ChevronRight size={14} className={isActive || isExpanded ? 'text-white/70' : 'text-muted-foreground'} />
               </div>
             </button>
           );
         })}
       </div>
+
+      {/* Botón "Ver más categorías" */}
+      {hasMoreCategories && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setShowAllCategories(!showAllCategories)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 bg-muted hover:bg-accent border border-border hover:border-primary/30 text-foreground"
+          >
+            {showAllCategories ? (
+              <>
+                <ChevronUp size={18} />
+                Ver menos categorías
+              </>
+            ) : (
+              <>
+                <ChevronDown size={18} />
+                Ver más categorías ({visibleCatalogStructure.length - VISIBLE_CATEGORIES_COUNT} más)
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Panel de subcategorías expandido */}
       <AnimatePresence>
@@ -363,6 +426,11 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
               .filter(p => p.id === expandedCategory)
               .map((parent) => {
                 const IconComponent = parent.icon;
+                const visibleSubs = getVisibleSubcategories(parent.id);
+                
+                // Si solo hay una subcategoría, no mostrar el panel
+                if (visibleSubs.length <= 1) return null;
+                
                 return (
                   <div
                     key={parent.id}
@@ -379,32 +447,22 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                      {parent.subcategories.map((sub, idx) => {
-                        const matchingIds = getMatchingCategoryIds(sub.codes);
+                      {visibleSubs.map((sub, idx) => {
                         const isActive = isSubcategoryActive(sub.codes);
-                        const hasMatch = matchingIds.length > 0;
                         
                         return (
                           <button
                             key={idx}
                             onClick={() => handleSubcategoryClick(sub.codes)}
-                            disabled={!hasMatch}
                             className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-left ${
-                              !hasMatch
-                                ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                                : isActive
+                              isActive
                                 ? 'bg-white text-gray-900 shadow-md'
                                 : 'bg-white/20 text-white hover:bg-white/30'
                             }`}
                           >
                             <div className="flex items-center justify-between">
                               <span>{sub.name}</span>
-                              {hasMatch && (
-                                <ChevronRight size={16} className={isActive ? 'text-gray-600' : 'text-white/60'} />
-                              )}
-                            </div>
-                            <div className={`text-xs mt-1 ${isActive ? 'text-gray-500' : 'text-white/50'}`}>
-                              {sub.codes.join(', ')}
+                              <ChevronRight size={16} className={isActive ? 'text-gray-600' : 'text-white/60'} />
                             </div>
                           </button>
                         );
