@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ import AdminServices from '@/components/admin/AdminServices';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminBlog from '@/components/admin/AdminBlog';
 import AdminSpecialOrders from '@/components/admin/AdminSpecialOrders';
+import AdminPorSurtir from '@/components/admin/AdminPorSurtir';
 import { Badge } from '@/components/ui/badge';
 
 const Admin: React.FC = () => {
@@ -47,6 +48,7 @@ const Admin: React.FC = () => {
   const canAccessServices = hasAccess(['admin', 'tecnico']);
   const canAccessBlog = hasAccess(['admin', 'ventas']);
   const canAccessSpecialOrders = hasAccess(['admin', 'ventas', 'tecnico']);
+  const canAccessPorSurtir = hasAccess(['admin', 'ventas']);
 
   // Initialize dark mode
   useEffect(() => {
@@ -140,8 +142,9 @@ const Admin: React.FC = () => {
       if (activeTab === 'services' && !canAccessServices) setActiveTab('dashboard');
       if (activeTab === 'blog' && !canAccessBlog) setActiveTab('dashboard');
       if (activeTab === 'special-orders' && !canAccessSpecialOrders) setActiveTab('dashboard');
+      if (activeTab === 'por-surtir' && !canAccessPorSurtir) setActiveTab('dashboard');
     }
-  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders]);
+  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -242,6 +245,7 @@ const Admin: React.FC = () => {
                       {activeTab === 'dashboard' && 'Compusistemas de Chiapas'}
                       {activeTab === 'sync' && 'Sincronizar'}
                       {activeTab === 'products' && 'Productos'}
+                      {activeTab === 'por-surtir' && 'Por Surtir'}
                       {activeTab === 'promotions' && 'Promociones'}
                       {activeTab === 'users' && 'Usuarios'}
                       {activeTab === 'contacts' && 'Contacto'}
@@ -318,6 +322,13 @@ const Admin: React.FC = () => {
                       Pedidos Especiales
                     </DropdownMenuItem>
                   )}
+                  
+                  {canAccessPorSurtir && (
+                    <DropdownMenuItem onClick={() => setActiveTab('por-surtir')} className="gap-2">
+                      <PackageX size={16} />
+                      Por Surtir
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -389,6 +400,13 @@ const Admin: React.FC = () => {
                   Pedidos Especiales
                 </TabsTrigger>
               )}
+              
+              {canAccessPorSurtir && (
+                <TabsTrigger value="por-surtir" className="gap-2">
+                  <PackageX size={16} />
+                  Por Surtir
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -445,6 +463,12 @@ const Admin: React.FC = () => {
             {canAccessSpecialOrders && (
               <TabsContent value="special-orders">
                 <AdminSpecialOrders />
+              </TabsContent>
+            )}
+
+            {canAccessPorSurtir && (
+              <TabsContent value="por-surtir">
+                <AdminPorSurtir />
               </TabsContent>
             )}
           </Tabs>

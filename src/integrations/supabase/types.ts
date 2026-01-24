@@ -264,6 +264,44 @@ export type Database = {
           },
         ]
       }
+      products_por_surtir: {
+        Row: {
+          clave: string
+          created_at: string
+          id: string
+          nombre: string
+          product_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clave: string
+          created_at?: string
+          id?: string
+          nombre: string
+          product_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clave?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          product_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_por_surtir_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

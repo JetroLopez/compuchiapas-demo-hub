@@ -358,10 +358,26 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       }
 
       // 6. Update the main products table existencias with sum from all warehouses
+      // Also track products that become zero stock for "Por Surtir" list
       const allAffectedProductIds = [...existingProductIds, ...newProductIds.map((p) => p.id)];
+      const zeroStockProducts: { id: string; clave: string; name: string }[] = [];
+      const restoredProducts: string[] = []; // Products that went from 0 to >0
       
       for (let i = 0; i < allAffectedProductIds.length; i += chunkSize) {
         const chunk = allAffectedProductIds.slice(i, i + chunkSize);
+        
+        // Get current existencias before update to detect changes
+        const { data: currentProducts, error: currentError } = await supabase
+          .from('products')
+          .select('id, clave, name, existencias')
+          .in('id', chunk);
+        
+        if (currentError) throw currentError;
+        
+        const previousExistencias = new Map<string, number>();
+        (currentProducts || []).forEach((p) => {
+          previousExistencias.set(p.id, p.existencias || 0);
+        });
         
         // Get sum of existencias for each product across all warehouses
         const { data: stockData, error: stockError } = await supabase
@@ -378,14 +394,70 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           productSums.set(s.product_id, current + s.existencias);
         });
 
-        // Update products with total existencias
+        // Update products with total existencias and track zero stock
         for (const [productId, totalExistencias] of productSums) {
           const { error: updateError } = await supabase
             .from('products')
             .update({ existencias: totalExistencias })
             .eq('id', productId);
           if (updateError) throw updateError;
+          
+          const prevStock = previousExistencias.get(productId) || 0;
+          
+          // Product went to zero - add to Por Surtir
+          if (totalExistencias === 0 && prevStock > 0) {
+            const product = (currentProducts || []).find((p) => p.id === productId);
+            if (product) {
+              zeroStockProducts.push({
+                id: product.id,
+                clave: product.clave || '',
+                name: product.name,
+              });
+            }
+          }
+          
+          // Product restored from zero - remove from Por Surtir
+          if (totalExistencias > 0 && prevStock === 0) {
+            restoredProducts.push(productId);
+          }
         }
+      }
+      
+      // 7. Add zero stock products to "Por Surtir" table
+      if (zeroStockProducts.length > 0) {
+        const porSurtirInserts = zeroStockProducts.map((p) => ({
+          product_id: p.id,
+          clave: p.clave,
+          nombre: p.name,
+          status: 'pending',
+        }));
+        
+        // Check for existing entries to avoid duplicates
+        const { data: existingPorSurtir } = await supabase
+          .from('products_por_surtir')
+          .select('product_id')
+          .in('product_id', zeroStockProducts.map((p) => p.id));
+        
+        const existingProductIds2 = new Set((existingPorSurtir || []).map((e) => e.product_id));
+        const newPorSurtir = porSurtirInserts.filter((p) => !existingProductIds2.has(p.product_id));
+        
+        if (newPorSurtir.length > 0) {
+          const { error: porSurtirError } = await supabase
+            .from('products_por_surtir')
+            .insert(newPorSurtir);
+          
+          if (porSurtirError) throw porSurtirError;
+        }
+      }
+      
+      // 8. Remove restored products from "Por Surtir" table
+      if (restoredProducts.length > 0) {
+        const { error: removeError } = await supabase
+          .from('products_por_surtir')
+          .delete()
+          .in('product_id', restoredProducts);
+        
+        if (removeError) throw removeError;
       }
 
       return {
@@ -393,16 +465,24 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         newProducts: newProducts.length,
         existingUpdated: existingProductIds.length,
         duplicates,
+        zeroStockAdded: zeroStockProducts.length,
+        restoredFromZero: restoredProducts.length,
       };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product-warehouse-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['products-por-surtir'] });
 
-      const extra = result.duplicates > 0 ? ` (${result.duplicates} duplicados fusionados)` : '';
+      const extras: string[] = [];
+      if (result.duplicates > 0) extras.push(`${result.duplicates} duplicados fusionados`);
+      if (result.zeroStockAdded > 0) extras.push(`${result.zeroStockAdded} agregados a Por Surtir`);
+      if (result.restoredFromZero > 0) extras.push(`${result.restoredFromZero} restaurados de Por Surtir`);
+      
+      const extraText = extras.length > 0 ? ` (${extras.join(', ')})` : '';
       toast.success(
-        `Sincronización completada: ${result.newProducts} nuevos, ${result.existingUpdated} actualizados${extra}`
+        `Sincronización completada: ${result.newProducts} nuevos, ${result.existingUpdated} actualizados${extraText}`
       );
       setSyncSuccess(true);
       setPastedData('');
