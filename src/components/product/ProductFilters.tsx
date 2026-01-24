@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Monitor, Cpu, HardDrive, Laptop, Printer, Network, Headphones, Package, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Monitor, Laptop, Cpu, HardDrive, Printer, Droplets, Network, Zap, Volume2, Mouse, Shield, ShoppingCart, FileCode, Armchair, Wrench, Tag, Building2, ChevronDown, ChevronRight, Package } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Category {
@@ -16,42 +16,201 @@ interface ProductFiltersProps {
   setSearchTerm: (term: string) => void;
 }
 
-// Agrupación visual de categorías (no afecta la base de datos)
-const categoryGroups = [
+// Nueva estructura jerárquica de categorías (solo para visualización)
+const catalogStructure = [
   {
-    name: "Equipos",
+    id: 'computadoras',
+    name: 'Computadoras',
     icon: Monitor,
-    keywords: ["computadora", "laptop", "desktop", "all-in-one", "workstation", "pc"]
+    color: 'from-blue-500 to-blue-600',
+    subcategories: [
+      { name: 'PCs de Escritorio', codes: ['COMPU'] }
+    ]
   },
   {
-    name: "Componentes",
-    icon: Cpu,
-    keywords: ["procesador", "memoria", "ram", "tarjeta", "mother", "board", "fuente", "gabinete", "ventilador", "cooler"]
-  },
-  {
-    name: "Almacenamiento",
-    icon: HardDrive,
-    keywords: ["disco", "ssd", "hdd", "usb", "memoria", "flash", "almacenamiento", "storage"]
-  },
-  {
-    name: "Portátiles",
+    id: 'laptops',
+    name: 'Laptops',
     icon: Laptop,
-    keywords: ["laptop", "notebook", "portatil", "chromebook"]
+    color: 'from-indigo-500 to-indigo-600',
+    subcategories: [
+      { name: 'Laptops', codes: ['LAPTO'] }
+    ]
   },
   {
-    name: "Impresión",
+    id: 'componentes',
+    name: 'Componentes',
+    icon: Cpu,
+    color: 'from-purple-500 to-purple-600',
+    subcategories: [
+      { name: 'Tarjetas Madre', codes: ['MOTHE'] },
+      { name: 'Procesadores', codes: ['MICRO'] },
+      { name: 'Fuentes de Poder', codes: ['FUENT'] },
+      { name: 'Gabinetes', codes: ['GABIN'] },
+      { name: 'Tarjetas Gráficas', codes: ['VIDEO'] }
+    ]
+  },
+  {
+    id: 'almacenamiento',
+    name: 'Almacenamiento',
+    icon: HardDrive,
+    color: 'from-cyan-500 to-cyan-600',
+    subcategories: [
+      { name: 'Discos Duros Internos', codes: ['DDURI'] },
+      { name: 'Discos Duros Externos', codes: ['DDURE'] },
+      { name: 'Memorias USB', codes: ['MEUSB'] },
+      { name: 'Memorias Flash', codes: ['MEFLA'] },
+      { name: 'Memorias RAM DIMM/UDIMM', codes: ['MEDIM'] },
+      { name: 'Memorias RAM SODIMM', codes: ['MESOD'] },
+      { name: 'Marca SanDisk', codes: ['SDISK'] }
+    ]
+  },
+  {
+    id: 'impresion',
+    name: 'Impresión',
     icon: Printer,
-    keywords: ["impresora", "toner", "cartucho", "tinta", "scanner", "multifuncional"]
+    color: 'from-orange-500 to-orange-600',
+    subcategories: [
+      { name: 'Impresoras Brother', codes: ['IMPBR'] },
+      { name: 'Impresoras Epson', codes: ['IMPEP'] },
+      { name: 'Impresoras HP', codes: ['IMPHP'] },
+      { name: 'Impresoras Otras Marcas', codes: ['IMPOT'] }
+    ]
   },
   {
-    name: "Redes",
+    id: 'consumibles',
+    name: 'Consumibles',
+    icon: Droplets,
+    color: 'from-pink-500 to-pink-600',
+    subcategories: [
+      { name: 'Consumibles Brother', codes: ['CONBR'] },
+      { name: 'Consumibles Epson', codes: ['CONEP'] },
+      { name: 'Consumibles HP', codes: ['CONHP'] },
+      { name: 'Consumibles Otras Marcas', codes: ['CONOT'] }
+    ]
+  },
+  {
+    id: 'redes',
+    name: 'Redes',
     icon: Network,
-    keywords: ["router", "switch", "cable", "red", "modem", "access point", "wifi", "ethernet"]
+    color: 'from-teal-500 to-teal-600',
+    subcategories: [
+      { name: 'TP-Link', codes: ['RTPLK'] },
+      { name: 'Tenda', codes: ['TENDA'] },
+      { name: 'Linksys', codes: ['LINKS'] },
+      { name: 'MikroTik', codes: ['MIKRO'] },
+      { name: 'Ubiquiti', codes: ['RUBIQ'] },
+      { name: 'Redes Otras Marcas', codes: ['REDOT'] },
+      { name: 'Cableado de Red', codes: ['CARED'] }
+    ]
   },
   {
-    name: "Periféricos",
-    icon: Headphones,
-    keywords: ["mouse", "teclado", "monitor", "pantalla", "audifonos", "bocinas", "webcam", "camara"]
+    id: 'energia',
+    name: 'Energía',
+    icon: Zap,
+    color: 'from-yellow-500 to-yellow-600',
+    subcategories: [
+      { name: 'NoBreaks', codes: ['ENNOB'] },
+      { name: 'Reguladores de Voltaje', codes: ['ENREG'] },
+      { name: 'Power Banks', codes: ['ENOTS'] },
+      { name: 'Energía CDP', codes: ['CDP'] },
+      { name: 'Energía Otras Marcas', codes: ['ENERG'] }
+    ]
+  },
+  {
+    id: 'audio-video',
+    name: 'Audio y Video',
+    icon: Volume2,
+    color: 'from-red-500 to-red-600',
+    subcategories: [
+      { name: 'Bocinas', codes: ['BOCIN'] },
+      { name: 'Diademas y Audífonos', codes: ['DIADE'] },
+      { name: 'Proyectores, Tablets y Escáneres', codes: ['DIGIT'] }
+    ]
+  },
+  {
+    id: 'perifericos',
+    name: 'Periféricos',
+    icon: Mouse,
+    color: 'from-emerald-500 to-emerald-600',
+    subcategories: [
+      { name: 'Teclados', codes: ['TECLA'] },
+      { name: 'Mouses', codes: ['MOUSE'] },
+      { name: 'Monitores', codes: ['MONIT'] },
+      { name: 'Accesorios de Cómputo', codes: ['ACCES'] },
+      { name: 'Cables y Adaptadores', codes: ['CABOT'] }
+    ]
+  },
+  {
+    id: 'seguridad',
+    name: 'Seguridad',
+    icon: Shield,
+    color: 'from-slate-500 to-slate-600',
+    subcategories: [
+      { name: 'Cámaras y Videovigilancia', codes: ['CCTV', 'SEGUR'] }
+    ]
+  },
+  {
+    id: 'punto-venta',
+    name: 'Punto de Venta',
+    icon: ShoppingCart,
+    color: 'from-lime-500 to-lime-600',
+    subcategories: [
+      { name: 'Equipos y Accesorios POS', codes: ['PUNTO', 'PTVTA'] }
+    ]
+  },
+  {
+    id: 'software',
+    name: 'Software',
+    icon: FileCode,
+    color: 'from-violet-500 to-violet-600',
+    subcategories: [
+      { name: 'Software Comercial', codes: ['SOFTW'] }
+    ]
+  },
+  {
+    id: 'mobiliario',
+    name: 'Mobiliario',
+    icon: Armchair,
+    color: 'from-amber-500 to-amber-600',
+    subcategories: [
+      { name: 'Mobiliario de Oficina', codes: ['MOBIL'] }
+    ]
+  },
+  {
+    id: 'refacciones',
+    name: 'Refacciones',
+    icon: Wrench,
+    color: 'from-gray-500 to-gray-600',
+    subcategories: [
+      { name: 'Refacciones Generales', codes: ['REFAC'] },
+      { name: 'Refacciones de Cargadores', codes: ['REFCA'] },
+      { name: 'Refacciones de Pantallas', codes: ['REFPA'] },
+      { name: 'Refacciones de Teclados', codes: ['REFTE'] },
+      { name: 'Refacciones Varias', codes: ['REFOT'] }
+    ]
+  },
+  {
+    id: 'promociones',
+    name: 'Promociones',
+    icon: Tag,
+    color: 'from-rose-500 to-rose-600',
+    subcategories: [
+      { name: 'Artículos en Promoción', codes: ['PROMO'] }
+    ]
+  },
+  {
+    id: 'marcas',
+    name: 'Marcas',
+    icon: Building2,
+    color: 'from-sky-500 to-sky-600',
+    subcategories: [
+      { name: 'Acer', codes: ['ACER'] },
+      { name: 'Lenovo', codes: ['LENOV'] },
+      { name: 'Logitech', codes: ['LOGIT'] },
+      { name: 'Koblenz', codes: ['KOBLE'] },
+      { name: 'Xerox', codes: ['XEROX'] },
+      { name: 'Adata', codes: ['ADATA'] }
+    ]
   }
 ];
 
@@ -62,38 +221,56 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   searchTerm,
   setSearchTerm
 }) => {
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  // Función para determinar a qué grupo pertenece una categoría
-  const getCategoryGroup = (categoryName: string) => {
-    const lowerName = categoryName.toLowerCase();
-    for (const group of categoryGroups) {
-      if (group.keywords.some(keyword => lowerName.includes(keyword))) {
-        return group.name;
-      }
-    }
-    return null;
+  // Mapear códigos de categoría a IDs de la base de datos
+  const getMatchingCategoryIds = (codes: string[]): string[] => {
+    return categories
+      .filter(cat => codes.some(code => cat.id.toUpperCase().includes(code) || cat.name.toUpperCase().includes(code)))
+      .map(cat => cat.id);
   };
 
-  // Agrupar categorías
-  const groupedCategories = categoryGroups.map(group => ({
-    ...group,
-    categories: categories.filter(cat => getCategoryGroup(cat.name) === group.name)
-  })).filter(group => group.categories.length > 0);
+  // Verificar si una categoría padre tiene categorías activas
+  const isParentActive = (parentId: string) => {
+    const parent = catalogStructure.find(p => p.id === parentId);
+    if (!parent) return false;
+    return parent.subcategories.some(sub => {
+      const matchingIds = getMatchingCategoryIds(sub.codes);
+      return matchingIds.includes(activeCategory);
+    });
+  };
 
-  // Categorías sin grupo
-  const ungroupedCategories = categories.filter(cat => !getCategoryGroup(cat.name));
+  // Obtener el conteo de productos para una subcategoría
+  const getSubcategoryCount = (codes: string[]): number => {
+    return getMatchingCategoryIds(codes).length;
+  };
 
-  const handleGroupClick = (groupName: string) => {
-    if (expandedGroup === groupName) {
-      setExpandedGroup(null);
+  // Manejar clic en categoría padre
+  const handleParentClick = (parentId: string) => {
+    if (expandedCategory === parentId) {
+      setExpandedCategory(null);
     } else {
-      setExpandedGroup(groupName);
+      setExpandedCategory(parentId);
     }
   };
 
-  const isGroupActive = (group: typeof groupedCategories[0]) => {
-    return group.categories.some(cat => cat.id === activeCategory);
+  // Manejar clic en subcategoría
+  const handleSubcategoryClick = (codes: string[]) => {
+    const matchingIds = getMatchingCategoryIds(codes);
+    if (matchingIds.length > 0) {
+      setActiveCategory(matchingIds[0]);
+    }
+  };
+
+  // Verificar si una subcategoría está activa
+  const isSubcategoryActive = (codes: string[]): boolean => {
+    const matchingIds = getMatchingCategoryIds(codes);
+    return matchingIds.includes(activeCategory);
+  };
+
+  // Verificar si hay categorías que coinciden con los códigos
+  const hasMatchingCategories = (codes: string[]): boolean => {
+    return getMatchingCategoryIds(codes).length > 0;
   };
 
   return (
@@ -105,120 +282,162 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         </div>
         <input
           type="text"
-          placeholder="Buscar productos..."
+          placeholder="Buscar productos por nombre o clave..."
           className="w-full pl-12 pr-4 py-3 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
-      
-      {/* Grid de categorías agrupadas */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        {/* Botón "Todos" */}
+
+      {/* Botón "Ver Todos" */}
+      <div className="flex justify-center">
         <button
           onClick={() => {
             setActiveCategory('all');
-            setExpandedGroup(null);
+            setExpandedCategory(null);
           }}
-          className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[100px] ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
             activeCategory === 'all'
-              ? 'bg-primary text-primary-foreground shadow-lg scale-105'
-              : 'bg-card hover:bg-accent border border-border hover:shadow-md'
+              ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg scale-105'
+              : 'bg-card hover:bg-accent border-2 border-border hover:border-primary/50 hover:shadow-md'
           }`}
         >
-          <Package size={28} className="mb-2" />
-          <span className="text-sm font-medium text-center">Todos</span>
+          <Package size={20} />
+          Ver Todo el Catálogo
         </button>
-
-        {/* Grupos de categorías */}
-        {groupedCategories.map((group) => {
-          const IconComponent = group.icon;
-          const isActive = isGroupActive(group);
-          const isExpanded = expandedGroup === group.name;
+      </div>
+      
+      {/* Grid de categorías padre */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        {catalogStructure.map((parent) => {
+          const IconComponent = parent.icon;
+          const isActive = isParentActive(parent.id);
+          const isExpanded = expandedCategory === parent.id;
+          const hasCategories = parent.subcategories.some(sub => hasMatchingCategories(sub.codes));
           
           return (
-            <div key={group.name} className="relative">
-              <button
-                onClick={() => handleGroupClick(group.name)}
-                className={`w-full flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[100px] ${
-                  isActive
-                    ? 'bg-primary/90 text-primary-foreground shadow-lg'
-                    : isExpanded
-                    ? 'bg-accent border-2 border-primary shadow-md'
-                    : 'bg-card hover:bg-accent border border-border hover:shadow-md'
-                }`}
-              >
-                <IconComponent size={28} className="mb-2" />
-                <span className="text-sm font-medium text-center leading-tight">{group.name}</span>
-                <span className="text-xs opacity-70 mt-1">({group.categories.length})</span>
-                {isExpanded ? (
-                  <ChevronUp size={16} className="absolute top-2 right-2 opacity-60" />
-                ) : (
-                  <ChevronDown size={16} className="absolute top-2 right-2 opacity-60" />
-                )}
-              </button>
-            </div>
+            <button
+              key={parent.id}
+              onClick={() => handleParentClick(parent.id)}
+              disabled={!hasCategories}
+              className={`relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[110px] group ${
+                !hasCategories
+                  ? 'opacity-40 cursor-not-allowed bg-muted'
+                  : isActive
+                  ? `bg-gradient-to-br ${parent.color} text-white shadow-lg`
+                  : isExpanded
+                  ? 'bg-accent border-2 border-primary shadow-md'
+                  : 'bg-card hover:bg-accent border border-border hover:shadow-md hover:border-primary/30'
+              }`}
+            >
+              <div className={`p-2 rounded-lg mb-2 ${
+                isActive ? 'bg-white/20' : 'bg-muted group-hover:bg-primary/10'
+              }`}>
+                <IconComponent size={24} className={isActive ? 'text-white' : 'text-foreground'} />
+              </div>
+              <span className={`text-xs font-semibold text-center leading-tight ${
+                isActive ? 'text-white' : 'text-foreground'
+              }`}>
+                {parent.name}
+              </span>
+              <div className={`absolute top-2 right-2 transition-transform duration-200 ${
+                isExpanded ? 'rotate-90' : ''
+              }`}>
+                <ChevronRight size={14} className={isActive ? 'text-white/70' : 'text-muted-foreground'} />
+              </div>
+            </button>
           );
         })}
       </div>
 
-      {/* Subcategorías expandidas */}
+      {/* Panel de subcategorías expandido */}
       <AnimatePresence>
-        {expandedGroup && (
+        {expandedCategory && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden"
           >
-            <div className="bg-muted/50 rounded-xl p-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-3 font-medium">
-                Subcategorías de {expandedGroup}:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {groupedCategories
-                  .find(g => g.name === expandedGroup)
-                  ?.categories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => setActiveCategory(category.id)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        activeCategory === category.id
-                          ? 'bg-primary text-primary-foreground shadow-md'
-                          : 'bg-background hover:bg-accent border border-border'
-                      }`}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
-              </div>
-            </div>
+            {catalogStructure
+              .filter(p => p.id === expandedCategory)
+              .map((parent) => {
+                const IconComponent = parent.icon;
+                return (
+                  <div
+                    key={parent.id}
+                    className={`bg-gradient-to-r ${parent.color} rounded-xl p-5 shadow-lg`}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <IconComponent size={24} className="text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-bold text-lg">{parent.name}</h3>
+                        <p className="text-white/70 text-sm">Selecciona una subcategoría</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {parent.subcategories.map((sub, idx) => {
+                        const matchingIds = getMatchingCategoryIds(sub.codes);
+                        const isActive = isSubcategoryActive(sub.codes);
+                        const hasMatch = matchingIds.length > 0;
+                        
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => handleSubcategoryClick(sub.codes)}
+                            disabled={!hasMatch}
+                            className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-left ${
+                              !hasMatch
+                                ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                                : isActive
+                                ? 'bg-white text-gray-900 shadow-md'
+                                : 'bg-white/20 text-white hover:bg-white/30'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span>{sub.name}</span>
+                              {hasMatch && (
+                                <ChevronRight size={16} className={isActive ? 'text-gray-600' : 'text-white/60'} />
+                              )}
+                            </div>
+                            <div className={`text-xs mt-1 ${isActive ? 'text-gray-500' : 'text-white/50'}`}>
+                              {sub.codes.join(', ')}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Categorías sin agrupar */}
-      {ungroupedCategories.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-2">
-          <span className="text-sm text-muted-foreground mr-2 self-center">Otras:</span>
-          {ungroupedCategories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => {
-                setActiveCategory(category.id);
-                setExpandedGroup(null);
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeCategory === category.id
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-card hover:bg-accent border border-border'
-              }`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
+      {/* Indicador de categoría activa */}
+      {activeCategory !== 'all' && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex items-center justify-center gap-2"
+        >
+          <span className="text-sm text-muted-foreground">Filtrando por:</span>
+          <span className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-sm font-medium">
+            {categories.find(c => c.id === activeCategory)?.name || activeCategory}
+          </span>
+          <button
+            onClick={() => {
+              setActiveCategory('all');
+              setExpandedCategory(null);
+            }}
+            className="text-sm text-muted-foreground hover:text-foreground underline"
+          >
+            Limpiar
+          </button>
+        </motion.div>
       )}
     </div>
   );
