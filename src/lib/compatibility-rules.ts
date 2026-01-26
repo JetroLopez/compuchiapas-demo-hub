@@ -58,11 +58,11 @@ export interface CompatibilityResult {
 export const COMPONENT_CATEGORIES: Record<string, string[]> = {
   cpu: ['MICRO'],
   motherboard: ['MOTHE'],
-  ram: ['MEMOR'],
+  ram: ['MEDIM', 'MESOD', 'DDURI'],
   gpu: ['VIDEO'],
   psu: ['FUENT'],
   case: ['GABIN'],
-  storage: ['MEDIM', 'MESOD', 'ALMAC'],
+  storage: ['ALMAC'],
 };
 
 export const COMPONENT_LABELS: Record<string, string> = {
