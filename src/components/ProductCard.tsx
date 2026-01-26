@@ -1,21 +1,29 @@
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
+import { calculatePrice, formatPrice } from '@/lib/price-utils';
 
 interface ProductCardProps {
   clave: string | null;
   name: string;
   image: string;
   existencias: number;
+  costo: number | null;
+  categoryId: string | null;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
   clave,
   name, 
   image, 
-  existencias
+  existencias,
+  costo,
+  categoryId,
 }) => {
   const whatsappNumber = "9622148546";
-  const whatsappMessage = `Hola, me interesa cotizar el producto:\n\nClave: ${clave || 'N/A'}\nDescripción: ${name}\n\n¿Podrían darme más información?`;
+  const price = calculatePrice(costo, categoryId);
+  const formattedPrice = formatPrice(price);
+  
+  const whatsappMessage = `Hola, me interesa cotizar el producto:\n\nClave: ${clave || 'N/A'}\nDescripción: ${name}\nPrecio: ${formattedPrice}\n\n¿Podrían darme más información?`;
   
   const handleWhatsAppClick = () => {
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
@@ -46,9 +54,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
       
       <div className="p-6">
         {clave && (
-          <p className="text-xs text-gray-500 mb-1">Clave: {clave}</p>
+          <p className="text-xs text-muted-foreground mb-1">Clave: {clave}</p>
         )}
-        <h3 className="text-lg font-semibold mb-4 line-clamp-2">{name}</h3>
+        <h3 className="text-lg font-semibold mb-2 line-clamp-2">{name}</h3>
+        
+        {/* Price Display */}
+        {price > 0 && (
+          <p className="text-2xl font-bold text-primary mb-4">{formattedPrice}</p>
+        )}
+        {price === 0 && costo === 0 && (
+          <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
+        )}
+        {price === 0 && costo === null && (
+          <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
+        )}
         
         <button 
           onClick={handleWhatsAppClick}

@@ -29,6 +29,7 @@ interface ParsedProduct {
   descripcion: string;
   linea: string;
   existencias: number;
+  costo: number;
   imagen_url?: string;
 }
 
@@ -129,6 +130,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       let descripcion = '';
       let linea = '';
       let existencias = 0;
+      let costo = 0;
       let imagen_url: string | undefined;
 
       if (isTabDelimited) {
@@ -139,7 +141,9 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         descripcion = parts[1] || '';
         linea = parts[2] || '';
         existencias = parseInt(parts[3] || '0', 10) || 0;
-        imagen_url = parts[4]?.trim() || undefined;
+        // Costo is 5th column (index 4), imagen_url is 6th column (index 5)
+        costo = parseFloat(parts[4] || '0') || 0;
+        imagen_url = parts[5]?.trim() || undefined;
       } else {
         // Try: separated by 2+ spaces (common when copying from some systems)
         const parts = line
@@ -152,11 +156,13 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           descripcion = parts[1] || '';
           linea = parts[2] || '';
           existencias = parseInt(parts[3] || '0', 10) || 0;
-          imagen_url = parts[4]?.trim() || undefined;
+          // Costo is 5th column (index 4), imagen_url is 6th column (index 5)
+          costo = parseFloat(parts[4] || '0') || 0;
+          imagen_url = parts[5]?.trim() || undefined;
         } else {
           // Fallback: single-space separated (descripcion puede contener espacios)
           // Formato esperado:
-          // CLAVE <descripcion...> LINEA EXISTENCIAS [URL_IMAGEN]
+          // CLAVE <descripcion...> LINEA EXISTENCIAS COSTO [URL_IMAGEN]
           const tokens = line.split(/\s+/).filter(Boolean);
           if (tokens.length < 4) continue;
 
@@ -167,13 +173,27 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
 
           if (hasUrl) {
             imagen_url = last;
-            existencias = parseInt(tokens[tokens.length - 2] || '0', 10) || 0;
-            linea = tokens[tokens.length - 3] || '';
-            descripcion = tokens.slice(1, tokens.length - 3).join(' ').trim();
+            costo = parseFloat(tokens[tokens.length - 2] || '0') || 0;
+            existencias = parseInt(tokens[tokens.length - 3] || '0', 10) || 0;
+            linea = tokens[tokens.length - 4] || '';
+            descripcion = tokens.slice(1, tokens.length - 4).join(' ').trim();
           } else {
-            existencias = parseInt(last || '0', 10) || 0;
-            linea = tokens[tokens.length - 2] || '';
-            descripcion = tokens.slice(1, tokens.length - 2).join(' ').trim();
+            // Check if last is a decimal number (could be costo)
+            const lastAsNumber = parseFloat(last);
+            const secondLast = tokens[tokens.length - 2];
+            const secondLastAsInt = parseInt(secondLast || '0', 10);
+            
+            // If we have at least 5 tokens and last looks like a costo
+            if (tokens.length >= 5 && !isNaN(lastAsNumber)) {
+              costo = lastAsNumber;
+              existencias = secondLastAsInt || 0;
+              linea = tokens[tokens.length - 3] || '';
+              descripcion = tokens.slice(1, tokens.length - 3).join(' ').trim();
+            } else {
+              existencias = parseInt(last || '0', 10) || 0;
+              linea = tokens[tokens.length - 2] || '';
+              descripcion = tokens.slice(1, tokens.length - 2).join(' ').trim();
+            }
           }
         }
       }
@@ -185,6 +205,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           descripcion,
           linea,
           existencias,
+          costo,
           imagen_url,
         });
       }
@@ -265,6 +286,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       const newProducts: any[] = [];
       const existingProductIds: string[] = [];
       const productToExistencias = new Map<string, number>(); // product_id -> existencias
+      const productToCosto = new Map<string, number>(); // product_id -> costo
 
       for (const product of uniqueProducts) {
         const category = categories.find(
@@ -278,6 +300,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           name: product.descripcion,
           category_id: category?.id || null,
           is_active: true,
+          costo: product.costo,
         };
 
         if (product.imagen_url) {
@@ -291,9 +314,24 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           // Product exists - we'll update its stock for this warehouse
           existingProductIds.push(existingProductId);
           productToExistencias.set(existingProductId, product.existencias);
+          productToCosto.set(existingProductId, product.costo);
         } else {
           // New product - will be inserted
           newProducts.push({ ...productData, existencias: product.existencias });
+        }
+      }
+
+      // 3.5. Update costo for existing products
+      for (let i = 0; i < existingProductIds.length; i += chunkSize) {
+        const chunk = existingProductIds.slice(i, i + chunkSize);
+        for (const productId of chunk) {
+          const newCosto = productToCosto.get(productId);
+          if (newCosto !== undefined) {
+            await supabase
+              .from('products')
+              .update({ costo: newCosto })
+              .eq('id', productId);
+          }
         }
       }
 
@@ -614,10 +652,11 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           <div>
             <Textarea
               placeholder={`Ejemplo de formato (separado por tabs o espacios):
+CLAVE  DESCRIPCION  LINEA  EXISTENCIAS  COSTO  URL_IMAGEN
 
-CLAVE001    Teclado USB Logitech    Periféricos    15    https://ejemplo.com/teclado.jpg
-CLAVE002    Mouse Inalámbrico       Periféricos    8     https://ejemplo.com/mouse.jpg
-CLAVE003    Laptop HP 15            Equipos        3`}
+CLAVE001    Teclado USB Logitech    Periféricos    15    250.00    https://ejemplo.com/teclado.jpg
+CLAVE002    Mouse Inalámbrico       Periféricos    8     150.50    https://ejemplo.com/mouse.jpg
+CLAVE003    Laptop HP 15            Equipos        3     8500.00`}
               value={pastedData}
               onChange={(e) => setPastedData(e.target.value)}
               rows={10}
@@ -660,6 +699,7 @@ CLAVE003    Laptop HP 15            Equipos        3`}
                       <th className="text-left p-2">Descripción</th>
                       <th className="text-left p-2">Línea</th>
                       <th className="text-center p-2">Existencias</th>
+                      <th className="text-right p-2">Costo</th>
                       <th className="text-left p-2">URL Imagen</th>
                     </tr>
                   </thead>
@@ -670,6 +710,7 @@ CLAVE003    Laptop HP 15            Equipos        3`}
                         <td className="p-2 truncate max-w-xs">{product.descripcion}</td>
                         <td className="p-2">{product.linea}</td>
                         <td className="p-2 text-center">{product.existencias}</td>
+                        <td className="p-2 text-right font-mono">${product.costo.toFixed(2)}</td>
                         <td className="p-2 truncate max-w-[150px] text-xs text-muted-foreground" title={product.imagen_url}>
                           {product.imagen_url || '-'}
                         </td>

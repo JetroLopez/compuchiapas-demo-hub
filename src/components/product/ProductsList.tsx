@@ -12,6 +12,7 @@ interface Product {
   category_id: string | null;
   image_url: string | null;
   existencias: number | null;
+  costo: number | null;
 }
 
 interface ProductWarehouseStock {
@@ -47,7 +48,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
         
         const { data, error } = await supabase
           .from('products')
-          .select('id, clave, name, category_id, image_url, existencias')
+          .select('id, clave, name, category_id, image_url, existencias, costo')
           .order('created_at', { ascending: false })
           .range(from, to);
           
@@ -197,6 +198,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
           name={product.name}
           image={product.image_url || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1000&q=80'}
           existencias={product.existencias ?? 0}
+          costo={product.costo}
+          categoryId={product.category_id}
         />
       ))}
     </div>
