@@ -313,6 +313,7 @@ export type Database = {
         Row: {
           category_id: string | null
           clave: string | null
+          costo: number | null
           created_at: string
           existencias: number | null
           id: string
@@ -324,6 +325,7 @@ export type Database = {
         Insert: {
           category_id?: string | null
           clave?: string | null
+          costo?: number | null
           created_at?: string
           existencias?: number | null
           id?: string
@@ -335,6 +337,7 @@ export type Database = {
         Update: {
           category_id?: string | null
           clave?: string | null
+          costo?: number | null
           created_at?: string
           existencias?: number | null
           id?: string
