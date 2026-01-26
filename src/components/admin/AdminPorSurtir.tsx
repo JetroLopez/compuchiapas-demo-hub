@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Truck, Package } from 'lucide-react';
+import { Loader2, Plus, Trash2, Truck, Package, Copy } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -153,6 +153,16 @@ const AdminPorSurtir: React.FC = () => {
   const pendingProducts = productsPorSurtir.filter(p => p.status === 'pending');
   const orderedProducts = productsPorSurtir.filter(p => p.status === 'ordered');
 
+  const handleCopyAll = () => {
+    const allProducts = [...pendingProducts, ...orderedProducts];
+    const text = allProducts.map(p => `${p.nombre} ${p.clave}`).join('\n');
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copiado',
+      description: `${allProducts.length} productos copiados al portapapeles.`,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -171,6 +181,18 @@ const AdminPorSurtir: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Copy all button */}
+          {(pendingProducts.length > 0 || orderedProducts.length > 0) && (
+            <Button
+              variant="outline"
+              onClick={handleCopyAll}
+              className="w-full sm:w-auto"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copiar todos ({pendingProducts.length + orderedProducts.length})
+            </Button>
+          )}
+
           {/* Pending products */}
           {pendingProducts.length === 0 && orderedProducts.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
