@@ -86,6 +86,95 @@ export type Database = {
         }
         Relationships: []
       }
+      component_specs: {
+        Row: {
+          case_form_factors: string[] | null
+          case_max_gpu_length: number | null
+          chipset: string | null
+          component_type: string
+          cpu_tdp: number | null
+          created_at: string
+          form_factor: string | null
+          gpu_length: number | null
+          gpu_tdp: number | null
+          id: string
+          m2_slots: number | null
+          max_ram_speed: number | null
+          product_id: string
+          psu_efficiency: string | null
+          psu_wattage: number | null
+          ram_capacity: number | null
+          ram_modules: number | null
+          ram_slots: number | null
+          ram_speed: number | null
+          ram_type: string | null
+          socket: string | null
+          storage_capacity: number | null
+          storage_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          case_form_factors?: string[] | null
+          case_max_gpu_length?: number | null
+          chipset?: string | null
+          component_type: string
+          cpu_tdp?: number | null
+          created_at?: string
+          form_factor?: string | null
+          gpu_length?: number | null
+          gpu_tdp?: number | null
+          id?: string
+          m2_slots?: number | null
+          max_ram_speed?: number | null
+          product_id: string
+          psu_efficiency?: string | null
+          psu_wattage?: number | null
+          ram_capacity?: number | null
+          ram_modules?: number | null
+          ram_slots?: number | null
+          ram_speed?: number | null
+          ram_type?: string | null
+          socket?: string | null
+          storage_capacity?: number | null
+          storage_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          case_form_factors?: string[] | null
+          case_max_gpu_length?: number | null
+          chipset?: string | null
+          component_type?: string
+          cpu_tdp?: number | null
+          created_at?: string
+          form_factor?: string | null
+          gpu_length?: number | null
+          gpu_tdp?: number | null
+          id?: string
+          m2_slots?: number | null
+          max_ram_speed?: number | null
+          product_id?: string
+          psu_efficiency?: string | null
+          psu_wattage?: number | null
+          ram_capacity?: number | null
+          ram_modules?: number | null
+          ram_slots?: number | null
+          ram_speed?: number | null
+          ram_type?: string | null
+          socket?: string | null
+          storage_capacity?: number | null
+          storage_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "component_specs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_submissions: {
         Row: {
           created_at: string
