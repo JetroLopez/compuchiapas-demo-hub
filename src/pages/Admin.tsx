@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,8 @@ import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminBlog from '@/components/admin/AdminBlog';
 import AdminSpecialOrders from '@/components/admin/AdminSpecialOrders';
 import AdminPorSurtir from '@/components/admin/AdminPorSurtir';
+import AdminQuotations from '@/components/admin/AdminQuotations';
+import AdminComponentSpecs from '@/components/admin/AdminComponentSpecs';
 import { Badge } from '@/components/ui/badge';
 
 const Admin: React.FC = () => {
@@ -49,6 +51,8 @@ const Admin: React.FC = () => {
   const canAccessBlog = hasAccess(['admin', 'ventas']);
   const canAccessSpecialOrders = hasAccess(['admin', 'ventas', 'tecnico']);
   const canAccessPorSurtir = hasAccess(['admin', 'ventas']);
+  const canAccessQuotations = hasAccess(['admin', 'ventas']);
+  const canAccessComponentSpecs = hasAccess(['admin', 'ventas']);
 
   // Initialize dark mode
   useEffect(() => {
@@ -143,8 +147,10 @@ const Admin: React.FC = () => {
       if (activeTab === 'blog' && !canAccessBlog) setActiveTab('dashboard');
       if (activeTab === 'special-orders' && !canAccessSpecialOrders) setActiveTab('dashboard');
       if (activeTab === 'por-surtir' && !canAccessPorSurtir) setActiveTab('dashboard');
+      if (activeTab === 'quotations' && !canAccessQuotations) setActiveTab('dashboard');
+      if (activeTab === 'component-specs' && !canAccessComponentSpecs) setActiveTab('dashboard');
     }
-  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir]);
+  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -250,6 +256,8 @@ const Admin: React.FC = () => {
                       {activeTab === 'users' && 'Usuarios'}
                       {activeTab === 'contacts' && 'Contacto'}
                       {activeTab === 'services' && 'Servicios'}
+                      {activeTab === 'quotations' && 'Cotizaciones'}
+                      {activeTab === 'component-specs' && 'Componentes PC'}
                       {activeTab === 'blog' && 'Blog'}
                       {activeTab === 'special-orders' && 'Pedidos Especiales'}
                     </span>
@@ -327,6 +335,20 @@ const Admin: React.FC = () => {
                     <DropdownMenuItem onClick={() => setActiveTab('por-surtir')} className="gap-2">
                       <PackageX size={16} />
                       Por Surtir
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessQuotations && (
+                    <DropdownMenuItem onClick={() => setActiveTab('quotations')} className="gap-2">
+                      <Calculator size={16} />
+                      Cotizaciones
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessComponentSpecs && (
+                    <DropdownMenuItem onClick={() => setActiveTab('component-specs')} className="gap-2">
+                      <Settings size={16} />
+                      Componentes PC
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -407,6 +429,20 @@ const Admin: React.FC = () => {
                   Por Surtir
                 </TabsTrigger>
               )}
+              
+              {canAccessQuotations && (
+                <TabsTrigger value="quotations" className="gap-2">
+                  <Calculator size={16} />
+                  Cotizaciones
+                </TabsTrigger>
+              )}
+              
+              {canAccessComponentSpecs && (
+                <TabsTrigger value="component-specs" className="gap-2">
+                  <Settings size={16} />
+                  Componentes PC
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -469,6 +505,18 @@ const Admin: React.FC = () => {
             {canAccessPorSurtir && (
               <TabsContent value="por-surtir">
                 <AdminPorSurtir />
+              </TabsContent>
+            )}
+
+            {canAccessQuotations && (
+              <TabsContent value="quotations">
+                <AdminQuotations />
+              </TabsContent>
+            )}
+
+            {canAccessComponentSpecs && (
+              <TabsContent value="component-specs">
+                <AdminComponentSpecs />
               </TabsContent>
             )}
           </Tabs>
