@@ -83,6 +83,7 @@ const AdminComponentSpecs: React.FC = () => {
         socket: specs.socket,
         cpu_tdp: specs.cpu_tdp,
         cpu_base_frequency: specs.cpu_base_frequency,
+        cpu_has_igpu: specs.cpu_has_igpu,
         // Motherboard
         ram_type: specs.ram_type,
         form_factor: specs.form_factor,
@@ -234,6 +235,16 @@ const AdminComponentSpecs: React.FC = () => {
         return (
           <>
             {renderGamerCheckbox()}
+            <div className="col-span-2 flex items-center gap-2 p-3 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
+              <Checkbox
+                id="cpu_has_igpu"
+                checked={specs.cpu_has_igpu || false}
+                onCheckedChange={(checked) => setSpecs({ ...specs, cpu_has_igpu: checked as boolean })}
+              />
+              <Label htmlFor="cpu_has_igpu" className="cursor-pointer font-medium text-blue-700 dark:text-blue-300">
+                🖥️ Incluye Gráficos Integrados
+              </Label>
+            </div>
             <div>
               <Label>Socket</Label>
               <Select value={specs.socket || ''} onValueChange={(v) => setSpecs({ ...specs, socket: v })}>
