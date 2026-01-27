@@ -88,20 +88,39 @@ export type Database = {
       }
       component_specs: {
         Row: {
+          case_color: string | null
+          case_fans_count: number | null
+          case_fans_included: boolean | null
           case_form_factors: string[] | null
           case_max_gpu_length: number | null
+          case_psu_position: string | null
           chipset: string | null
           component_type: string
+          cooling_color: string | null
+          cooling_fans_count: number | null
+          cooling_type: string | null
+          cpu_base_frequency: number | null
           cpu_tdp: number | null
           created_at: string
           form_factor: string | null
+          gpu_brand: string | null
+          gpu_displayport_ports: number | null
+          gpu_dvi_ports: number | null
+          gpu_hdmi_ports: number | null
           gpu_length: number | null
+          gpu_mini_displayport_ports: number | null
           gpu_tdp: number | null
+          gpu_vga_ports: number | null
           id: string
+          is_gamer: boolean | null
           m2_slots: number | null
           max_ram_speed: number | null
           product_id: string
+          psu_color: string | null
           psu_efficiency: string | null
+          psu_form_factor: string | null
+          psu_modular: boolean | null
+          psu_pcie_cable: boolean | null
           psu_wattage: number | null
           ram_capacity: number | null
           ram_modules: number | null
@@ -110,24 +129,48 @@ export type Database = {
           ram_type: string | null
           socket: string | null
           storage_capacity: number | null
+          storage_has_heatsink: boolean | null
+          storage_interface: string | null
+          storage_m2_size: string | null
+          storage_speed: number | null
+          storage_subtype: string | null
           storage_type: string | null
           updated_at: string
         }
         Insert: {
+          case_color?: string | null
+          case_fans_count?: number | null
+          case_fans_included?: boolean | null
           case_form_factors?: string[] | null
           case_max_gpu_length?: number | null
+          case_psu_position?: string | null
           chipset?: string | null
           component_type: string
+          cooling_color?: string | null
+          cooling_fans_count?: number | null
+          cooling_type?: string | null
+          cpu_base_frequency?: number | null
           cpu_tdp?: number | null
           created_at?: string
           form_factor?: string | null
+          gpu_brand?: string | null
+          gpu_displayport_ports?: number | null
+          gpu_dvi_ports?: number | null
+          gpu_hdmi_ports?: number | null
           gpu_length?: number | null
+          gpu_mini_displayport_ports?: number | null
           gpu_tdp?: number | null
+          gpu_vga_ports?: number | null
           id?: string
+          is_gamer?: boolean | null
           m2_slots?: number | null
           max_ram_speed?: number | null
           product_id: string
+          psu_color?: string | null
           psu_efficiency?: string | null
+          psu_form_factor?: string | null
+          psu_modular?: boolean | null
+          psu_pcie_cable?: boolean | null
           psu_wattage?: number | null
           ram_capacity?: number | null
           ram_modules?: number | null
@@ -136,24 +179,48 @@ export type Database = {
           ram_type?: string | null
           socket?: string | null
           storage_capacity?: number | null
+          storage_has_heatsink?: boolean | null
+          storage_interface?: string | null
+          storage_m2_size?: string | null
+          storage_speed?: number | null
+          storage_subtype?: string | null
           storage_type?: string | null
           updated_at?: string
         }
         Update: {
+          case_color?: string | null
+          case_fans_count?: number | null
+          case_fans_included?: boolean | null
           case_form_factors?: string[] | null
           case_max_gpu_length?: number | null
+          case_psu_position?: string | null
           chipset?: string | null
           component_type?: string
+          cooling_color?: string | null
+          cooling_fans_count?: number | null
+          cooling_type?: string | null
+          cpu_base_frequency?: number | null
           cpu_tdp?: number | null
           created_at?: string
           form_factor?: string | null
+          gpu_brand?: string | null
+          gpu_displayport_ports?: number | null
+          gpu_dvi_ports?: number | null
+          gpu_hdmi_ports?: number | null
           gpu_length?: number | null
+          gpu_mini_displayport_ports?: number | null
           gpu_tdp?: number | null
+          gpu_vga_ports?: number | null
           id?: string
+          is_gamer?: boolean | null
           m2_slots?: number | null
           max_ram_speed?: number | null
           product_id?: string
+          psu_color?: string | null
           psu_efficiency?: string | null
+          psu_form_factor?: string | null
+          psu_modular?: boolean | null
+          psu_pcie_cable?: boolean | null
           psu_wattage?: number | null
           ram_capacity?: number | null
           ram_modules?: number | null
@@ -162,6 +229,11 @@ export type Database = {
           ram_type?: string | null
           socket?: string | null
           storage_capacity?: number | null
+          storage_has_heatsink?: boolean | null
+          storage_interface?: string | null
+          storage_m2_size?: string | null
+          storage_speed?: number | null
+          storage_subtype?: string | null
           storage_type?: string | null
           updated_at?: string
         }

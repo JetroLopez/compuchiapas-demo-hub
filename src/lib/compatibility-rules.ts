@@ -3,26 +3,59 @@
 export interface ComponentSpec {
   id: string;
   product_id: string;
-  component_type: 'cpu' | 'motherboard' | 'ram' | 'gpu' | 'psu' | 'case' | 'storage';
+  component_type: 'cpu' | 'motherboard' | 'ram' | 'gpu' | 'psu' | 'case' | 'storage' | 'cooling';
+  // Common
+  is_gamer?: boolean | null;
+  // CPU
   socket?: string | null;
+  cpu_tdp?: number | null;
+  cpu_base_frequency?: number | null;
+  // Motherboard
   ram_type?: string | null;
   form_factor?: string | null;
-  cpu_tdp?: number | null;
   ram_slots?: number | null;
   max_ram_speed?: number | null;
   m2_slots?: number | null;
   chipset?: string | null;
+  // RAM
   ram_capacity?: number | null;
   ram_speed?: number | null;
   ram_modules?: number | null;
+  // GPU
   gpu_tdp?: number | null;
   gpu_length?: number | null;
+  gpu_hdmi_ports?: number | null;
+  gpu_displayport_ports?: number | null;
+  gpu_mini_displayport_ports?: number | null;
+  gpu_vga_ports?: number | null;
+  gpu_dvi_ports?: number | null;
+  gpu_brand?: string | null;
+  // PSU
   psu_wattage?: number | null;
   psu_efficiency?: string | null;
+  psu_form_factor?: string | null;
+  psu_color?: string | null;
+  psu_modular?: boolean | null;
+  psu_pcie_cable?: boolean | null;
+  // Case
   case_max_gpu_length?: number | null;
   case_form_factors?: string[] | null;
+  case_color?: string | null;
+  case_fans_included?: boolean | null;
+  case_fans_count?: number | null;
+  case_psu_position?: string | null;
+  // Storage
   storage_type?: string | null;
   storage_capacity?: number | null;
+  storage_interface?: string | null;
+  storage_subtype?: string | null;
+  storage_m2_size?: string | null;
+  storage_speed?: number | null;
+  storage_has_heatsink?: boolean | null;
+  // Cooling
+  cooling_fans_count?: number | null;
+  cooling_color?: string | null;
+  cooling_type?: string | null;
 }
 
 export interface Product {
