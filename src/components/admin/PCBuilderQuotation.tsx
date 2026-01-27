@@ -40,12 +40,14 @@ interface AdditionalItem {
   costo: number;
   quantity: number;
   price: number;
+  existencias?: number;
 }
 
 const PCBuilderQuotation: React.FC = () => {
   const { toast } = useToast();
   const [build, setBuild] = useState<PCBuild>({});
   const [prices, setPrices] = useState<Record<string, number>>({});
+  const [ramQuantity, setRamQuantity] = useState(1);
   const [additionalItems, setAdditionalItems] = useState<AdditionalItem[]>([]);
   const [clientName, setClientName] = useState('');
   const [notes, setNotes] = useState('');
@@ -62,13 +64,27 @@ const PCBuilderQuotation: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, clave, category_id, costo')
+        .select('id, name, clave, category_id, costo, existencias')
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
       return data;
     },
   });
+
+  // Calculate max RAM quantity based on motherboard slots and stock
+  const maxRamQuantity = useMemo(() => {
+    const ramProduct = build.ram;
+    if (!ramProduct) return 1;
+    
+    const moboSlots = build.motherboard?.spec?.ram_slots || 4;
+    const ramModules = ramProduct.spec?.ram_modules || 1;
+    const maxBySlots = Math.floor(moboSlots / ramModules);
+    
+    const ramStock = (ramProduct as any).existencias || 999;
+    
+    return Math.max(1, Math.min(maxBySlots, ramStock));
+  }, [build.ram, build.motherboard]);
 
   const filteredProducts = useMemo(() => {
     if (!productSearch.trim()) return [];
@@ -91,11 +107,21 @@ const PCBuilderQuotation: React.FC = () => {
       );
       setPrices(prev => ({ ...prev, [product.id]: prev[product.id] || suggestedPrice }));
     }
+    // Reset RAM quantity when RAM is changed
+    if (type === 'ram') {
+      setRamQuantity(1);
+    }
     setEditableTotal(null); // Reset editable total when components change
   };
 
   const handlePriceChange = (productId: string, price: number) => {
     setPrices(prev => ({ ...prev, [productId]: price }));
+    setEditableTotal(null);
+  };
+
+  const handleRamQuantityChange = (qty: number) => {
+    const validQty = Math.max(1, Math.min(qty, maxRamQuantity));
+    setRamQuantity(validQty);
     setEditableTotal(null);
   };
 
@@ -145,6 +171,7 @@ const PCBuilderQuotation: React.FC = () => {
   const handleClear = () => {
     setBuild({});
     setPrices({});
+    setRamQuantity(1);
     setAdditionalItems([]);
     setClientName('');
     setNotes('');
@@ -159,12 +186,14 @@ const PCBuilderQuotation: React.FC = () => {
     [...COMPONENT_ORDER, ...OPTIONAL_COMPONENTS].forEach(type => {
       const product = build[type];
       if (product) {
+        // RAM can have quantity > 1
+        const qty = type === 'ram' ? ramQuantity : 1;
         items.push({
           id: product.id,
           name: product.name,
           clave: product.clave || undefined,
           categoryId: product.category_id,
-          quantity: 1,
+          quantity: qty,
           costo: (product as any).costo || 0,
           precioEditado: prices[product.id] || 0,
         });
@@ -336,6 +365,10 @@ const PCBuilderQuotation: React.FC = () => {
                 currentBuild={build}
                 price={build[type] ? prices[build[type]!.id] || 0 : 0}
                 onPriceChange={(price) => build[type] && handlePriceChange(build[type]!.id, price)}
+                // RAM quantity props
+                quantity={type === 'ram' ? ramQuantity : undefined}
+                maxQuantity={type === 'ram' ? maxRamQuantity : undefined}
+                onQuantityChange={type === 'ram' ? handleRamQuantityChange : undefined}
               />
             ))}
             
@@ -532,14 +565,19 @@ const PCBuilderQuotation: React.FC = () => {
                     const product = build[type];
                     if (!product) return null;
                     
+                    // RAM shows quantity
+                    const qty = type === 'ram' ? ramQuantity : 1;
+                    const unitPrice = prices[product.id] || 0;
+                    
                     return (
                       <div key={type} className="flex items-center justify-between text-sm">
                         <span className="flex items-center gap-2">
                           <span>{COMPONENT_ICONS[type]}</span>
                           <span className="truncate max-w-[120px]">{COMPONENT_LABELS[type]}</span>
+                          {qty > 1 && <span className="text-muted-foreground">(x{qty})</span>}
                         </span>
                         <span className="font-medium">
-                          {formatCurrency(prices[product.id] || 0)}
+                          {formatCurrency(unitPrice * qty)}
                         </span>
                       </div>
                     );

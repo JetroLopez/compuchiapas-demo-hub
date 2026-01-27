@@ -24,6 +24,10 @@ interface ComponentSelectorProps {
   currentBuild: PCBuild;
   price: number;
   onPriceChange: (price: number) => void;
+  // RAM quantity support
+  quantity?: number;
+  maxQuantity?: number;
+  onQuantityChange?: (qty: number) => void;
 }
 
 const ComponentSelector: React.FC<ComponentSelectorProps> = ({
@@ -35,6 +39,9 @@ const ComponentSelector: React.FC<ComponentSelectorProps> = ({
   currentBuild,
   price,
   onPriceChange,
+  quantity,
+  maxQuantity,
+  onQuantityChange,
 }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -84,6 +91,21 @@ const ComponentSelector: React.FC<ComponentSelectorProps> = ({
           <p className="text-sm text-muted-foreground">Sin seleccionar</p>
         )}
       </div>
+
+      {/* Quantity selector for RAM */}
+      {selected && quantity !== undefined && onQuantityChange && (
+        <div className="w-16 shrink-0">
+          <Input
+            type="number"
+            min="1"
+            max={maxQuantity || 4}
+            value={quantity}
+            onChange={(e) => onQuantityChange(parseInt(e.target.value) || 1)}
+            className="h-8 text-sm text-center"
+            title={`Máximo: ${maxQuantity || 4}`}
+          />
+        </div>
+      )}
 
       {/* Price Input */}
       {selected && (
