@@ -1,7 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Cpu, HardDrive, Monitor, Package, Power, CircuitBoard, MemoryStick, Fan, MessageCircle, ChevronDown } from 'lucide-react';
+import { 
+  ArrowLeft, ArrowRight, Check, Cpu, HardDrive, Monitor, Package, Power, 
+  CircuitBoard, MemoryStick, Fan, MessageCircle, Sparkles, Zap, Briefcase,
+  Gamepad2, Home, X
+} from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,6 +13,29 @@ import { useComponentProducts, usePCBuilderCompatibility } from '@/hooks/useComp
 import { PCBuild, ProductWithSpec, COMPONENT_LABELS } from '@/lib/compatibility-rules';
 import { cn } from '@/lib/utils';
 import { calculateSuggestedPrice } from '@/lib/quotation-pricing';
+
+// Usage types for filtering
+type UsageType = 'basic' | 'professional' | 'gaming' | null;
+type CpuBrand = 'AMD' | 'Intel' | null;
+
+interface FilterState {
+  usageType: UsageType;
+  cpuBrand: CpuBrand;
+  needsGpu: boolean | null;
+  compactCase: boolean | null;
+}
+
+interface Question {
+  id: string;
+  title: string;
+  subtitle?: string;
+  options: {
+    value: string;
+    label: string;
+    description: string;
+    icon: React.ReactNode;
+  }[];
+}
 
 const STEPS = [
   { key: 'cpu', label: 'Procesador', icon: Cpu },
@@ -28,10 +55,20 @@ const PCBuilder: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [build, setBuild] = useState<PCBuild>({});
   const [ramQuantity, setRamQuantity] = useState(1);
+  const [showQuestion, setShowQuestion] = useState(true);
+  const [filters, setFilters] = useState<FilterState>({
+    usageType: null,
+    cpuBrand: null,
+    needsGpu: null,
+    compactCase: null,
+  });
   
   const currentStepData = STEPS[currentStep];
   const { data: products = [], isLoading } = useComponentProducts(currentStepData.key as any);
   const compatibility = usePCBuilderCompatibility(build);
+
+  // Check if CPU has integrated graphics
+  const cpuHasIGPU = build.cpu?.spec?.cpu_has_igpu === true;
 
   // Calculate max RAM quantity based on motherboard slots and RAM modules
   const maxRamQuantity = useMemo(() => {
@@ -41,11 +78,194 @@ const PCBuilder: React.FC = () => {
     return Math.min(Math.floor(moboSlots / ramModules), ramStock);
   }, [build.motherboard, build.ram]);
 
+  // Filter products based on current filters
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      const spec = product.spec;
+      const name = product.name.toLowerCase();
+      
+      // CPU filtering
+      if (currentStepData.key === 'cpu') {
+        // Brand filter
+        if (filters.cpuBrand === 'AMD' && !name.includes('amd') && !name.includes('ryzen')) {
+          return false;
+        }
+        if (filters.cpuBrand === 'Intel' && !name.includes('intel') && !name.includes('core')) {
+          return false;
+        }
+        // Usage filter - gamer products for gaming, non-gamer for basic
+        if (filters.usageType === 'gaming' && spec?.is_gamer === false) {
+          return false;
+        }
+        if (filters.usageType === 'basic' && spec?.is_gamer === true) {
+          return false;
+        }
+      }
+      
+      // GPU filtering based on is_gamer for performance
+      if (currentStepData.key === 'gpu' && filters.usageType) {
+        if (filters.usageType === 'gaming' && spec?.is_gamer === false) {
+          return false;
+        }
+      }
+      
+      // Case filtering for compact
+      if (currentStepData.key === 'case' && filters.compactCase === true) {
+        const formFactors = spec?.case_form_factors || [];
+        // Only show mATX and ITX cases
+        const hasCompactFactor = formFactors.some((f: string) => 
+          f.toLowerCase().includes('matx') || 
+          f.toLowerCase().includes('itx') ||
+          f.toLowerCase().includes('micro')
+        );
+        if (!hasCompactFactor && formFactors.length > 0) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [products, filters, currentStepData.key]);
+
+  // Determine if current step should show a question
+  const currentQuestion = useMemo((): Question | null => {
+    if (!showQuestion) return null;
+    
+    switch (currentStepData.key) {
+      case 'cpu':
+        if (filters.usageType === null) {
+          return {
+            id: 'usage',
+            title: '¿Para qué usarás tu PC?',
+            subtitle: 'Esto nos ayudará a recomendarte los mejores componentes',
+            options: [
+              {
+                value: 'basic',
+                label: 'Uso Básico',
+                description: 'Escolar, administrativo, hogar',
+                icon: <Home className="w-8 h-8" />,
+              },
+              {
+                value: 'professional',
+                label: 'Profesional',
+                description: 'Trabajo demandante, servidor',
+                icon: <Briefcase className="w-8 h-8" />,
+              },
+              {
+                value: 'gaming',
+                label: 'Gaming',
+                description: 'Juegos y alto rendimiento',
+                icon: <Gamepad2 className="w-8 h-8" />,
+              },
+            ],
+          };
+        }
+        if (filters.cpuBrand === null) {
+          return {
+            id: 'brand',
+            title: 'Elige tu procesador',
+            subtitle: '¿Prefieres AMD o Intel?',
+            options: [
+              {
+                value: 'AMD',
+                label: 'AMD',
+                description: 'Ryzen - Excelente rendimiento multicore',
+                icon: <Zap className="w-8 h-8" />,
+              },
+              {
+                value: 'Intel',
+                label: 'Intel',
+                description: 'Core - Gran rendimiento single-core',
+                icon: <Cpu className="w-8 h-8" />,
+              },
+            ],
+          };
+        }
+        break;
+        
+      case 'gpu':
+        // Only show question if CPU has integrated graphics and user hasn't answered
+        if (cpuHasIGPU && filters.needsGpu === null) {
+          return {
+            id: 'gpu_needed',
+            title: '¿Requieres una tarjeta de video dedicada?',
+            subtitle: 'Tu procesador tiene gráficos integrados',
+            options: [
+              {
+                value: 'yes',
+                label: 'Sí, necesito más potencia',
+                description: 'Para gaming, diseño o trabajo con video',
+                icon: <Sparkles className="w-8 h-8" />,
+              },
+              {
+                value: 'no',
+                label: 'No, los gráficos integrados son suficientes',
+                description: 'Para uso básico y oficina',
+                icon: <Monitor className="w-8 h-8" />,
+              },
+            ],
+          };
+        }
+        break;
+        
+      case 'case':
+        if (filters.compactCase === null) {
+          return {
+            id: 'compact',
+            title: '¿Tienes poco espacio?',
+            subtitle: '¿Buscas un gabinete compacto?',
+            options: [
+              {
+                value: 'yes',
+                label: 'Sí, necesito algo compacto',
+                description: 'Gabinetes Micro ATX e ITX',
+                icon: <Package className="w-8 h-8" />,
+              },
+              {
+                value: 'no',
+                label: 'No, el tamaño no importa',
+                description: 'Todas las opciones disponibles',
+                icon: <Package className="w-8 h-8" />,
+              },
+            ],
+          };
+        }
+        break;
+    }
+    
+    return null;
+  }, [currentStepData.key, filters, showQuestion, cpuHasIGPU]);
+
+  const handleQuestionAnswer = (questionId: string, value: string) => {
+    switch (questionId) {
+      case 'usage':
+        setFilters(prev => ({ ...prev, usageType: value as UsageType }));
+        break;
+      case 'brand':
+        setFilters(prev => ({ ...prev, cpuBrand: value as CpuBrand }));
+        setShowQuestion(false);
+        break;
+      case 'gpu_needed':
+        if (value === 'no') {
+          // Skip GPU step entirely
+          setFilters(prev => ({ ...prev, needsGpu: false }));
+          handleNext();
+        } else {
+          setFilters(prev => ({ ...prev, needsGpu: true }));
+          setShowQuestion(false);
+        }
+        break;
+      case 'compact':
+        setFilters(prev => ({ ...prev, compactCase: value === 'yes' }));
+        setShowQuestion(false);
+        break;
+    }
+  };
+
   const handleSelectComponent = (product: ProductWithSpec) => {
     const stepKey = currentStepData.key as keyof PCBuild;
     setBuild(prev => ({ ...prev, [stepKey]: product }));
     
-    // Reset RAM quantity when RAM is changed
     if (stepKey === 'ram') {
       setRamQuantity(1);
     }
@@ -61,18 +281,39 @@ const PCBuilder: React.FC = () => {
 
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      let nextStep = currentStep + 1;
+      
+      // Skip GPU if not needed
+      if (STEPS[nextStep].key === 'gpu' && cpuHasIGPU && filters.needsGpu === false) {
+        nextStep++;
+      }
+      
+      setCurrentStep(nextStep);
+      setShowQuestion(true);
     }
   };
 
   const handlePrev = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      let prevStep = currentStep - 1;
+      
+      // Skip GPU going back if it was skipped
+      if (STEPS[prevStep].key === 'gpu' && cpuHasIGPU && filters.needsGpu === false) {
+        prevStep--;
+      }
+      
+      setCurrentStep(prevStep);
+      setShowQuestion(true);
     }
   };
 
   const handleGoToStep = (index: number) => {
+    // Don't allow going to GPU step if it should be skipped
+    if (STEPS[index].key === 'gpu' && cpuHasIGPU && filters.needsGpu === false) {
+      return;
+    }
     setCurrentStep(index);
+    setShowQuestion(true);
   };
 
   // Calculate total price
@@ -108,6 +349,8 @@ const PCBuilder: React.FC = () => {
     return encodeURIComponent(message);
   };
 
+  const shouldSkipGPU = cpuHasIGPU && filters.needsGpu === false;
+
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
@@ -131,7 +374,10 @@ const PCBuilder: React.FC = () => {
               <div className="text-center">
                 <h1 className="text-lg sm:text-xl font-bold">Arma tu PC</h1>
                 <p className="text-xs text-muted-foreground">
-                  Paso {currentStep + 1} de {STEPS.length}
+                  {filters.usageType 
+                    ? `${filters.usageType === 'basic' ? '🏠 Básico' : filters.usageType === 'professional' ? '💼 Profesional' : '🎮 Gaming'}`
+                    : 'Paso ' + (currentStep + 1) + ' de ' + STEPS.length
+                  }
                 </p>
               </div>
 
@@ -156,6 +402,9 @@ const PCBuilder: React.FC = () => {
                     const Icon = step.icon;
                     const isSelected = !!build[step.key as keyof PCBuild];
                     const isCurrent = index === currentStep;
+                    const isSkipped = step.key === 'gpu' && shouldSkipGPU;
+                    
+                    if (isSkipped) return null;
                     
                     return (
                       <button
@@ -186,7 +435,7 @@ const PCBuilder: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
-                className="bg-card rounded-2xl border shadow-lg overflow-hidden"
+                className="bg-card rounded-2xl border shadow-lg overflow-hidden relative"
               >
                 <div className="p-6 border-b bg-muted/30">
                   <div className="flex items-center justify-between">
@@ -214,6 +463,68 @@ const PCBuilder: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Question Overlay */}
+                <AnimatePresence>
+                  {currentQuestion && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 z-10 bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-6"
+                    >
+                      <motion.div
+                        initial={{ scale: 0.9, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.9, y: 20 }}
+                        className="w-full max-w-lg text-center"
+                      >
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.1, type: 'spring' }}
+                          className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center"
+                        >
+                          <Sparkles className="w-8 h-8 text-primary" />
+                        </motion.div>
+                        
+                        <h3 className="text-2xl font-bold mb-2">{currentQuestion.title}</h3>
+                        {currentQuestion.subtitle && (
+                          <p className="text-muted-foreground mb-8">{currentQuestion.subtitle}</p>
+                        )}
+                        
+                        <div className={cn(
+                          "grid gap-4",
+                          currentQuestion.options.length === 2 ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-3"
+                        )}>
+                          {currentQuestion.options.map((option, index) => (
+                            <motion.button
+                              key={option.value}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.2 + index * 0.1 }}
+                              onClick={() => handleQuestionAnswer(currentQuestion.id, option.value)}
+                              className="group p-6 rounded-2xl border-2 border-border hover:border-primary bg-card hover:bg-primary/5 transition-all text-center"
+                            >
+                              <div className="mb-4 mx-auto w-16 h-16 rounded-xl bg-muted group-hover:bg-primary/10 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                                {option.icon}
+                              </div>
+                              <p className="font-semibold mb-1">{option.label}</p>
+                              <p className="text-xs text-muted-foreground">{option.description}</p>
+                            </motion.button>
+                          ))}
+                        </div>
+                        
+                        <button
+                          onClick={() => setShowQuestion(false)}
+                          className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Omitir y ver todos los productos
+                        </button>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Product Grid */}
                 <ScrollArea className="h-[400px] sm:h-[500px]">
                   <div className="p-4">
@@ -223,17 +534,25 @@ const PCBuilder: React.FC = () => {
                           <div key={i} className="h-32 bg-muted animate-pulse rounded-xl" />
                         ))}
                       </div>
-                    ) : products.length === 0 ? (
+                    ) : filteredProducts.length === 0 ? (
                       <div className="text-center py-12 text-muted-foreground">
                         <currentStepData.icon size={48} className="mx-auto mb-4 opacity-30" />
-                        <p>No hay productos disponibles en esta categoría</p>
+                        <p>No hay productos disponibles con los filtros seleccionados</p>
+                        <Button
+                          variant="link"
+                          onClick={() => setShowQuestion(true)}
+                          className="mt-2"
+                        >
+                          Cambiar filtros
+                        </Button>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <AnimatePresence mode="popLayout">
-                          {products.map((product, index) => {
+                          {filteredProducts.map((product, index) => {
                             const isSelected = currentSelection?.id === product.id;
                             const price = product.costo ? calculateSuggestedPrice(product.costo, product.clave || '') : 0;
+                            const isGamer = product.spec?.is_gamer;
                             
                             return (
                               <motion.button
@@ -260,7 +579,13 @@ const PCBuilder: React.FC = () => {
                                   </motion.div>
                                 )}
                                 
-                                <div className="flex gap-3">
+                                {isGamer && (
+                                  <div className="absolute top-2 left-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full font-medium">
+                                    🎮 Gamer
+                                  </div>
+                                )}
+                                
+                                <div className="flex gap-3 mt-4">
                                   {product.image_url ? (
                                     <img 
                                       src={product.image_url} 
@@ -402,7 +727,7 @@ const PCBuilder: React.FC = () => {
                   <div className="p-4 border-b bg-muted/30">
                     <h3 className="font-bold">Tu Configuración</h3>
                     <p className="text-xs text-muted-foreground">
-                      {selectedCount} de {STEPS.length} componentes
+                      {selectedCount} de {STEPS.length - (shouldSkipGPU ? 1 : 0)} componentes
                     </p>
                   </div>
 
@@ -411,10 +736,13 @@ const PCBuilder: React.FC = () => {
                       const Icon = step.icon;
                       const component = build[step.key as keyof PCBuild];
                       const isCurrent = index === currentStep;
+                      const isSkipped = step.key === 'gpu' && shouldSkipGPU;
                       const qty = step.key === 'ram' && component ? ramQuantity : 1;
                       const price = component?.costo 
                         ? calculateSuggestedPrice(component.costo, component.clave || '') * qty 
                         : 0;
+                      
+                      if (isSkipped) return null;
                       
                       return (
                         <motion.button

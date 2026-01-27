@@ -10,6 +10,7 @@ export interface ComponentSpec {
   socket?: string | null;
   cpu_tdp?: number | null;
   cpu_base_frequency?: number | null;
+  cpu_has_igpu?: boolean | null;
   // Motherboard
   ram_type?: string | null;
   form_factor?: string | null;

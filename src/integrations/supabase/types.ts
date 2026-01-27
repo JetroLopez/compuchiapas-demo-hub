@@ -100,6 +100,7 @@ export type Database = {
           cooling_fans_count: number | null
           cooling_type: string | null
           cpu_base_frequency: number | null
+          cpu_has_igpu: boolean | null
           cpu_tdp: number | null
           created_at: string
           form_factor: string | null
@@ -150,6 +151,7 @@ export type Database = {
           cooling_fans_count?: number | null
           cooling_type?: string | null
           cpu_base_frequency?: number | null
+          cpu_has_igpu?: boolean | null
           cpu_tdp?: number | null
           created_at?: string
           form_factor?: string | null
@@ -200,6 +202,7 @@ export type Database = {
           cooling_fans_count?: number | null
           cooling_type?: string | null
           cpu_base_frequency?: number | null
+          cpu_has_igpu?: boolean | null
           cpu_tdp?: number | null
           created_at?: string
           form_factor?: string | null
