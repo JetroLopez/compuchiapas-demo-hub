@@ -31,6 +31,7 @@ export function useComponentProducts(componentType: keyof typeof COMPONENT_CATEG
         .select('id, name, clave, category_id, existencias, image_url, costo')
         .in('category_id', categoryIds)
         .eq('is_active', true)
+        .gt('existencias', 0)
         .order('name');
 
       if (productsError) throw productsError;
