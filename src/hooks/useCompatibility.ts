@@ -17,6 +17,7 @@ interface Product {
   category_id: string | null;
   existencias: number | null;
   image_url: string | null;
+  costo: number | null;
 }
 
 export function useComponentProducts(componentType: keyof typeof COMPONENT_CATEGORIES) {
@@ -27,7 +28,7 @@ export function useComponentProducts(componentType: keyof typeof COMPONENT_CATEG
     queryFn: async () => {
       const { data: products, error: productsError } = await supabase
         .from('products')
-        .select('id, name, clave, category_id, existencias, image_url')
+        .select('id, name, clave, category_id, existencias, image_url, costo')
         .in('category_id', categoryIds)
         .eq('is_active', true)
         .order('name');
@@ -68,7 +69,7 @@ export function useAllComponentSpecs() {
 
       const { data: products, error: productsError } = await supabase
         .from('products')
-        .select('id, name, clave, category_id, existencias, image_url')
+        .select('id, name, clave, category_id, existencias, image_url, costo')
         .in('category_id', allCategoryIds)
         .eq('is_active', true)
         .order('category_id')

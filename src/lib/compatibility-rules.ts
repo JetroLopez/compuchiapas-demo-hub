@@ -32,6 +32,7 @@ export interface Product {
   category_id?: string | null;
   existencias?: number | null;
   image_url?: string | null;
+  costo?: number | null;
 }
 
 export interface ProductWithSpec extends Product {
@@ -46,6 +47,7 @@ export interface PCBuild {
   psu?: ProductWithSpec | null;
   case?: ProductWithSpec | null;
   storage?: ProductWithSpec | null;
+  cooling?: ProductWithSpec | null;
 }
 
 export interface CompatibilityResult {
@@ -58,11 +60,12 @@ export interface CompatibilityResult {
 export const COMPONENT_CATEGORIES: Record<string, string[]> = {
   cpu: ['MICRO'],
   motherboard: ['MOTHE'],
-  ram: ['MEDIM', 'MESOD', 'DDURI'],
+  ram: ['MEDIM'],
   gpu: ['VIDEO'],
   psu: ['FUENT'],
   case: ['GABIN'],
-  storage: ['ALMAC'],
+  storage: ['DDURI'],
+  cooling: ['ENFRI'], // Optional cooling component
 };
 
 export const COMPONENT_LABELS: Record<string, string> = {
@@ -73,6 +76,7 @@ export const COMPONENT_LABELS: Record<string, string> = {
   psu: 'Fuente de Poder',
   case: 'Gabinete',
   storage: 'Almacenamiento',
+  cooling: 'Enfriamiento',
 };
 
 export const COMPONENT_ICONS: Record<string, string> = {
@@ -83,6 +87,7 @@ export const COMPONENT_ICONS: Record<string, string> = {
   psu: '🔌',
   case: '📦',
   storage: '💿',
+  cooling: '❄️',
 };
 
 // Socket compatibility groups
