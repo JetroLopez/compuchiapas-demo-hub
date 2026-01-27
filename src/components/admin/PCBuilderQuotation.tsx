@@ -58,17 +58,42 @@ const PCBuilderQuotation: React.FC = () => {
 
   const compatibility = usePCBuilderCompatibility(build);
 
-  // Fetch all products for additional items
+  // Fetch all products for additional items (paginated to get all)
   const { data: allProducts = [] } = useQuery({
     queryKey: ['all-products-quotation'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, clave, category_id, costo, existencias')
-        .eq('is_active', true)
-        .order('name');
-      if (error) throw error;
-      return data;
+      const allData: Array<{
+        id: string;
+        name: string;
+        clave: string | null;
+        category_id: string | null;
+        costo: number | null;
+        existencias: number | null;
+      }> = [];
+      const pageSize = 1000;
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, name, clave, category_id, costo, existencias')
+          .eq('is_active', true)
+          .order('name')
+          .range(offset, offset + pageSize - 1);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allData.push(...data);
+          offset += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      return allData;
     },
   });
 
