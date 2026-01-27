@@ -1,5 +1,6 @@
-
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { Monitor } from 'lucide-react';
 
 interface CheckIconProps {
   className?: string;
@@ -49,14 +50,13 @@ const CustomPCBuild: React.FC = () => {
             </div>
           </div>
           
-          <a 
-            href="https://wa.me/529612345678?text=Hola,%20me%20interesa%20cotizar%20una%20PC%20personalizada." 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="btn-secondary inline-flex items-center"
+          <Link 
+            to="/productos/arma-tu-pc"
+            className="btn-secondary inline-flex items-center gap-2"
           >
-            Solicitar cotización
-          </a>
+            <Monitor size={18} />
+            Arma tu PC ahora
+          </Link>
         </div>
         
         <div className="hidden md:block">
