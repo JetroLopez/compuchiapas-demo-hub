@@ -102,6 +102,15 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
     },
   });
 
+  // Helper function to parse numbers that may have commas as thousands separators
+  const parseNumberWithCommas = (value: string | undefined): number => {
+    if (!value) return 0;
+    // Remove commas (thousands separator) before parsing
+    const cleaned = value.replace(/,/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
   const parseTableData = (text: string): ParsedProduct[] => {
     const lines = text
       .trim()
@@ -142,7 +151,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         linea = parts[2] || '';
         existencias = parseInt(parts[3] || '0', 10) || 0;
         // Costo is 5th column (index 4), imagen_url is 6th column (index 5)
-        costo = parseFloat(parts[4] || '0') || 0;
+        costo = parseNumberWithCommas(parts[4]);
         imagen_url = parts[5]?.trim() || undefined;
       } else {
         // Try: separated by 2+ spaces (common when copying from some systems)
@@ -157,7 +166,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           linea = parts[2] || '';
           existencias = parseInt(parts[3] || '0', 10) || 0;
           // Costo is 5th column (index 4), imagen_url is 6th column (index 5)
-          costo = parseFloat(parts[4] || '0') || 0;
+          costo = parseNumberWithCommas(parts[4]);
           imagen_url = parts[5]?.trim() || undefined;
         } else {
           // Fallback: single-space separated (descripcion puede contener espacios)
@@ -173,18 +182,18 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
 
           if (hasUrl) {
             imagen_url = last;
-            costo = parseFloat(tokens[tokens.length - 2] || '0') || 0;
+            costo = parseNumberWithCommas(tokens[tokens.length - 2]);
             existencias = parseInt(tokens[tokens.length - 3] || '0', 10) || 0;
             linea = tokens[tokens.length - 4] || '';
             descripcion = tokens.slice(1, tokens.length - 4).join(' ').trim();
           } else {
             // Check if last is a decimal number (could be costo)
-            const lastAsNumber = parseFloat(last);
+            const lastAsNumber = parseNumberWithCommas(last);
             const secondLast = tokens[tokens.length - 2];
             const secondLastAsInt = parseInt(secondLast || '0', 10);
             
             // If we have at least 5 tokens and last looks like a costo
-            if (tokens.length >= 5 && !isNaN(lastAsNumber)) {
+            if (tokens.length >= 5 && lastAsNumber > 0) {
               costo = lastAsNumber;
               existencias = secondLastAsInt || 0;
               linea = tokens[tokens.length - 3] || '';
