@@ -334,6 +334,17 @@ const AdminComponentSpecs: React.FC = () => {
                 placeholder="2"
               />
             </div>
+            {(specs.m2_slots || 0) > 0 && (
+              <div>
+                <Label>Tamaño máximo M.2</Label>
+                <Select value={specs.storage_m2_size || ''} onValueChange={(v) => setSpecs({ ...specs, storage_m2_size: v })}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar tamaño" /></SelectTrigger>
+                  <SelectContent>
+                    {M2_SIZE_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Chipset</Label>
               <Input
