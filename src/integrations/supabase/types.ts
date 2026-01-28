@@ -109,6 +109,8 @@ export type Database = {
           gpu_dvi_ports: number | null
           gpu_hdmi_ports: number | null
           gpu_length: number | null
+          gpu_memory_capacity: number | null
+          gpu_memory_type: string | null
           gpu_mini_displayport_ports: number | null
           gpu_tdp: number | null
           gpu_vga_ports: number | null
@@ -160,6 +162,8 @@ export type Database = {
           gpu_dvi_ports?: number | null
           gpu_hdmi_ports?: number | null
           gpu_length?: number | null
+          gpu_memory_capacity?: number | null
+          gpu_memory_type?: string | null
           gpu_mini_displayport_ports?: number | null
           gpu_tdp?: number | null
           gpu_vga_ports?: number | null
@@ -211,6 +215,8 @@ export type Database = {
           gpu_dvi_ports?: number | null
           gpu_hdmi_ports?: number | null
           gpu_length?: number | null
+          gpu_memory_capacity?: number | null
+          gpu_memory_type?: string | null
           gpu_mini_displayport_ports?: number | null
           gpu_tdp?: number | null
           gpu_vga_ports?: number | null

@@ -38,6 +38,7 @@ const COLOR_OPTIONS = ['Negro', 'Blanco', 'Otro'];
 const PSU_POSITION_OPTIONS = ['Superior', 'Inferior', 'Trasero'];
 const M2_SIZE_OPTIONS = ['2242', '2260', '2280', '22110'];
 const COOLING_TYPE_OPTIONS = ['Aire', 'Líquido'];
+const GPU_MEMORY_TYPE_OPTIONS = ['GDDR2', 'GDDR3', 'GDDR4', 'GDDR5', 'GDDR6', 'GDDR7'];
 
 const AdminComponentSpecs: React.FC = () => {
   const { toast } = useToast();
@@ -104,6 +105,8 @@ const AdminComponentSpecs: React.FC = () => {
         gpu_vga_ports: specs.gpu_vga_ports,
         gpu_dvi_ports: specs.gpu_dvi_ports,
         gpu_brand: specs.gpu_brand,
+        gpu_memory_type: specs.gpu_memory_type,
+        gpu_memory_capacity: specs.gpu_memory_capacity,
         // PSU
         psu_wattage: specs.psu_wattage,
         psu_efficiency: specs.psu_efficiency,
@@ -409,6 +412,24 @@ const AdminComponentSpecs: React.FC = () => {
                 value={specs.gpu_brand || ''}
                 onChange={(e) => setSpecs({ ...specs, gpu_brand: e.target.value })}
                 placeholder="NVIDIA, AMD, Intel..."
+              />
+            </div>
+            <div>
+              <Label>Tipo de Memoria</Label>
+              <Select value={specs.gpu_memory_type || ''} onValueChange={(v) => setSpecs({ ...specs, gpu_memory_type: v })}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar tipo" /></SelectTrigger>
+                <SelectContent>
+                  {GPU_MEMORY_TYPE_OPTIONS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Capacidad de Memoria (GB)</Label>
+              <Input
+                type="number"
+                value={specs.gpu_memory_capacity || ''}
+                onChange={(e) => setSpecs({ ...specs, gpu_memory_capacity: parseInt(e.target.value) || undefined })}
+                placeholder="8"
               />
             </div>
             <div>

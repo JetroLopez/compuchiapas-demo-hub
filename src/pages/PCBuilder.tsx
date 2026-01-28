@@ -362,7 +362,7 @@ const PCBuilder: React.FC = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pt-6">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
