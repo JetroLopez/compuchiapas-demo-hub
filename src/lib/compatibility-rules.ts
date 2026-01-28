@@ -31,6 +31,8 @@ export interface ComponentSpec {
   gpu_vga_ports?: number | null;
   gpu_dvi_ports?: number | null;
   gpu_brand?: string | null;
+  gpu_memory_type?: string | null;
+  gpu_memory_capacity?: number | null;
   // PSU
   psu_wattage?: number | null;
   psu_efficiency?: string | null;

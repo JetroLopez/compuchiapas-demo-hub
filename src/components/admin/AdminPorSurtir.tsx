@@ -17,6 +17,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface PorSurtirProduct {
   id: string;
@@ -27,11 +34,37 @@ interface PorSurtirProduct {
   created_at: string;
 }
 
+interface Warehouse {
+  id: string;
+  name: string;
+}
+
+interface WarehouseStock {
+  warehouse_id: string;
+  warehouse_name: string;
+  existencias: number;
+}
+
 const AdminPorSurtir: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newClave, setNewClave] = useState('');
   const [newNombre, setNewNombre] = useState('');
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('all');
+
+  // Fetch warehouses
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .select('id, name')
+        .order('name');
+      
+      if (error) throw error;
+      return data as Warehouse[];
+    },
+  });
 
   // Fetch products por surtir
   const { data: productsPorSurtir = [], isLoading } = useQuery({
@@ -45,6 +78,58 @@ const AdminPorSurtir: React.FC = () => {
       if (error) throw error;
       return data as PorSurtirProduct[];
     },
+  });
+
+  // Fetch stock by warehouse for all products with same clave
+  const { data: warehouseStockMap = new Map() } = useQuery({
+    queryKey: ['warehouse-stock-by-clave', productsPorSurtir.map(p => p.clave)],
+    queryFn: async () => {
+      if (productsPorSurtir.length === 0) return new Map<string, WarehouseStock[]>();
+
+      const claves = productsPorSurtir.map(p => p.clave);
+      
+      // Get all products with these claves
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('id, clave')
+        .in('clave', claves);
+      
+      if (productsError) throw productsError;
+      if (!products || products.length === 0) return new Map<string, WarehouseStock[]>();
+
+      const productIds = products.map(p => p.id);
+      
+      // Get warehouse stock for these products
+      const { data: stockData, error: stockError } = await supabase
+        .from('product_warehouse_stock')
+        .select('product_id, warehouse_id, existencias')
+        .in('product_id', productIds)
+        .gt('existencias', 0);
+      
+      if (stockError) throw stockError;
+
+      // Create a map of clave -> warehouse stocks
+      const stockMap = new Map<string, WarehouseStock[]>();
+      
+      for (const stock of stockData || []) {
+        const product = products.find(p => p.id === stock.product_id);
+        if (!product) continue;
+        
+        const warehouse = warehouses.find(w => w.id === stock.warehouse_id);
+        if (!warehouse) continue;
+
+        const existing = stockMap.get(product.clave) || [];
+        existing.push({
+          warehouse_id: stock.warehouse_id,
+          warehouse_name: warehouse.name,
+          existencias: stock.existencias,
+        });
+        stockMap.set(product.clave, existing);
+      }
+
+      return stockMap;
+    },
+    enabled: productsPorSurtir.length > 0 && warehouses.length > 0,
   });
 
   // Add manual product
@@ -150,12 +235,40 @@ const AdminPorSurtir: React.FC = () => {
     addProductMutation.mutate({ clave: newClave.trim(), nombre: newNombre.trim() });
   };
 
-  const pendingProducts = productsPorSurtir.filter(p => p.status === 'pending');
-  const orderedProducts = productsPorSurtir.filter(p => p.status === 'ordered');
+  // Filter by warehouse - check if product has zero stock in selected warehouse
+  const filterByWarehouse = (product: PorSurtirProduct) => {
+    if (selectedWarehouse === 'all') return true;
+    
+    const stocks = warehouseStockMap.get(product.clave) || [];
+    // Show product if it has NO stock in the selected warehouse
+    const hasStockInWarehouse = stocks.some(s => s.warehouse_id === selectedWarehouse && s.existencias > 0);
+    return !hasStockInWarehouse;
+  };
+
+  const filteredProducts = productsPorSurtir.filter(filterByWarehouse);
+  const pendingProducts = filteredProducts.filter(p => p.status === 'pending');
+  const orderedProducts = filteredProducts.filter(p => p.status === 'ordered');
+
+  // Get other warehouse stock info for display
+  const getOtherWarehouseStock = (product: PorSurtirProduct): string => {
+    const stocks = warehouseStockMap.get(product.clave) || [];
+    const relevantStocks = selectedWarehouse === 'all' 
+      ? stocks 
+      : stocks.filter(s => s.warehouse_id !== selectedWarehouse);
+    
+    if (relevantStocks.length === 0) return '';
+    
+    return relevantStocks
+      .map(s => `${s.existencias} pzas en ${s.warehouse_name}`)
+      .join(', ');
+  };
 
   const handleCopyAll = () => {
     const allProducts = [...pendingProducts, ...orderedProducts];
-    const text = allProducts.map(p => `${p.nombre} ${p.clave}`).join('\n');
+    const text = allProducts.map(p => {
+      const otherStock = getOtherWarehouseStock(p);
+      return `${p.nombre}${otherStock ? `, ${otherStock}` : ''} ${p.clave}`;
+    }).join('\n');
     navigator.clipboard.writeText(text);
     toast({
       title: 'Copiado',
@@ -181,17 +294,36 @@ const AdminPorSurtir: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Copy all button */}
-          {(pendingProducts.length > 0 || orderedProducts.length > 0) && (
-            <Button
-              variant="outline"
-              onClick={handleCopyAll}
-              className="w-full sm:w-auto"
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Copiar todos ({pendingProducts.length + orderedProducts.length})
-            </Button>
-          )}
+          {/* Warehouse filter and copy button */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Almacén:</span>
+              <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Seleccionar almacén" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los almacenes</SelectItem>
+                  {warehouses.map((warehouse) => (
+                    <SelectItem key={warehouse.id} value={warehouse.id}>
+                      {warehouse.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {(pendingProducts.length > 0 || orderedProducts.length > 0) && (
+              <Button
+                variant="outline"
+                onClick={handleCopyAll}
+                className="w-full sm:w-auto"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar todos ({pendingProducts.length + orderedProducts.length})
+              </Button>
+            )}
+          </div>
 
           {/* Pending products */}
           {pendingProducts.length === 0 && orderedProducts.length === 0 ? (
@@ -214,7 +346,14 @@ const AdminPorSurtir: React.FC = () => {
                       >
                         <div className="flex-1">
                           <div className="font-medium">{product.clave}</div>
-                          <div className="text-sm text-muted-foreground">{product.nombre}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {product.nombre}
+                            {getOtherWarehouseStock(product) && (
+                              <span className="text-blue-600 dark:text-blue-400 ml-1">
+                                , {getOtherWarehouseStock(product)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -279,7 +418,14 @@ const AdminPorSurtir: React.FC = () => {
                       >
                         <div className="flex-1">
                           <div className="font-medium text-green-700 dark:text-green-400">{product.clave}</div>
-                          <div className="text-sm text-green-600 dark:text-green-500">{product.nombre}</div>
+                          <div className="text-sm text-green-600 dark:text-green-500">
+                            {product.nombre}
+                            {getOtherWarehouseStock(product) && (
+                              <span className="text-blue-600 dark:text-blue-400 ml-1">
+                                , {getOtherWarehouseStock(product)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full flex items-center gap-1">
