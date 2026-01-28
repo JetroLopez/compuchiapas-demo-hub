@@ -9,6 +9,7 @@ interface ProductCardProps {
   existencias: number;
   costo: number | null;
   categoryId: string | null;
+  showPrice?: boolean;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -18,12 +19,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
   existencias,
   costo,
   categoryId,
+  showPrice = false,
 }) => {
   const whatsappNumber = "9622148546";
   const price = calculatePrice(costo, categoryId);
   const formattedPrice = formatPrice(price);
   
-  const whatsappMessage = `Hola, me interesa cotizar el producto:\n\nClave: ${clave || 'N/A'}\nDescripción: ${name}\nPrecio: ${formattedPrice}\n\n¿Podrían darme más información?`;
+  const whatsappMessage = showPrice && price > 0
+    ? `Hola, me interesa cotizar el producto:\n\nClave: ${clave || 'N/A'}\nDescripción: ${name}\nPrecio: ${formattedPrice}\n\n¿Podrían darme más información?`
+    : `Hola, me interesa cotizar el producto:\n\nClave: ${clave || 'N/A'}\nDescripción: ${name}\n\n¿Podrían darme más información sobre precio y disponibilidad?`;
   
   const handleWhatsAppClick = () => {
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
@@ -58,14 +62,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
         <h3 className="text-lg font-semibold mb-2 line-clamp-2">{name}</h3>
         
-        {/* Price Display */}
-        {price > 0 && (
+        {/* Price Display - Only when showPrice is true */}
+        {showPrice && price > 0 && (
           <p className="text-2xl font-bold text-primary mb-4">{formattedPrice}</p>
         )}
-        {price === 0 && costo === 0 && (
+        {showPrice && price === 0 && (
           <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
         )}
-        {price === 0 && costo === null && (
+        {!showPrice && (
           <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
         )}
         

@@ -235,26 +235,38 @@ const AdminPorSurtir: React.FC = () => {
     addProductMutation.mutate({ clave: newClave.trim(), nombre: newNombre.trim() });
   };
 
-  // Filter by warehouse - check if product has zero stock in selected warehouse
+  // Filter by warehouse - only show products that are genuinely out of stock in the selected warehouse
+  // A product should appear if:
+  // 1. When "all" is selected: show all products in the por_surtir list
+  // 2. When a specific warehouse is selected: only show products that have zero stock in THAT warehouse
+  //    AND either don't exist in other warehouses OR have stock elsewhere (for the info display)
   const filterByWarehouse = (product: PorSurtirProduct) => {
     if (selectedWarehouse === 'all') return true;
     
     const stocks = warehouseStockMap.get(product.clave) || [];
-    // Show product if it has NO stock in the selected warehouse
-    const hasStockInWarehouse = stocks.some(s => s.warehouse_id === selectedWarehouse && s.existencias > 0);
-    return !hasStockInWarehouse;
+    
+    // Check if product has any stock entry for the selected warehouse
+    const warehouseEntry = stocks.find(s => s.warehouse_id === selectedWarehouse);
+    
+    // Only show if product has zero or no stock in the selected warehouse
+    // This means: no entry exists for this warehouse, OR entry exists with 0 stock
+    if (warehouseEntry && warehouseEntry.existencias > 0) {
+      return false; // Has stock in selected warehouse, don't show
+    }
+    
+    return true; // No stock in selected warehouse, show it
   };
 
   const filteredProducts = productsPorSurtir.filter(filterByWarehouse);
   const pendingProducts = filteredProducts.filter(p => p.status === 'pending');
   const orderedProducts = filteredProducts.filter(p => p.status === 'ordered');
 
-  // Get other warehouse stock info for display
+  // Get other warehouse stock info for display (only warehouses different from selected)
   const getOtherWarehouseStock = (product: PorSurtirProduct): string => {
     const stocks = warehouseStockMap.get(product.clave) || [];
     const relevantStocks = selectedWarehouse === 'all' 
-      ? stocks 
-      : stocks.filter(s => s.warehouse_id !== selectedWarehouse);
+      ? stocks.filter(s => s.existencias > 0)
+      : stocks.filter(s => s.warehouse_id !== selectedWarehouse && s.existencias > 0);
     
     if (relevantStocks.length === 0) return '';
     
@@ -263,13 +275,27 @@ const AdminPorSurtir: React.FC = () => {
       .join(', ');
   };
 
+  // Get warehouse name for clipboard header
+  const getWarehouseName = (): string => {
+    if (selectedWarehouse === 'all') return 'Todos los almacenes';
+    const warehouse = warehouses.find(w => w.id === selectedWarehouse);
+    return warehouse?.name || 'Almacén';
+  };
+
   const handleCopyAll = () => {
     const allProducts = [...pendingProducts, ...orderedProducts];
-    const text = allProducts.map(p => {
+    const today = new Date().toLocaleDateString('es-MX', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const header = `Productos por surtir ${today} de ${getWarehouseName()}\n\n`;
+    const productsList = allProducts.map(p => {
       const otherStock = getOtherWarehouseStock(p);
       return `${p.nombre}${otherStock ? `, ${otherStock}` : ''} ${p.clave}`;
     }).join('\n');
-    navigator.clipboard.writeText(text);
+    
+    navigator.clipboard.writeText(header + productsList);
     toast({
       title: 'Copiado',
       description: `${allProducts.length} productos copiados al portapapeles.`,

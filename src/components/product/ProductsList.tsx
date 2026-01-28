@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import ProductCard from '../ProductCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +33,28 @@ interface ProductsListProps {
 }
 
 const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory, resetFilters }) => {
+  // Listen for changes to showPublicPrices in localStorage
+  const [showPrices, setShowPrices] = useState(() => {
+    return localStorage.getItem('showPublicPrices') === 'true';
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setShowPrices(localStorage.getItem('showPublicPrices') === 'true');
+    };
+    
+    // Listen for storage events (from other tabs)
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also poll for changes within same tab
+    const interval = setInterval(handleStorageChange, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
   // Obtener productos de la base de datos con paginación para superar límite de 1000
   const { data: products = [], isLoading: isLoadingProducts, error: productsError } = useQuery({
     queryKey: ['products'],
@@ -200,6 +222,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
           existencias={product.existencias ?? 0}
           costo={product.costo}
           categoryId={product.category_id}
+          showPrice={showPrices}
         />
       ))}
     </div>
