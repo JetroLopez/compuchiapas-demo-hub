@@ -78,7 +78,11 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
   const [showAll, setShowAll] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showZeroStock, setShowZeroStock] = useState(false);
-  const [showPrices, setShowPrices] = useState(false);
+  const [showPublicPrices, setShowPublicPrices] = useState(() => {
+    // Load initial value from localStorage
+    const saved = localStorage.getItem('showPublicPrices');
+    return saved === 'true';
+  });
   const [newProduct, setNewProduct] = useState({
     clave: '',
     name: '',
@@ -649,6 +653,21 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
               </Label>
             </div>
 
+            {/* Show Public Prices Toggle */}
+            <div className="flex items-center gap-2 px-3 py-1 border rounded-md bg-background">
+              <Switch
+                id="show-public-prices"
+                checked={showPublicPrices}
+                onCheckedChange={(checked) => {
+                  setShowPublicPrices(checked);
+                  localStorage.setItem('showPublicPrices', String(checked));
+                }}
+              />
+              <Label htmlFor="show-public-prices" className="text-sm cursor-pointer whitespace-nowrap">
+                Mostrar precios (público)
+              </Label>
+            </div>
+
             {/* Delete All Button - Only for admin */}
             {canDeleteAll && (
               <AlertDialog>
@@ -818,29 +837,6 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
           </Select>
         </div>
 
-        {/* Toggle for Prices and Zero Stock */}
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-prices"
-              checked={showPrices}
-              onCheckedChange={setShowPrices}
-            />
-            <Label htmlFor="show-prices" className="text-sm">
-              Mostrar precios
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-zero-stock"
-              checked={showZeroStock}
-              onCheckedChange={setShowZeroStock}
-            />
-            <Label htmlFor="show-zero-stock" className="text-sm">
-              Mostrar productos sin stock
-            </Label>
-          </div>
-        </div>
 
         {hasChanges && (
           <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
@@ -864,19 +860,15 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
                   <TableHead className="w-40">Almacenes</TableHead>
                   <TableHead className="w-32">URL Imagen</TableHead>
                   <TableHead className="w-24 text-center">Existencias</TableHead>
-                  {showPrices && (
-                    <>
-                      <TableHead className="w-24 text-right">Costo</TableHead>
-                      <TableHead className="w-24 text-right">Precio</TableHead>
-                    </>
-                  )}
+                  <TableHead className="w-24 text-right">Costo</TableHead>
+                  <TableHead className="w-24 text-right">Precio</TableHead>
                   <TableHead className="w-16 text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayedProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={showPrices ? 9 : 7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No se encontraron productos
                     </TableCell>
                   </TableRow>
@@ -938,16 +930,12 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
                           className="h-8 text-sm text-center"
                         />
                       </TableCell>
-                      {showPrices && (
-                        <>
-                          <TableCell className="p-1 text-right font-mono text-sm text-muted-foreground">
-                            ${(product.costo ?? 0).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="p-1 text-right font-mono text-sm font-medium">
-                            {formatPrice(calculatePrice(product.costo, product.category_id))}
-                          </TableCell>
-                        </>
-                      )}
+                      <TableCell className="p-1 text-right font-mono text-sm text-muted-foreground">
+                        ${(product.costo ?? 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="p-1 text-right font-mono text-sm font-medium">
+                        {formatPrice(calculatePrice(product.costo, product.category_id))}
+                      </TableCell>
                       <TableCell className="p-1 text-right">
                         {canDelete && (
                           <Button
