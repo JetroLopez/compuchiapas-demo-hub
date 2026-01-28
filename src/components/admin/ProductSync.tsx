@@ -68,7 +68,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
   });
 
   // Fetch categories to map LINEA values
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], refetch: refetchCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -297,6 +297,43 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       const productToExistencias = new Map<string, number>(); // product_id -> existencias
       const productToCosto = new Map<string, number>(); // product_id -> costo
       const productToCategoryId = new Map<string, string | null>(); // product_id -> category_id
+
+      // Track new categories that need to be created
+      const newCategories = new Map<string, string>(); // linea code -> linea code (as name too)
+
+      // First pass: identify new categories
+      for (const product of uniqueProducts) {
+        const categoryExists = categories.some(
+          (c) =>
+            c.name.toLowerCase() === product.linea.toLowerCase() ||
+            c.id.toLowerCase() === product.linea.toLowerCase()
+        );
+        if (!categoryExists && product.linea) {
+          newCategories.set(product.linea.toUpperCase(), product.linea.toUpperCase());
+        }
+      }
+
+      // Create new categories if any
+      if (newCategories.size > 0) {
+        const categoriesToInsert = Array.from(newCategories.keys()).map(linea => ({
+          id: linea,
+          name: linea,
+          is_active: true,
+        }));
+        
+        const { error: catError } = await supabase
+          .from('categories')
+          .upsert(categoriesToInsert, { onConflict: 'id' });
+        
+        if (catError) {
+          console.error('Error creating categories:', catError);
+        } else {
+          // Add to local categories array for mapping
+          categoriesToInsert.forEach(cat => {
+            categories.push({ id: cat.id, name: cat.name });
+          });
+        }
+      }
 
       for (const product of uniqueProducts) {
         const category = categories.find(
@@ -573,6 +610,8 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product-warehouse-stock'] });
       queryClient.invalidateQueries({ queryKey: ['products-por-surtir'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      refetchCategories();
 
       const extras: string[] = [];
       if (result.duplicates > 0) extras.push(`${result.duplicates} duplicados fusionados`);

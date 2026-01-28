@@ -78,10 +78,15 @@ const PCBuilder: React.FC = () => {
     return Math.min(Math.floor(moboSlots / ramModules), ramStock);
   }, [build.motherboard, build.ram]);
 
-  // Filter products based on current filters
+  // Filter products based on current filters - ONLY show products WITH specs configured
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const spec = product.spec;
+      
+      // IMPORTANT: Only show products that have specs configured
+      if (!spec) {
+        return false;
+      }
       
       // CPU filtering
       if (currentStepData.key === 'cpu') {
@@ -557,6 +562,23 @@ const PCBuilder: React.FC = () => {
                             const isSelected = currentSelection?.id === product.id;
                             const price = product.costo ? calculateSuggestedPrice(product.costo, product.clave || '') : 0;
                             const isGamer = product.spec?.is_gamer;
+                            const spec = product.spec;
+                            
+                            // Build specs display string
+                            const specsDisplay: string[] = [];
+                            if (spec?.socket) specsDisplay.push(spec.socket);
+                            if (spec?.ram_type) specsDisplay.push(spec.ram_type);
+                            if (spec?.form_factor) specsDisplay.push(spec.form_factor);
+                            if (spec?.cpu_tdp) specsDisplay.push(`${spec.cpu_tdp}W`);
+                            if (spec?.gpu_tdp) specsDisplay.push(`${spec.gpu_tdp}W TDP`);
+                            if (spec?.gpu_length) specsDisplay.push(`${spec.gpu_length}mm`);
+                            if (spec?.psu_wattage) specsDisplay.push(`${spec.psu_wattage}W`);
+                            if (spec?.psu_efficiency) specsDisplay.push(spec.psu_efficiency);
+                            if (spec?.ram_capacity) specsDisplay.push(`${spec.ram_capacity}GB`);
+                            if (spec?.ram_speed) specsDisplay.push(`${spec.ram_speed}MHz`);
+                            if (spec?.storage_capacity) specsDisplay.push(`${spec.storage_capacity}GB`);
+                            if (spec?.storage_type) specsDisplay.push(spec.storage_type);
+                            if (spec?.case_form_factors?.length) specsDisplay.push(spec.case_form_factors.join('/'));
                             
                             return (
                               <motion.button
@@ -604,7 +626,12 @@ const PCBuilder: React.FC = () => {
                                   
                                   <div className="flex-1 min-w-0">
                                     <p className="font-medium text-sm line-clamp-2 mb-1">{product.name}</p>
-                                    <p className="text-xs text-muted-foreground mb-2">
+                                    {specsDisplay.length > 0 && (
+                                      <p className="text-xs text-muted-foreground mb-1 line-clamp-1">
+                                        {specsDisplay.slice(0, 3).join(' • ')}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground/70 mb-2">
                                       Stock: {product.existencias || 0}
                                     </p>
                                     <p className="text-primary font-bold">
@@ -804,12 +831,16 @@ const PCBuilder: React.FC = () => {
 
                   {/* Total */}
                   <div className="p-4 border-t bg-gradient-to-r from-primary/10 to-primary/5">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-muted-foreground">Total estimado</span>
                       <span className="text-2xl font-bold text-primary">
                         ${totalPrice.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
+                    
+                    <p className="text-[10px] text-muted-foreground/70 mb-3 leading-tight">
+                      Este precio es aproximado, contáctanos para verificar el precio o para ofrecerte algún descuento en tu ensamble.
+                    </p>
                     
                     <a
                       href={`https://wa.me/529622148546?text=${generateWhatsAppMessage()}`}
