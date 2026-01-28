@@ -29,7 +29,7 @@ import { COMPONENT_LABELS, COMPONENT_ICONS, ProductWithSpec, ComponentSpec } fro
 
 type ComponentType = 'cpu' | 'motherboard' | 'ram' | 'gpu' | 'psu' | 'case' | 'storage' | 'cooling';
 
-const SOCKET_OPTIONS = ['AM4', 'AM5', 'LGA1700', 'LGA1200', 'LGA1151'];
+const SOCKET_OPTIONS = ['AM4', 'AM5', 'LGA1700', 'LGA1200'];
 const RAM_TYPE_OPTIONS = ['DDR4', 'DDR5', 'DDR3'];
 const FORM_FACTOR_OPTIONS = ['ATX', 'mATX', 'ITX', 'EATX'];
 const PSU_EFFICIENCY_OPTIONS = ['80+ White', '80+ Bronze', '80+ Silver', '80+ Gold', '80+ Platinum', '80+ Titanium'];

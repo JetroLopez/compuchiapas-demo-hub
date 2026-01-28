@@ -296,6 +296,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       const existingProductIds: string[] = [];
       const productToExistencias = new Map<string, number>(); // product_id -> existencias
       const productToCosto = new Map<string, number>(); // product_id -> costo
+      const productToCategoryId = new Map<string, string | null>(); // product_id -> category_id
 
       for (const product of uniqueProducts) {
         const category = categories.find(
@@ -324,21 +325,32 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           existingProductIds.push(existingProductId);
           productToExistencias.set(existingProductId, product.existencias);
           productToCosto.set(existingProductId, product.costo);
+          productToCategoryId.set(existingProductId, category?.id || null);
         } else {
           // New product - will be inserted
           newProducts.push({ ...productData, existencias: product.existencias });
         }
       }
 
-      // 3.5. Update costo for existing products
+      // 3.5. Update costo AND category_id for existing products
       for (let i = 0; i < existingProductIds.length; i += chunkSize) {
         const chunk = existingProductIds.slice(i, i + chunkSize);
         for (const productId of chunk) {
           const newCosto = productToCosto.get(productId);
+          const newCategoryId = productToCategoryId.get(productId);
+          
+          const updateData: { costo?: number; category_id?: string | null } = {};
           if (newCosto !== undefined) {
+            updateData.costo = newCosto;
+          }
+          if (newCategoryId !== undefined) {
+            updateData.category_id = newCategoryId;
+          }
+          
+          if (Object.keys(updateData).length > 0) {
             await supabase
               .from('products')
-              .update({ costo: newCosto })
+              .update(updateData)
               .eq('id', productId);
           }
         }

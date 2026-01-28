@@ -46,7 +46,8 @@ const catalogStructure = [
       { name: 'Procesadores', codes: ['MICRO'] },
       { name: 'Fuentes de Poder', codes: ['FUENT'] },
       { name: 'Gabinetes', codes: ['GABIN'] },
-      { name: 'Tarjetas Gráficas', codes: ['VIDEO'] }
+      { name: 'Tarjetas Gráficas', codes: ['VIDEO'] },
+      { name: 'Sistemas de Enfriamiento', codes: ['ENFRI'] }
     ]
   },
   {

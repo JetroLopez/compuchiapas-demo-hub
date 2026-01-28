@@ -82,16 +82,20 @@ const PCBuilder: React.FC = () => {
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const spec = product.spec;
-      const name = product.name.toLowerCase();
       
       // CPU filtering
       if (currentStepData.key === 'cpu') {
-        // Brand filter
-        if (filters.cpuBrand === 'AMD' && !name.includes('amd') && !name.includes('ryzen')) {
-          return false;
+        // Brand filter by socket - AMD: AM4, AM5 | Intel: LGA1200, LGA1700
+        const socket = spec?.socket?.toUpperCase() || '';
+        if (filters.cpuBrand === 'AMD') {
+          if (!socket.includes('AM4') && !socket.includes('AM5')) {
+            return false;
+          }
         }
-        if (filters.cpuBrand === 'Intel' && !name.includes('intel') && !name.includes('core')) {
-          return false;
+        if (filters.cpuBrand === 'Intel') {
+          if (!socket.includes('1200') && !socket.includes('1700')) {
+            return false;
+          }
         }
         // Usage filter - gamer products for gaming, non-gamer for basic
         if (filters.usageType === 'gaming' && spec?.is_gamer === false) {
