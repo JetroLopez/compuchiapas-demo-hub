@@ -47,6 +47,9 @@ export interface ComponentSpec {
   case_fans_included?: boolean | null;
   case_fans_count?: number | null;
   case_psu_position?: string | null;
+  case_includes_500w_psu?: boolean | null;
+  case_is_compact?: boolean | null;
+  case_supports_liquid_cooling?: boolean | null;
   // Storage
   storage_type?: string | null;
   storage_capacity?: number | null;

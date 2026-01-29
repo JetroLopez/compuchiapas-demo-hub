@@ -92,8 +92,11 @@ export type Database = {
           case_fans_count: number | null
           case_fans_included: boolean | null
           case_form_factors: string[] | null
+          case_includes_500w_psu: boolean | null
+          case_is_compact: boolean | null
           case_max_gpu_length: number | null
           case_psu_position: string | null
+          case_supports_liquid_cooling: boolean | null
           chipset: string | null
           component_type: string
           cooling_color: string | null
@@ -145,8 +148,11 @@ export type Database = {
           case_fans_count?: number | null
           case_fans_included?: boolean | null
           case_form_factors?: string[] | null
+          case_includes_500w_psu?: boolean | null
+          case_is_compact?: boolean | null
           case_max_gpu_length?: number | null
           case_psu_position?: string | null
+          case_supports_liquid_cooling?: boolean | null
           chipset?: string | null
           component_type: string
           cooling_color?: string | null
@@ -198,8 +204,11 @@ export type Database = {
           case_fans_count?: number | null
           case_fans_included?: boolean | null
           case_form_factors?: string[] | null
+          case_includes_500w_psu?: boolean | null
+          case_is_compact?: boolean | null
           case_max_gpu_length?: number | null
           case_psu_position?: string | null
+          case_supports_liquid_cooling?: boolean | null
           chipset?: string | null
           component_type?: string
           cooling_color?: string | null
