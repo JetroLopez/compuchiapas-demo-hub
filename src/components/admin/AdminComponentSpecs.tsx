@@ -121,6 +121,9 @@ const AdminComponentSpecs: React.FC = () => {
         case_fans_included: specs.case_fans_included,
         case_fans_count: specs.case_fans_count,
         case_psu_position: specs.case_psu_position,
+        case_includes_500w_psu: specs.case_includes_500w_psu,
+        case_is_compact: specs.case_is_compact,
+        case_supports_liquid_cooling: specs.case_supports_liquid_cooling,
         // Storage
         storage_type: specs.storage_type,
         storage_capacity: specs.storage_capacity,
@@ -675,6 +678,29 @@ const AdminComponentSpecs: React.FC = () => {
                 />
               </div>
             )}
+            <div className="col-span-2 grid grid-cols-3 gap-3">
+              <div className="flex items-center gap-3 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <Switch
+                  checked={specs.case_includes_500w_psu || false}
+                  onCheckedChange={(checked) => setSpecs({ ...specs, case_includes_500w_psu: checked })}
+                />
+                <Label className="text-amber-700 dark:text-amber-300">⚡ Incluye Fuente 500W</Label>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <Switch
+                  checked={specs.case_is_compact || false}
+                  onCheckedChange={(checked) => setSpecs({ ...specs, case_is_compact: checked })}
+                />
+                <Label className="text-blue-700 dark:text-blue-300">📦 Compacto</Label>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+                <Switch
+                  checked={specs.case_supports_liquid_cooling || false}
+                  onCheckedChange={(checked) => setSpecs({ ...specs, case_supports_liquid_cooling: checked })}
+                />
+                <Label className="text-cyan-700 dark:text-cyan-300">💧 Soporta Enfriamiento Líquido</Label>
+              </div>
+            </div>
           </>
         );
 
