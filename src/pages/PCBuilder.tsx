@@ -152,17 +152,14 @@ const PCBuilder: React.FC = () => {
     });
   }, [allProducts, selectedCpu]);
 
-  // Filter RAM by motherboard RAM type and speed
+  // Filter RAM by motherboard RAM type only (speed > max is OK, will run at max speed)
   const filteredRam = useMemo(() => {
     if (!selectedMotherboard?.spec?.ram_type) return [];
     return getProductsByCategory('ram').filter(p => {
       if (!p.spec) return false;
-      if (p.spec.ram_type !== selectedMotherboard.spec?.ram_type) return false;
-      // Speed within range
-      if (p.spec.ram_speed && selectedMotherboard.spec?.max_ram_speed) {
-        if (p.spec.ram_speed > selectedMotherboard.spec.max_ram_speed) return false;
-      }
-      return true;
+      // Only filter by RAM type, NOT by speed
+      // RAM with higher speed than motherboard max will simply run at the max supported speed
+      return p.spec.ram_type === selectedMotherboard.spec?.ram_type;
     });
   }, [allProducts, selectedMotherboard]);
 
@@ -1137,7 +1134,7 @@ const PCBuilder: React.FC = () => {
             <div className="lg:col-span-3 space-y-4">
               {/* Step indicator - mobile */}
               {currentStep !== 'summary' && (
-                <div className="lg:hidden overflow-x-auto pb-2">
+                <div className="lg:hidden overflow-x-auto pb-2 mt-4">
                   <div className="flex items-center gap-2">
                     {stepIndicatorItems.map((item, index) => (
                       <div
