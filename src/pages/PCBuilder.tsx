@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { calculateSuggestedPrice } from '@/lib/quotation-pricing';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import logoIntel from '@/assets/logo-intel.png';
 
 // Step definitions
 type BuildStep = 
@@ -886,7 +887,7 @@ const PCBuilder: React.FC = () => {
               value: 'Intel', 
               label: 'Intel', 
               description: 'Core - Gran rendimiento', 
-              icon: <img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Intel-logo.svg" alt="Intel" className="w-12 h-12 object-contain" />
+              icon: <img src={logoIntel} alt="Intel" className="w-12 h-12 object-contain" />
             },
           ],
           (value) => {
