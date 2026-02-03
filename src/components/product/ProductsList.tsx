@@ -216,6 +216,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
       {filteredProducts.map((product) => (
         <ProductCard
           key={product.id}
+          id={product.id}
           clave={product.clave}
           name={product.name}
           image={product.image_url || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1000&q=80'}
@@ -223,6 +224,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
           costo={product.costo}
           categoryId={product.category_id}
           showPrice={showPrices}
+          type="product"
         />
       ))}
     </div>

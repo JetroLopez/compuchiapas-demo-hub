@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button';
 import NavBar from './NavBar';
 import Footer from './Footer';
 import WhatsAppButton from './WhatsAppButton';
+import CartButton from './cart/CartButton';
+import CartSidebar from './cart/CartSidebar';
+import { CartProvider } from '@/hooks/useCart';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -39,6 +42,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setIsDarkMode(prev => !prev);
   };
 
+  // Show cart button on productos page and index page
+  const showCartButton = location.pathname.startsWith('/productos') || location.pathname === '/';
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground transition-colors duration-300">
       <Toaster />
@@ -54,6 +60,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
       </Button>
+
+      {/* Cart button - only on productos page */}
+      {showCartButton && <CartButton />}
+      
+      {/* Cart sidebar */}
+      <CartSidebar />
       
       <main className="flex-grow">
         {children}
@@ -61,6 +73,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <WhatsAppButton />
       <Footer />
     </div>
+  );
+};
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
+  return (
+    <CartProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </CartProvider>
   );
 };
 
