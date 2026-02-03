@@ -26,7 +26,9 @@ import {
   ChevronDown,
   ChevronUp,
   ShoppingBag,
-  ShoppingCart
+  ShoppingCart,
+  FolderKanban,
+  User
 } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -91,6 +93,17 @@ interface SpecialOrder {
   created_at: string;
 }
 
+interface ProjectWithLastLog {
+  id: string;
+  project_number: number;
+  nombre_proyecto: string;
+  cliente_nombre: string;
+  assigned_user_id: string;
+  assigned_user_name: string;
+  is_completed: boolean;
+  last_log_at: string | null;
+}
+
 interface AdminDashboardProps {
   onNavigateToTab: (tab: string) => void;
   pendingContactsCount: number;
@@ -110,8 +123,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
   const previousContactsCount = useRef<number>(0);
   const queryClient = useQueryClient();
-  const { hasAccess } = useAuth();
+  const { hasAccess, user, userRole } = useAuth();
   const canEditServices = hasAccess(['admin', 'tecnico']);
+  const isAdmin = userRole === 'admin';
 
   // Update current time every minute
   useEffect(() => {
@@ -274,6 +288,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     refetchInterval: 30000,
   });
 
+  // Fetch active projects with last log date
+  const { data: activeProjects = [], isLoading: projectsLoading } = useQuery({
+    queryKey: ['dashboard-projects', user?.id, isAdmin],
+    queryFn: async () => {
+      // Fetch projects
+      let projectsQuery = supabase
+        .from('projects')
+        .select('id, project_number, nombre_proyecto, cliente_nombre, assigned_user_id, assigned_user_name, is_completed')
+        .eq('is_completed', false);
+      
+      // Filter by user for non-admin roles
+      if (!isAdmin && user?.id) {
+        projectsQuery = projectsQuery.eq('assigned_user_id', user.id);
+      }
+      
+      const { data: projects, error: pError } = await projectsQuery;
+      if (pError) throw pError;
+      
+      // Fetch last log date for each project
+      const projectsWithLogs: ProjectWithLastLog[] = [];
+      for (const project of projects || []) {
+        const { data: logData } = await supabase
+          .from('project_logs')
+          .select('created_at')
+          .eq('project_id', project.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        projectsWithLogs.push({
+          ...project,
+          last_log_at: logData?.[0]?.created_at || null
+        });
+      }
+      
+      return projectsWithLogs;
+    },
+    refetchInterval: 60000,
+    enabled: !!user?.id
+  });
+
   // Mutation to update service estatus_interno
   const updateEstatusInternoMutation = useMutation({
     mutationFn: async ({ serviceId, estatusInterno }: { serviceId: string; estatusInterno: EstatusInterno }) => {
@@ -421,6 +475,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
   });
 
+  // Get project color based on last log interaction (days since last log)
+  const getProjectColor = (lastLogAt: string | null) => {
+    if (!lastLogAt) return 'bg-muted/50 border-border text-foreground'; // No logs yet
+    const daysSinceLastLog = differenceInDays(currentTime, new Date(lastLogAt));
+    if (daysSinceLastLog >= 5) return 'bg-red-500/20 border-red-500 text-red-700 dark:text-red-300';
+    if (daysSinceLastLog >= 3) return 'bg-yellow-500/20 border-yellow-500 text-yellow-700 dark:text-yellow-300';
+    return 'bg-green-500/20 border-green-500 text-green-700 dark:text-green-300';
+  };
+
+  // Sort projects by last log urgency (oldest interaction first)
+  const sortedActiveProjects = [...activeProjects].sort((a, b) => {
+    const daysA = a.last_log_at ? differenceInDays(currentTime, new Date(a.last_log_at)) : 999;
+    const daysB = b.last_log_at ? differenceInDays(currentTime, new Date(b.last_log_at)) : 999;
+    return daysB - daysA; // Most urgent (oldest interaction) first
+  });
+
   const containerClass = isFullscreen 
     ? 'fixed inset-0 z-50 bg-background p-4 overflow-auto' 
     : '';
@@ -473,7 +543,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Stats Overview - Hide some for tecnico */}
       {isTecnico ? (
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -508,13 +578,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div>
                   <p className="text-2xl font-bold">{specialOrders.length}</p>
                   <p className="text-xs text-muted-foreground">Pedidos especiales</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={cn(
+              "cursor-pointer hover:bg-muted/50 transition-colors relative",
+              activeProjects.length > 0 && "ring-2 ring-teal-500"
+            )} 
+            onClick={() => onNavigateToTab('projects')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-teal-500/10">
+                  <FolderKanban className="h-5 w-5 text-teal-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{activeProjects.length}</p>
+                  <p className="text-xs text-muted-foreground">Proyectos activos</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
           <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -549,6 +639,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div>
                   <p className="text-2xl font-bold">{specialOrders.length}</p>
                   <p className="text-xs text-muted-foreground">Pedidos especiales</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={cn(
+              "cursor-pointer hover:bg-muted/50 transition-colors relative",
+              activeProjects.length > 0 && "ring-2 ring-teal-500"
+            )} 
+            onClick={() => onNavigateToTab('projects')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-teal-500/10">
+                  <FolderKanban className="h-5 w-5 text-teal-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{activeProjects.length}</p>
+                  <p className="text-xs text-muted-foreground">Proyectos activos</p>
                 </div>
               </div>
             </CardContent>
@@ -1148,6 +1258,88 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       );
                     })}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Projects Monitor */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <FolderKanban size={18} />
+                    Proyectos
+                  </div>
+                  <div className="flex gap-1">
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500 text-[10px] px-1.5">
+                      1-2d
+                    </Badge>
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">
+                      3d
+                    </Badge>
+                    <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500 text-[10px] px-1.5">
+                      5+d
+                    </Badge>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {projectsLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : sortedActiveProjects.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay proyectos activos
+                  </p>
+                ) : (
+                  <ScrollArea className="h-[200px]">
+                    <div className="space-y-2 pr-4">
+                      {sortedActiveProjects.map((project) => {
+                        const daysSinceLog = project.last_log_at 
+                          ? differenceInDays(currentTime, new Date(project.last_log_at))
+                          : null;
+                        
+                        return (
+                          <div
+                            key={project.id}
+                            className={cn(
+                              "p-3 rounded-lg border-2 cursor-pointer hover:opacity-80 transition-opacity",
+                              getProjectColor(project.last_log_at)
+                            )}
+                            onClick={() => onNavigateToTab('projects')}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">{project.nombre_proyecto}</p>
+                                <div className="flex items-center gap-1 text-xs opacity-75 mt-0.5">
+                                  <User className="h-3 w-3" />
+                                  <span className="truncate">{project.cliente_nombre}</span>
+                                </div>
+                                <p className="text-[10px] opacity-60 mt-0.5">
+                                  #{project.project_number} • {project.assigned_user_name}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {daysSinceLog !== null ? (
+                                  <Badge className={cn(
+                                    "text-white text-xs px-2 py-0.5",
+                                    daysSinceLog >= 5 ? "bg-red-500" : daysSinceLog >= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
+                                  )}>
+                                    {daysSinceLog === 0 ? 'Hoy' : `${daysSinceLog}d`}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[10px] px-1.5">Sin log</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
                 )}
               </CardContent>
             </Card>
