@@ -508,6 +508,95 @@ export type Database = {
         }
         Relationships: []
       }
+      project_logs: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by_id: string
+          created_by_name: string
+          id: string
+          project_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by_id: string
+          created_by_name: string
+          id?: string
+          project_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by_id?: string
+          created_by_name?: string
+          id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          assigned_user_id: string
+          assigned_user_name: string
+          cliente_nombre: string
+          completed_at: string | null
+          created_at: string | null
+          descripcion: string | null
+          fecha: string
+          id: string
+          is_completed: boolean | null
+          monto_total: number | null
+          nombre_proyecto: string
+          project_number: number
+          remision_numero: string | null
+          telefono_contacto: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_user_id: string
+          assigned_user_name: string
+          cliente_nombre: string
+          completed_at?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          fecha?: string
+          id?: string
+          is_completed?: boolean | null
+          monto_total?: number | null
+          nombre_proyecto: string
+          project_number?: number
+          remision_numero?: string | null
+          telefono_contacto: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_user_id?: string
+          assigned_user_name?: string
+          cliente_nombre?: string
+          completed_at?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          fecha?: string
+          id?: string
+          is_completed?: boolean | null
+          monto_total?: number | null
+          nombre_proyecto?: string
+          project_number?: number
+          remision_numero?: string | null
+          telefono_contacto?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       promotions: {
         Row: {
           clave: string
