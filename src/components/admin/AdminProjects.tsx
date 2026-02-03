@@ -582,11 +582,11 @@ const AdminProjects = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Número de Remisión</Label>
+              <Label>Número de remisión o remisiones (separados por comas)</Label>
               <Input 
                 value={completionData.remision}
                 onChange={(e) => setCompletionData(prev => ({ ...prev, remision: e.target.value }))}
-                placeholder="Ej: REM-001"
+                placeholder="Ej: REM-001, REM-002"
               />
             </div>
             <div className="space-y-2">
