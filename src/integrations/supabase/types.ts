@@ -727,6 +727,54 @@ export type Database = {
         }
         Relationships: []
       }
+      web_orders: {
+        Row: {
+          billing_data: string | null
+          created_at: string
+          delivery_method: string | null
+          id: string
+          items: Json
+          notes: string | null
+          order_number: number
+          payment_method: string
+          phone: string
+          requires_quote: boolean
+          status: string
+          subtotal: number | null
+          updated_at: string
+        }
+        Insert: {
+          billing_data?: string | null
+          created_at?: string
+          delivery_method?: string | null
+          id?: string
+          items: Json
+          notes?: string | null
+          order_number?: number
+          payment_method: string
+          phone: string
+          requires_quote?: boolean
+          status?: string
+          subtotal?: number | null
+          updated_at?: string
+        }
+        Update: {
+          billing_data?: string | null
+          created_at?: string
+          delivery_method?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_number?: number
+          payment_method?: string
+          phone?: string
+          requires_quote?: boolean
+          status?: string
+          subtotal?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

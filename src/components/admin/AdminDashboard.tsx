@@ -25,7 +25,8 @@ import {
   VolumeX,
   ChevronDown,
   ChevronUp,
-  ShoppingBag
+  ShoppingBag,
+  ShoppingCart
 } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -257,6 +258,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return (data || []) as SpecialOrder[];
     },
     refetchInterval: 60000,
+  });
+
+  // Fetch pending web orders
+  const { data: pendingWebOrders = 0 } = useQuery({
+    queryKey: ['dashboard-web-orders-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('web_orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 30000,
   });
 
   // Mutation to update service estatus_interno
@@ -499,7 +514,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </Card>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -595,6 +610,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div>
                   <p className="text-2xl font-bold">{warehouseInfo.length}</p>
                   <p className="text-xs text-muted-foreground">Almacenes</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={cn(
+              "cursor-pointer hover:bg-muted/50 transition-colors relative",
+              pendingWebOrders > 0 && "ring-2 ring-indigo-500"
+            )} 
+            onClick={() => onNavigateToTab('web-orders')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-indigo-500/10 relative">
+                  <ShoppingCart className="h-5 w-5 text-indigo-500" />
+                  {pendingWebOrders > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+                      {pendingWebOrders > 9 ? '9+' : pendingWebOrders}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{pendingWebOrders}</p>
+                  <p className="text-xs text-muted-foreground">Pedidos web</p>
                 </div>
               </div>
             </CardContent>

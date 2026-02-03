@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,7 @@ import AdminSpecialOrders from '@/components/admin/AdminSpecialOrders';
 import AdminPorSurtir from '@/components/admin/AdminPorSurtir';
 import AdminQuotations from '@/components/admin/AdminQuotations';
 import AdminComponentSpecs from '@/components/admin/AdminComponentSpecs';
+import AdminWebOrders from '@/components/admin/AdminWebOrders';
 import { Badge } from '@/components/ui/badge';
 
 const Admin: React.FC = () => {
@@ -53,6 +54,7 @@ const Admin: React.FC = () => {
   const canAccessPorSurtir = hasAccess(['admin', 'ventas']);
   const canAccessQuotations = hasAccess(['admin', 'ventas']);
   const canAccessComponentSpecs = hasAccess(['admin', 'ventas']);
+  const canAccessWebOrders = hasAccess(['admin', 'ventas']);
 
   // Initialize dark mode
   useEffect(() => {
@@ -149,8 +151,9 @@ const Admin: React.FC = () => {
       if (activeTab === 'por-surtir' && !canAccessPorSurtir) setActiveTab('dashboard');
       if (activeTab === 'quotations' && !canAccessQuotations) setActiveTab('dashboard');
       if (activeTab === 'component-specs' && !canAccessComponentSpecs) setActiveTab('dashboard');
+      if (activeTab === 'web-orders' && !canAccessWebOrders) setActiveTab('dashboard');
     }
-  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs]);
+  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs, canAccessWebOrders]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -260,6 +263,7 @@ const Admin: React.FC = () => {
                       {activeTab === 'component-specs' && 'Componentes PC'}
                       {activeTab === 'blog' && 'Blog'}
                       {activeTab === 'special-orders' && 'Pedidos Especiales'}
+                      {activeTab === 'web-orders' && 'Pedidos Web'}
                     </span>
                     <ChevronDown size={16} />
                   </Button>
@@ -349,6 +353,13 @@ const Admin: React.FC = () => {
                     <DropdownMenuItem onClick={() => setActiveTab('component-specs')} className="gap-2">
                       <Settings size={16} />
                       Componentes PC
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {canAccessWebOrders && (
+                    <DropdownMenuItem onClick={() => setActiveTab('web-orders')} className="gap-2">
+                      <ShoppingCart size={16} />
+                      Pedidos Web
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -443,6 +454,13 @@ const Admin: React.FC = () => {
                   Componentes PC
                 </TabsTrigger>
               )}
+              
+              {canAccessWebOrders && (
+                <TabsTrigger value="web-orders" className="gap-2">
+                  <ShoppingCart size={16} />
+                  Pedidos Web
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -517,6 +535,12 @@ const Admin: React.FC = () => {
             {canAccessComponentSpecs && (
               <TabsContent value="component-specs">
                 <AdminComponentSpecs />
+              </TabsContent>
+            )}
+
+            {canAccessWebOrders && (
+              <TabsContent value="web-orders">
+                <AdminWebOrders />
               </TabsContent>
             )}
           </Tabs>
