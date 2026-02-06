@@ -52,6 +52,10 @@ const AdminPorSurtir: React.FC = () => {
   const [newNombre, setNewNombre] = useState('');
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('all');
 
+  // Optimistic UI state: track items being visually removed or moved
+  const [optimisticDeleted, setOptimisticDeleted] = useState<Set<string>>(new Set());
+  const [optimisticStatusOverrides, setOptimisticStatusOverrides] = useState<Map<string, string>>(new Map());
+
   // Fetch warehouses
   const { data: warehouses = [] } = useQuery({
     queryKey: ['warehouses'],
@@ -76,12 +80,14 @@ const AdminPorSurtir: React.FC = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+      // Clear optimistic state when fresh data arrives
+      setOptimisticDeleted(new Set());
+      setOptimisticStatusOverrides(new Map());
       return data as PorSurtirProduct[];
     },
   });
 
   // Fetch ALL stock records (including 0) by warehouse for all products with same clave
-  // This is critical: we need records with existencias=0 to know which warehouses a product belongs to
   const { data: warehouseStockMap = new Map() } = useQuery({
     queryKey: ['warehouse-stock-by-clave', productsPorSurtir.map(p => p.clave)],
     queryFn: async () => {
@@ -89,7 +95,6 @@ const AdminPorSurtir: React.FC = () => {
 
       const claves = productsPorSurtir.map(p => p.clave);
       
-      // Get all products with these claves
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('id, clave')
@@ -100,8 +105,6 @@ const AdminPorSurtir: React.FC = () => {
 
       const productIds = products.map(p => p.id);
       
-      // Get ALL warehouse stock records (including existencias=0)
-      // This tells us which warehouses a product has been registered in
       const { data: stockData, error: stockError } = await supabase
         .from('product_warehouse_stock')
         .select('product_id, warehouse_id, existencias')
@@ -109,7 +112,6 @@ const AdminPorSurtir: React.FC = () => {
       
       if (stockError) throw stockError;
 
-      // Create a map of clave -> ALL warehouse stocks (including 0)
       const stockMap = new Map<string, WarehouseStock[]>();
       
       for (const stock of stockData || []) {
@@ -160,7 +162,7 @@ const AdminPorSurtir: React.FC = () => {
     },
   });
 
-  // Mark as ordered (in transit)
+  // Mark as ordered (in transit) - optimistic
   const markAsOrderedMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -170,14 +172,19 @@ const AdminPorSurtir: React.FC = () => {
       
       if (error) throw error;
     },
+    onMutate: (id: string) => {
+      setOptimisticStatusOverrides(prev => new Map(prev).set(id, 'ordered'));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products-por-surtir'] });
-      toast({
-        title: 'Estado actualizado',
-        description: 'El producto ha sido marcado como pedido y en camino.',
-      });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, id: string) => {
+      // Revert optimistic update
+      setOptimisticStatusOverrides(prev => {
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
       toast({
         title: 'Error',
         description: error.message,
@@ -186,10 +193,39 @@ const AdminPorSurtir: React.FC = () => {
     },
   });
 
-  // Delete product completely
+  // Mark as pending (revert from ordered) - optimistic
+  const markAsPendingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('products_por_surtir')
+        .update({ status: 'pending' })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onMutate: (id: string) => {
+      setOptimisticStatusOverrides(prev => new Map(prev).set(id, 'pending'));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products-por-surtir'] });
+    },
+    onError: (error: Error, id: string) => {
+      setOptimisticStatusOverrides(prev => {
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete product completely - optimistic
   const deleteProductMutation = useMutation({
     mutationFn: async ({ id, productId }: { id: string; productId: string | null }) => {
-      // Delete from por_surtir list
       const { error: porSurtirError } = await supabase
         .from('products_por_surtir')
         .delete()
@@ -197,7 +233,6 @@ const AdminPorSurtir: React.FC = () => {
       
       if (porSurtirError) throw porSurtirError;
 
-      // If has associated product, delete from products table too
       if (productId) {
         const { error: productError } = await supabase
           .from('products')
@@ -207,15 +242,20 @@ const AdminPorSurtir: React.FC = () => {
         if (productError) throw productError;
       }
     },
+    onMutate: ({ id }) => {
+      setOptimisticDeleted(prev => new Set(prev).add(id));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products-por-surtir'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: 'Producto eliminado',
-        description: 'El producto ha sido eliminado completamente.',
-      });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, { id }: { id: string; productId: string | null }) => {
+      // Revert optimistic delete
+      setOptimisticDeleted(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast({
         title: 'Error',
         description: error.message,
@@ -236,32 +276,31 @@ const AdminPorSurtir: React.FC = () => {
     addProductMutation.mutate({ clave: newClave.trim(), nombre: newNombre.trim() });
   };
 
-  // Filter by warehouse - strict membership check using product_warehouse_stock records
-  // A product should ONLY appear for a warehouse if it has an actual record in product_warehouse_stock
-  // for that warehouse with existencias === 0. This prevents "crossed products".
+  // Filter by warehouse
   const filterByWarehouse = (product: PorSurtirProduct) => {
     if (selectedWarehouse === 'all') return true;
-    
-    // Manual products (no product_id) show in all views since we can't track warehouse membership
     if (!product.product_id) return true;
     
     const stocks = warehouseStockMap.get(product.clave) || [];
-    
-    // Find if this product has ANY record for the selected warehouse
     const warehouseEntry = stocks.find(s => s.warehouse_id === selectedWarehouse);
-    
-    // If no record exists for this warehouse, the product was never registered there - DON'T show it
     if (!warehouseEntry) return false;
-    
-    // Only show if the product has 0 stock in the selected warehouse
     return warehouseEntry.existencias === 0;
   };
 
-  const filteredProducts = productsPorSurtir.filter(filterByWarehouse);
-  const pendingProducts = filteredProducts.filter(p => p.status === 'pending');
-  const orderedProducts = filteredProducts.filter(p => p.status === 'ordered');
+  // Apply optimistic state: get effective status for a product
+  const getEffectiveStatus = (product: PorSurtirProduct): string => {
+    return optimisticStatusOverrides.get(product.id) ?? product.status;
+  };
 
-  // Get other warehouse stock info for display (only warehouses different from selected)
+  // Filter out optimistically deleted, then apply warehouse filter
+  const visibleProducts = productsPorSurtir
+    .filter(p => !optimisticDeleted.has(p.id))
+    .filter(filterByWarehouse);
+
+  const pendingProducts = visibleProducts.filter(p => getEffectiveStatus(p) === 'pending');
+  const orderedProducts = visibleProducts.filter(p => getEffectiveStatus(p) === 'ordered');
+
+  // Get other warehouse stock info for display
   const getOtherWarehouseStock = (product: PorSurtirProduct): string => {
     const stocks = warehouseStockMap.get(product.clave) || [];
     const relevantStocks = selectedWarehouse === 'all' 
@@ -275,22 +314,18 @@ const AdminPorSurtir: React.FC = () => {
       .join(', ');
   };
 
-  // Get warehouse name for clipboard header
   const getWarehouseName = (): string => {
     if (selectedWarehouse === 'all') return 'Todos los almacenes';
     const warehouse = warehouses.find(w => w.id === selectedWarehouse);
     return warehouse?.name || 'Almacén';
   };
 
-  const handleCopyAll = () => {
-    const allProducts = [...pendingProducts, ...orderedProducts];
+  const handleCopyPending = () => {
     const today = new Date().toLocaleDateString('es-MX', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+      year: 'numeric', month: 'long', day: 'numeric' 
     });
     const header = `Productos por surtir ${today} de ${getWarehouseName()}\n\n`;
-    const productsList = allProducts.map(p => {
+    const productsList = pendingProducts.map(p => {
       const otherStock = getOtherWarehouseStock(p);
       return `${p.nombre}${otherStock ? `, ${otherStock}` : ''} ${p.clave}`;
     }).join('\n');
@@ -298,7 +333,24 @@ const AdminPorSurtir: React.FC = () => {
     navigator.clipboard.writeText(header + productsList);
     toast({
       title: 'Copiado',
-      description: `${allProducts.length} productos copiados al portapapeles.`,
+      description: `${pendingProducts.length} productos pendientes copiados.`,
+    });
+  };
+
+  const handleCopyOrdered = () => {
+    const today = new Date().toLocaleDateString('es-MX', { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    });
+    const header = `Pedidos en camino ${today} de ${getWarehouseName()}\n\n`;
+    const productsList = orderedProducts.map(p => {
+      const otherStock = getOtherWarehouseStock(p);
+      return `${p.nombre}${otherStock ? `, ${otherStock}` : ''} ${p.clave}`;
+    }).join('\n');
+    
+    navigator.clipboard.writeText(header + productsList);
+    toast({
+      title: 'Copiado',
+      description: `${orderedProducts.length} pedidos en camino copiados.`,
     });
   };
 
@@ -320,7 +372,7 @@ const AdminPorSurtir: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Warehouse filter and copy button */}
+          {/* Warehouse filter */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground">Almacén:</span>
@@ -338,17 +390,6 @@ const AdminPorSurtir: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
-            {(pendingProducts.length > 0 || orderedProducts.length > 0) && (
-              <Button
-                variant="outline"
-                onClick={handleCopyAll}
-                className="w-full sm:w-auto"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copiar todos ({pendingProducts.length + orderedProducts.length})
-              </Button>
-            )}
           </div>
 
           {/* Pending products */}
@@ -361,9 +402,19 @@ const AdminPorSurtir: React.FC = () => {
               {/* Pending section */}
               {pendingProducts.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Pendientes ({pendingProducts.length})
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                      Pendientes ({pendingProducts.length})
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyPending}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copiar todos
+                    </Button>
+                  </div>
                   <div className="space-y-2">
                     {pendingProducts.map((product) => (
                       <div
@@ -387,7 +438,6 @@ const AdminPorSurtir: React.FC = () => {
                             variant="outline"
                             className="text-green-600 hover:bg-green-50 hover:text-green-700 border-green-300"
                             onClick={() => markAsOrderedMutation.mutate(product.id)}
-                            disabled={markAsOrderedMutation.isPending}
                           >
                             <Truck className="h-4 w-4 mr-1" />
                             Pedido y en camino
@@ -433,9 +483,19 @@ const AdminPorSurtir: React.FC = () => {
               {/* Ordered section (green) */}
               {orderedProducts.length > 0 && (
                 <div className="space-y-2 mt-6">
-                  <h3 className="font-semibold text-sm text-green-600 uppercase tracking-wide">
-                    Pedidos en camino ({orderedProducts.length})
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm text-green-600 uppercase tracking-wide">
+                      Pedidos en camino ({orderedProducts.length})
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyOrdered}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copiar todos
+                    </Button>
+                  </div>
                   <div className="space-y-2">
                     {orderedProducts.map((product) => (
                       <div
@@ -454,10 +514,14 @@ const AdminPorSurtir: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full flex items-center gap-1">
+                          <button
+                            onClick={() => markAsPendingMutation.mutate(product.id)}
+                            className="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full flex items-center gap-1 hover:bg-green-300 dark:hover:bg-green-700 transition-colors cursor-pointer"
+                            title="Click para regresar a pendiente"
+                          >
                             <Truck className="h-3 w-3" />
                             En camino
-                          </span>
+                          </button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
