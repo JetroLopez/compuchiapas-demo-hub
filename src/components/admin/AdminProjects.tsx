@@ -11,10 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Plus, CalendarIcon, Phone, User, FileText, Check, Loader2, PartyPopper } from 'lucide-react';
+import { Plus, CalendarIcon, Phone, User, FileText, Check, Loader2, PartyPopper, X, ChevronDown, ChevronUp, Archive, RotateCcw, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Project {
@@ -25,12 +26,16 @@ interface Project {
   telefono_contacto: string;
   nombre_proyecto: string;
   descripcion: string | null;
+  empresa_institucion: string | null;
   assigned_user_id: string;
   assigned_user_name: string;
   is_completed: boolean;
   completed_at: string | null;
   remision_numero: string | null;
   monto_total: number | null;
+  is_discarded: boolean | null;
+  discarded_at: string | null;
+  discard_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,9 +50,10 @@ interface ProjectLog {
 }
 
 const AdminProjects = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isAdmin = userRole === 'admin';
   
   // Dialog states
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
@@ -61,13 +67,20 @@ const AdminProjects = () => {
     fecha: string;
   } | null>(null);
   
+  // Discard states
+  const [isDiscardingProject, setIsDiscardingProject] = useState(false);
+  const [discardingProject, setDiscardingProject] = useState<Project | null>(null);
+  const [discardReason, setDiscardReason] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  
   // Form states
   const [newProjectDate, setNewProjectDate] = useState<Date>(new Date());
   const [newProject, setNewProject] = useState({
     cliente_nombre: '',
     telefono_contacto: '',
     nombre_proyecto: '',
-    descripcion: ''
+    descripcion: '',
+    empresa_institucion: ''
   });
   
   // Edit states
@@ -75,7 +88,8 @@ const AdminProjects = () => {
     cliente_nombre: '',
     telefono_contacto: '',
     nombre_proyecto: '',
-    descripcion: ''
+    descripcion: '',
+    empresa_institucion: ''
   });
   const [newLogEntry, setNewLogEntry] = useState('');
 
@@ -137,18 +151,32 @@ const AdminProjects = () => {
           telefono_contacto: newProject.telefono_contacto,
           nombre_proyecto: newProject.nombre_proyecto,
           descripcion: newProject.descripcion || null,
+          empresa_institucion: newProject.empresa_institucion || null,
           assigned_user_id: user!.id,
           assigned_user_name: userName
         })
         .select()
         .single();
       if (error) throw error;
+
+      // Create default initial log entry
+      const createdAt = new Date();
+      const { error: logError } = await supabase
+        .from('project_logs')
+        .insert({
+          project_id: data.id,
+          content: `Este proyecto ha sido creado con éxito el día ${format(createdAt, "dd/MM/yyyy 'a las' HH:mm:ss", { locale: es })}`,
+          created_by_id: user!.id,
+          created_by_name: userName
+        });
+      if (logError) console.error('Error creating initial log:', logError);
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setIsNewProjectOpen(false);
-      setNewProject({ cliente_nombre: '', telefono_contacto: '', nombre_proyecto: '', descripcion: '' });
+      setNewProject({ cliente_nombre: '', telefono_contacto: '', nombre_proyecto: '', descripcion: '', empresa_institucion: '' });
       setNewProjectDate(new Date());
       toast({ title: 'Proyecto creado exitosamente' });
     },
@@ -167,7 +195,8 @@ const AdminProjects = () => {
           cliente_nombre: editData.cliente_nombre,
           telefono_contacto: editData.telefono_contacto,
           nombre_proyecto: editData.nombre_proyecto,
-          descripcion: editData.descripcion || null
+          descripcion: editData.descripcion || null,
+          empresa_institucion: editData.empresa_institucion || null
         })
         .eq('id', selectedProject.id);
       if (error) throw error;
@@ -209,6 +238,7 @@ const AdminProjects = () => {
   // Complete project mutation
   const completeProjectMutation = useMutation({
     mutationFn: async (project: Project) => {
+      const userName = userProfile?.full_name || userProfile?.email || 'Usuario';
       const { error } = await supabase
         .from('projects')
         .update({
@@ -219,10 +249,20 @@ const AdminProjects = () => {
         })
         .eq('id', project.id);
       if (error) throw error;
+
+      // Log the completion
+      await supabase.from('project_logs').insert({
+        project_id: project.id,
+        content: `Proyecto completado. Remisión: ${completionData.remision}. Monto total: $${parseFloat(completionData.monto).toLocaleString('es-MX')}`,
+        created_by_id: user!.id,
+        created_by_name: userName
+      });
+
       return project;
     },
     onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-projects'] });
       setIsCompletingProject(false);
       setShowCelebration({
         projectNumber: project.project_number,
@@ -238,6 +278,94 @@ const AdminProjects = () => {
     }
   });
 
+  // Discard project mutation
+  const discardProjectMutation = useMutation({
+    mutationFn: async ({ project, reason }: { project: Project; reason: string }) => {
+      const userName = userProfile?.full_name || userProfile?.email || 'Usuario';
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          is_discarded: true,
+          discarded_at: new Date().toISOString(),
+          discard_reason: reason
+        })
+        .eq('id', project.id);
+      if (error) throw error;
+
+      // Log the discard reason
+      await supabase.from('project_logs').insert({
+        project_id: project.id,
+        content: `Proyecto descartado. Razón: ${reason}`,
+        created_by_id: user!.id,
+        created_by_name: userName
+      });
+
+      return project;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-projects'] });
+      setIsDiscardingProject(false);
+      setDiscardingProject(null);
+      setDiscardReason('');
+      toast({ title: 'Proyecto archivado' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error al archivar proyecto', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  // Reactivate project mutation
+  const reactivateProjectMutation = useMutation({
+    mutationFn: async (project: Project) => {
+      const userName = userProfile?.full_name || userProfile?.email || 'Usuario';
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          is_discarded: false,
+          discarded_at: null,
+          discard_reason: null
+        })
+        .eq('id', project.id);
+      if (error) throw error;
+
+      // Log the reactivation
+      await supabase.from('project_logs').insert({
+        project_id: project.id,
+        content: `Proyecto reactivado`,
+        created_by_id: user!.id,
+        created_by_name: userName
+      });
+
+      return project;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-projects'] });
+      toast({ title: 'Proyecto reactivado' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error al reactivar proyecto', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  // Permanently delete project mutation (admin only, 60+ days)
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      // Delete logs first
+      await supabase.from('project_logs').delete().eq('project_id', projectId);
+      const { error } = await supabase.from('projects').delete().eq('id', projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast({ title: 'Proyecto eliminado permanentemente' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error al eliminar', description: error.message, variant: 'destructive' });
+    }
+  });
+
   // Set edit data when project is selected
   useEffect(() => {
     if (selectedProject) {
@@ -245,13 +373,21 @@ const AdminProjects = () => {
         cliente_nombre: selectedProject.cliente_nombre,
         telefono_contacto: selectedProject.telefono_contacto,
         nombre_proyecto: selectedProject.nombre_proyecto,
-        descripcion: selectedProject.descripcion || ''
+        descripcion: selectedProject.descripcion || '',
+        empresa_institucion: selectedProject.empresa_institucion || ''
       });
     }
   }, [selectedProject]);
 
-  const activeProjects = projects?.filter(p => !p.is_completed) || [];
-  const completedProjects = projects?.filter(p => p.is_completed) || [];
+  const activeProjects = projects?.filter(p => !p.is_completed && !p.is_discarded) || [];
+  const completedProjects = projects?.filter(p => p.is_completed && !p.is_discarded) || [];
+  const archivedProjects = projects?.filter(p => p.is_discarded) || [];
+
+  // Check which archived projects are past 60 days
+  const getDaysArchived = (discardedAt: string | null) => {
+    if (!discardedAt) return 0;
+    return differenceInDays(new Date(), new Date(discardedAt));
+  };
 
   if (isLoading) {
     return (
@@ -260,6 +396,8 @@ const AdminProjects = () => {
       </div>
     );
   }
+
+  const isProjectEditable = (project: Project) => !project.is_completed && !project.is_discarded;
 
   return (
     <div className="space-y-6">
@@ -273,7 +411,7 @@ const AdminProjects = () => {
       </div>
 
       {/* Active Projects */}
-      {activeProjects.length === 0 && completedProjects.length === 0 ? (
+      {activeProjects.length === 0 && completedProjects.length === 0 && archivedProjects.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           No hay proyectos. Crea uno nuevo para comenzar.
         </div>
@@ -297,6 +435,12 @@ const AdminProjects = () => {
                     <User className="h-4 w-4 text-muted-foreground" />
                     <span>{project.cliente_nombre}</span>
                   </div>
+                  {project.empresa_institucion && (
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span>{project.empresa_institucion}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{project.telefono_contacto}</span>
@@ -309,11 +453,11 @@ const AdminProjects = () => {
                     Asignado a: {project.assigned_user_name}
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="gap-2">
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="w-full"
+                    className="flex-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedProject(project);
@@ -322,6 +466,19 @@ const AdminProjects = () => {
                   >
                     <Check className="h-4 w-4 mr-2" />
                     Proyecto Completado
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="aspect-square p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDiscardingProject(project);
+                      setIsDiscardingProject(true);
+                    }}
+                    title="Eliminar"
+                  >
+                    <X className="h-4 w-4" />
                   </Button>
                 </CardFooter>
               </Card>
@@ -353,6 +510,12 @@ const AdminProjects = () => {
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span>{project.cliente_nombre}</span>
                       </div>
+                      {project.empresa_institucion && (
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span>{project.empresa_institucion}</span>
+                        </div>
+                      )}
                       <div className="text-xs text-muted-foreground">
                         Remisión: {project.remision_numero}
                       </div>
@@ -369,6 +532,93 @@ const AdminProjects = () => {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Archived Projects - Collapsible */}
+          {archivedProjects.length > 0 && (
+            <Collapsible open={showArchived} onOpenChange={setShowArchived} className="mt-8">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between text-muted-foreground hover:text-foreground">
+                  <span className="flex items-center gap-2">
+                    <Archive className="h-4 w-4" />
+                    Proyectos Archivados ({archivedProjects.length})
+                  </span>
+                  {showArchived ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {archivedProjects.map((project) => {
+                    const daysArchived = getDaysArchived(project.discarded_at);
+                    const canPermanentlyDelete = daysArchived >= 60 && isAdmin;
+
+                    return (
+                      <Card 
+                        key={project.id} 
+                        className="bg-muted/30 opacity-60 hover:opacity-100 transition-opacity border-dashed cursor-pointer"
+                        onClick={() => setSelectedProject(project)}
+                      >
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg flex items-center gap-2 text-muted-foreground">
+                            <Archive className="h-5 w-5" />
+                            {project.nombre_proyecto}
+                          </CardTitle>
+                          <CardDescription className="text-xs">
+                            Proyecto #{project.project_number} • Archivado hace {daysArchived} días
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span>{project.cliente_nombre}</span>
+                          </div>
+                          {project.discard_reason && (
+                            <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                              Razón: {project.discard_reason}
+                            </div>
+                          )}
+                          {daysArchived >= 60 && (
+                            <div className="text-xs text-destructive font-medium">
+                              ⚠️ Marcado para eliminación permanente
+                            </div>
+                          )}
+                        </CardContent>
+                        <CardFooter className="gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              reactivateProjectMutation.mutate(project);
+                            }}
+                            disabled={reactivateProjectMutation.isPending}
+                          >
+                            <RotateCcw className="h-4 w-4 mr-2" />
+                            Reactivar
+                          </Button>
+                          {canPermanentlyDelete && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('¿Eliminar permanentemente este proyecto? Esta acción no se puede deshacer.')) {
+                                  permanentDeleteMutation.mutate(project.id);
+                                }
+                              }}
+                              disabled={permanentDeleteMutation.isPending}
+                            >
+                              Eliminar
+                            </Button>
+                          )}
+                        </CardFooter>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </>
       )}
@@ -406,6 +656,14 @@ const AdminProjects = () => {
                 value={newProject.cliente_nombre}
                 onChange={(e) => setNewProject(prev => ({ ...prev, cliente_nombre: e.target.value }))}
                 placeholder="Nombre del cliente"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Empresa o Institución <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+              <Input 
+                value={newProject.empresa_institucion}
+                onChange={(e) => setNewProject(prev => ({ ...prev, empresa_institucion: e.target.value }))}
+                placeholder="Ej: Gobierno del Estado, UNACH..."
               />
             </div>
             <div className="space-y-2">
@@ -454,19 +712,20 @@ const AdminProjects = () => {
             <DialogTitle className="flex items-center gap-2">
               {selectedProject?.nombre_proyecto}
               {selectedProject?.is_completed && <Check className="h-5 w-5 text-green-500" />}
+              {selectedProject?.is_discarded && <Archive className="h-5 w-5 text-muted-foreground" />}
             </DialogTitle>
             <DialogDescription>Proyecto #{selectedProject?.project_number}</DialogDescription>
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto space-y-6">
-            {/* Editable Fields (disabled if completed) */}
+            {/* Editable Fields (disabled if completed or discarded) */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nombre del Cliente</Label>
                 <Input 
                   value={editData.cliente_nombre}
                   onChange={(e) => setEditData(prev => ({ ...prev, cliente_nombre: e.target.value }))}
-                  disabled={selectedProject?.is_completed}
+                  disabled={!isProjectEditable(selectedProject!)}
                 />
               </div>
               <div className="space-y-2">
@@ -474,7 +733,16 @@ const AdminProjects = () => {
                 <Input 
                   value={editData.telefono_contacto}
                   onChange={(e) => setEditData(prev => ({ ...prev, telefono_contacto: e.target.value }))}
-                  disabled={selectedProject?.is_completed}
+                  disabled={!isProjectEditable(selectedProject!)}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Empresa o Institución <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+                <Input 
+                  value={editData.empresa_institucion}
+                  onChange={(e) => setEditData(prev => ({ ...prev, empresa_institucion: e.target.value }))}
+                  disabled={!isProjectEditable(selectedProject!)}
+                  placeholder="Ej: Gobierno del Estado, UNACH..."
                 />
               </div>
               <div className="space-y-2 col-span-2">
@@ -482,7 +750,7 @@ const AdminProjects = () => {
                 <Input 
                   value={editData.nombre_proyecto}
                   onChange={(e) => setEditData(prev => ({ ...prev, nombre_proyecto: e.target.value }))}
-                  disabled={selectedProject?.is_completed}
+                  disabled={!isProjectEditable(selectedProject!)}
                 />
               </div>
               <div className="space-y-2 col-span-2">
@@ -490,13 +758,13 @@ const AdminProjects = () => {
                 <Textarea 
                   value={editData.descripcion}
                   onChange={(e) => setEditData(prev => ({ ...prev, descripcion: e.target.value }))}
-                  disabled={selectedProject?.is_completed}
+                  disabled={!isProjectEditable(selectedProject!)}
                   rows={2}
                 />
               </div>
             </div>
 
-            {!selectedProject?.is_completed && (
+            {selectedProject && isProjectEditable(selectedProject) && (
               <Button 
                 onClick={() => updateProjectMutation.mutate()}
                 disabled={updateProjectMutation.isPending}
@@ -511,6 +779,9 @@ const AdminProjects = () => {
             <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-1">
               <p><span className="font-medium">Fecha:</span> {selectedProject && format(new Date(selectedProject.fecha), 'PPP', { locale: es })}</p>
               <p><span className="font-medium">Usuario Asignado:</span> {selectedProject?.assigned_user_name}</p>
+              {selectedProject?.empresa_institucion && (
+                <p><span className="font-medium">Empresa/Institución:</span> {selectedProject.empresa_institucion}</p>
+              )}
               <p><span className="font-medium">Creado:</span> {selectedProject && format(new Date(selectedProject.created_at), "dd/MM/yyyy HH:mm", { locale: es })}</p>
               <p><span className="font-medium">Última actualización:</span> {selectedProject && format(new Date(selectedProject.updated_at), "dd/MM/yyyy HH:mm", { locale: es })}</p>
               {selectedProject?.is_completed && (
@@ -518,6 +789,12 @@ const AdminProjects = () => {
                   <p><span className="font-medium">Remisión:</span> {selectedProject.remision_numero}</p>
                   <p><span className="font-medium">Monto Total:</span> ${selectedProject.monto_total?.toLocaleString('es-MX')}</p>
                   <p><span className="font-medium">Completado:</span> {format(new Date(selectedProject.completed_at!), "dd/MM/yyyy HH:mm", { locale: es })}</p>
+                </>
+              )}
+              {selectedProject?.is_discarded && (
+                <>
+                  <p><span className="font-medium text-destructive">Archivado:</span> {selectedProject.discarded_at && format(new Date(selectedProject.discarded_at), "dd/MM/yyyy HH:mm", { locale: es })}</p>
+                  <p><span className="font-medium text-destructive">Razón:</span> {selectedProject.discard_reason}</p>
                 </>
               )}
             </div>
@@ -529,7 +806,7 @@ const AdminProjects = () => {
                 Bitácora del Proyecto
               </h4>
               
-              {!selectedProject?.is_completed && (
+              {selectedProject && isProjectEditable(selectedProject) && (
                 <div className="space-y-2">
                   <Textarea 
                     value={newLogEntry}
@@ -586,7 +863,7 @@ const AdminProjects = () => {
               <Input 
                 value={completionData.remision}
                 onChange={(e) => setCompletionData(prev => ({ ...prev, remision: e.target.value }))}
-                placeholder="Ej: REM-001, REM-002"
+                placeholder="Ej. 45786,45787,..."
               />
             </div>
             <div className="space-y-2">
@@ -609,6 +886,45 @@ const AdminProjects = () => {
             >
               {completeProjectMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Completar Proyecto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Discard Project Dialog */}
+      <Dialog open={isDiscardingProject} onOpenChange={(open) => { setIsDiscardingProject(open); if (!open) { setDiscardingProject(null); setDiscardReason(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Eliminar Proyecto</DialogTitle>
+            <DialogDescription>
+              Proyecto #{discardingProject?.project_number} - {discardingProject?.nombre_proyecto}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              El proyecto será archivado y se eliminará permanentemente después de 60 días. Puedes reactivarlo antes de ese plazo.
+            </p>
+            <div className="space-y-2">
+              <Label>Razón por la que se descarta este proyecto:</Label>
+              <Textarea 
+                value={discardReason}
+                onChange={(e) => setDiscardReason(e.target.value)}
+                placeholder="Escribe la razón del descarte..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsDiscardingProject(false); setDiscardingProject(null); setDiscardReason(''); }}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => discardingProject && discardProjectMutation.mutate({ project: discardingProject, reason: discardReason })}
+              disabled={!discardReason.trim() || discardProjectMutation.isPending}
+            >
+              {discardProjectMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Archivar Proyecto
             </Button>
           </DialogFooter>
         </DialogContent>

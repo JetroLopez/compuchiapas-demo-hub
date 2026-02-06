@@ -295,8 +295,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       // Fetch projects
       let projectsQuery = supabase
         .from('projects')
-        .select('id, project_number, nombre_proyecto, cliente_nombre, assigned_user_id, assigned_user_name, is_completed')
-        .eq('is_completed', false);
+        .select('id, project_number, nombre_proyecto, cliente_nombre, assigned_user_id, assigned_user_name, is_completed, is_discarded')
+        .eq('is_completed', false)
+        .or('is_discarded.is.null,is_discarded.eq.false');
       
       // Filter by user for non-admin roles
       if (!isAdmin && user?.id) {

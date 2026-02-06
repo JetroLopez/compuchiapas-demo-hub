@@ -551,9 +551,13 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           descripcion: string | null
+          discard_reason: string | null
+          discarded_at: string | null
+          empresa_institucion: string | null
           fecha: string
           id: string
           is_completed: boolean | null
+          is_discarded: boolean | null
           monto_total: number | null
           nombre_proyecto: string
           project_number: number
@@ -568,9 +572,13 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           descripcion?: string | null
+          discard_reason?: string | null
+          discarded_at?: string | null
+          empresa_institucion?: string | null
           fecha?: string
           id?: string
           is_completed?: boolean | null
+          is_discarded?: boolean | null
           monto_total?: number | null
           nombre_proyecto: string
           project_number?: number
@@ -585,9 +593,13 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           descripcion?: string | null
+          discard_reason?: string | null
+          discarded_at?: string | null
+          empresa_institucion?: string | null
           fecha?: string
           id?: string
           is_completed?: boolean | null
+          is_discarded?: boolean | null
           monto_total?: number | null
           nombre_proyecto?: string
           project_number?: number
