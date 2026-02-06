@@ -80,7 +80,8 @@ const AdminPorSurtir: React.FC = () => {
     },
   });
 
-  // Fetch stock by warehouse for all products with same clave
+  // Fetch ALL stock records (including 0) by warehouse for all products with same clave
+  // This is critical: we need records with existencias=0 to know which warehouses a product belongs to
   const { data: warehouseStockMap = new Map() } = useQuery({
     queryKey: ['warehouse-stock-by-clave', productsPorSurtir.map(p => p.clave)],
     queryFn: async () => {
@@ -99,16 +100,16 @@ const AdminPorSurtir: React.FC = () => {
 
       const productIds = products.map(p => p.id);
       
-      // Get warehouse stock for these products
+      // Get ALL warehouse stock records (including existencias=0)
+      // This tells us which warehouses a product has been registered in
       const { data: stockData, error: stockError } = await supabase
         .from('product_warehouse_stock')
         .select('product_id, warehouse_id, existencias')
-        .in('product_id', productIds)
-        .gt('existencias', 0);
+        .in('product_id', productIds);
       
       if (stockError) throw stockError;
 
-      // Create a map of clave -> warehouse stocks
+      // Create a map of clave -> ALL warehouse stocks (including 0)
       const stockMap = new Map<string, WarehouseStock[]>();
       
       for (const stock of stockData || []) {
@@ -235,26 +236,25 @@ const AdminPorSurtir: React.FC = () => {
     addProductMutation.mutate({ clave: newClave.trim(), nombre: newNombre.trim() });
   };
 
-  // Filter by warehouse - only show products that are genuinely out of stock in the selected warehouse
-  // A product should appear if:
-  // 1. When "all" is selected: show all products in the por_surtir list
-  // 2. When a specific warehouse is selected: only show products that have zero stock in THAT warehouse
-  //    AND either don't exist in other warehouses OR have stock elsewhere (for the info display)
+  // Filter by warehouse - strict membership check using product_warehouse_stock records
+  // A product should ONLY appear for a warehouse if it has an actual record in product_warehouse_stock
+  // for that warehouse with existencias === 0. This prevents "crossed products".
   const filterByWarehouse = (product: PorSurtirProduct) => {
     if (selectedWarehouse === 'all') return true;
     
+    // Manual products (no product_id) show in all views since we can't track warehouse membership
+    if (!product.product_id) return true;
+    
     const stocks = warehouseStockMap.get(product.clave) || [];
     
-    // Check if product has any stock entry for the selected warehouse
+    // Find if this product has ANY record for the selected warehouse
     const warehouseEntry = stocks.find(s => s.warehouse_id === selectedWarehouse);
     
-    // Only show if product has zero or no stock in the selected warehouse
-    // This means: no entry exists for this warehouse, OR entry exists with 0 stock
-    if (warehouseEntry && warehouseEntry.existencias > 0) {
-      return false; // Has stock in selected warehouse, don't show
-    }
+    // If no record exists for this warehouse, the product was never registered there - DON'T show it
+    if (!warehouseEntry) return false;
     
-    return true; // No stock in selected warehouse, show it
+    // Only show if the product has 0 stock in the selected warehouse
+    return warehouseEntry.existencias === 0;
   };
 
   const filteredProducts = productsPorSurtir.filter(filterByWarehouse);

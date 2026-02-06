@@ -490,16 +490,15 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       }
 
       // 6. Update the main products table existencias with sum from all warehouses
-      // Also track products that become zero stock for "Por Surtir" list
-      // IMPORTANT: Include products that were removed from sync (missingProducts)
+      // Track products per-warehouse for "Por Surtir" list
       const allAffectedProductIds = [...existingProductIds, ...newProductIds.map((p) => p.id), ...missingProducts];
       const zeroStockProducts: { id: string; clave: string; name: string }[] = [];
-      const restoredProducts: string[] = []; // Products that went from 0 to >0
+      const restoredProducts: string[] = []; // Products that went from 0 to >0 in ALL warehouses
       
       for (let i = 0; i < allAffectedProductIds.length; i += chunkSize) {
         const chunk = allAffectedProductIds.slice(i, i + chunkSize);
         
-        // Get current existencias before update to detect changes
+        // Get current product info
         const { data: currentProducts, error: currentError } = await supabase
           .from('products')
           .select('id, clave, name, existencias')
@@ -507,29 +506,22 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         
         if (currentError) throw currentError;
         
-        const previousExistencias = new Map<string, number>();
-        (currentProducts || []).forEach((p) => {
-          previousExistencias.set(p.id, p.existencias || 0);
-        });
-        
         // Get sum of existencias for each product across all warehouses
         const { data: stockData, error: stockError } = await supabase
           .from('product_warehouse_stock')
-          .select('product_id, existencias')
+          .select('product_id, warehouse_id, existencias')
           .in('product_id', chunk);
         
         if (stockError) throw stockError;
 
-        // Calculate sum per product
+        // Calculate sum per product for the main table
         const productSums = new Map<string, number>();
         (stockData || []).forEach((s) => {
           const current = productSums.get(s.product_id) || 0;
           productSums.set(s.product_id, current + s.existencias);
         });
 
-        // Update products with total existencias and track zero stock
-        // Important: Products might not be in productSums if they weren't in stock query results
-        // We need to handle all products in chunk
+        // Update products with total existencias
         for (const product of currentProducts || []) {
           const productId = product.id;
           const totalExistencias = productSums.get(productId) || 0;
@@ -540,10 +532,14 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
             .eq('id', productId);
           if (updateError) throw updateError;
           
-          const prevStock = previousExistencias.get(productId) || 0;
+          // Check if this product has 0 stock in the CURRENT warehouse being synced
+          const currentWarehouseStock = (stockData || []).find(
+            s => s.product_id === productId && s.warehouse_id === warehouseId
+          );
+          const stockInCurrentWarehouse = currentWarehouseStock?.existencias || 0;
           
-          // Product went to zero - add to Por Surtir
-          if (totalExistencias === 0 && prevStock > 0) {
+          // Product has 0 stock in the current sync warehouse → add to Por Surtir
+          if (stockInCurrentWarehouse === 0) {
             zeroStockProducts.push({
               id: product.id,
               clave: product.clave || '',
@@ -551,8 +547,10 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
             });
           }
           
-          // Product restored from zero - remove from Por Surtir
-          if (totalExistencias > 0 && prevStock === 0) {
+          // Product has been restored (stock > 0 in ALL warehouses where it exists) → remove from Por Surtir
+          const allWarehouseStocks = (stockData || []).filter(s => s.product_id === productId);
+          const hasZeroInAnyWarehouse = allWarehouseStocks.some(s => s.existencias === 0);
+          if (!hasZeroInAnyWarehouse && allWarehouseStocks.length > 0) {
             restoredProducts.push(productId);
           }
         }
@@ -560,13 +558,6 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       
       // 7. Add zero stock products to "Por Surtir" table
       if (zeroStockProducts.length > 0) {
-        const porSurtirInserts = zeroStockProducts.map((p) => ({
-          product_id: p.id,
-          clave: p.clave,
-          nombre: p.name,
-          status: 'pending',
-        }));
-        
         // Check for existing entries to avoid duplicates
         const { data: existingPorSurtir } = await supabase
           .from('products_por_surtir')
@@ -574,7 +565,14 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           .in('product_id', zeroStockProducts.map((p) => p.id));
         
         const existingProductIds2 = new Set((existingPorSurtir || []).map((e) => e.product_id));
-        const newPorSurtir = porSurtirInserts.filter((p) => !existingProductIds2.has(p.product_id));
+        const newPorSurtir = zeroStockProducts
+          .filter((p) => !existingProductIds2.has(p.id))
+          .map((p) => ({
+            product_id: p.id,
+            clave: p.clave,
+            nombre: p.name,
+            status: 'pending',
+          }));
         
         if (newPorSurtir.length > 0) {
           const { error: porSurtirError } = await supabase
@@ -586,6 +584,7 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       }
       
       // 8. Remove restored products from "Por Surtir" table
+      // Only remove if product has stock > 0 in ALL warehouses
       if (restoredProducts.length > 0) {
         const { error: removeError } = await supabase
           .from('products_por_surtir')
