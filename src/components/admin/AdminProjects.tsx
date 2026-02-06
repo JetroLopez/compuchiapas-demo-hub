@@ -397,7 +397,10 @@ const AdminProjects = () => {
     );
   }
 
-  const isProjectEditable = (project: Project) => !project.is_completed && !project.is_discarded;
+  const isProjectEditable = (project: Project | null) => {
+    if (!project) return false;
+    return !project.is_completed && !project.is_discarded;
+  };
 
   return (
     <div className="space-y-6">
