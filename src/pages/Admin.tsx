@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban, Store, MoreHorizontal, Eye } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +28,24 @@ import AdminWebOrders from '@/components/admin/AdminWebOrders';
 import AdminProjects from '@/components/admin/AdminProjects';
 import { Badge } from '@/components/ui/badge';
 
+// Tab label mapping
+const TAB_LABELS: Record<string, string> = {
+  'dashboard': 'Resumen',
+  'sync': 'Sincronizar',
+  'products': 'Productos',
+  'por-surtir': 'Por Surtir',
+  'promotions': 'Promociones',
+  'users': 'Usuarios',
+  'contacts': 'Contacto',
+  'services': 'Servicios',
+  'quotations': 'Cotizaciones',
+  'component-specs': 'Componentes PC',
+  'blog': 'Blog',
+  'projects': 'Proyectos',
+  'special-orders': 'Pedidos Especiales',
+  'web-orders': 'Pedidos Web',
+};
+
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const { user, userRole, isLoading, signOut, hasAccess } = useAuth();
@@ -42,21 +60,27 @@ const Admin: React.FC = () => {
   const previousContactsCount = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Role-based access configuration
-  const canAccessSync = hasAccess(['admin', 'ventas']);
-  const canAccessProducts = hasAccess(['admin', 'ventas']);
-  const canAccessPromotions = hasAccess(['admin', 'ventas']);
+  // Role checks
+  const isSupervisor = userRole === 'supervisor';
+  const isVentas = userRole === 'ventas';
   const isTecnico = userRole === 'tecnico';
+  const isAdmin = userRole === 'admin';
+
+  // Role-based access configuration
+  const canAccessSync = hasAccess(['admin', 'ventas', 'supervisor']);
+  const canAccessProducts = hasAccess(['admin', 'ventas', 'supervisor']);
+  const canAccessPromotions = hasAccess(['admin', 'ventas', 'supervisor']);
   const canAccessUsers = hasAccess(['admin']);
-  const canAccessContacts = hasAccess(['admin', 'ventas']);
-  const canAccessServices = hasAccess(['admin', 'tecnico']);
-  const canAccessBlog = hasAccess(['admin', 'ventas']);
-  const canAccessSpecialOrders = hasAccess(['admin', 'ventas', 'tecnico']);
-  const canAccessPorSurtir = hasAccess(['admin', 'ventas']);
-  const canAccessQuotations = hasAccess(['admin', 'ventas']);
-  const canAccessComponentSpecs = hasAccess(['admin', 'ventas']);
-  const canAccessWebOrders = hasAccess(['admin', 'ventas']);
-  const canAccessProjects = hasAccess(['admin', 'ventas', 'tecnico']);
+  const canAccessContacts = hasAccess(['admin', 'ventas', 'supervisor']);
+  const canAccessServices = hasAccess(['admin', 'tecnico', 'supervisor', 'ventas']);
+  const canAccessBlog = hasAccess(['admin', 'ventas', 'supervisor']);
+  const canAccessSpecialOrders = hasAccess(['admin', 'ventas', 'tecnico', 'supervisor']);
+  const canAccessPorSurtir = hasAccess(['admin', 'ventas', 'supervisor']);
+  const canAccessQuotations = hasAccess(['admin', 'ventas', 'supervisor']);
+  const canAccessComponentSpecs = hasAccess(['admin']);
+  const canAccessWebOrders = hasAccess(['admin', 'ventas', 'supervisor']);
+  const canAccessProjects = hasAccess(['admin', 'ventas', 'tecnico', 'supervisor']);
+  const isServicesReadOnly = isVentas;
 
   // Initialize dark mode
   useEffect(() => {
@@ -71,10 +95,8 @@ const Admin: React.FC = () => {
   // Create notification sound
   const playNotificationSound = useCallback(() => {
     try {
-      // Create audio context for louder notification
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
-      // Play three beeps for urgency
       const playBeep = (startTime: number, frequency: number, duration: number) => {
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
@@ -93,9 +115,9 @@ const Admin: React.FC = () => {
       };
 
       const currentTime = audioContext.currentTime;
-      playBeep(currentTime, 880, 0.2);       // A5
-      playBeep(currentTime + 0.25, 988, 0.2); // B5
-      playBeep(currentTime + 0.5, 1047, 0.3); // C6
+      playBeep(currentTime, 880, 0.2);
+      playBeep(currentTime + 0.25, 988, 0.2);
+      playBeep(currentTime + 0.5, 1047, 0.3);
       
     } catch (error) {
       console.log('Could not play notification sound:', error);
@@ -180,6 +202,13 @@ const Admin: React.FC = () => {
             Admin
           </span>
         );
+      case 'supervisor':
+        return (
+          <span className="flex items-center gap-1 text-xs bg-indigo-500/10 text-indigo-600 px-2 py-1 rounded-full">
+            <Eye size={12} />
+            Supervisor
+          </span>
+        );
       case 'tecnico':
         return (
           <span className="flex items-center gap-1 text-xs bg-orange-500/10 text-orange-600 px-2 py-1 rounded-full">
@@ -199,6 +228,439 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Define secondary tabs per role (hidden behind dropdown)
+  const getSupervisorSecondaryTabs = () => [
+    { value: 'sync', icon: RefreshCw, label: 'Sincronizar' },
+    { value: 'promotions', icon: Tag, label: 'Promociones' },
+    { value: 'products', icon: Package, label: 'Productos' },
+    { value: 'contacts', icon: MessageCircle, label: 'Contacto', badge: pendingContactsCount },
+    { value: 'blog', icon: FileText, label: 'Blog' },
+    { value: 'quotations', icon: Calculator, label: 'Cotizaciones' },
+  ];
+
+  const getVentasSecondaryTabs = () => [
+    { value: 'sync', icon: RefreshCw, label: 'Sincronizar' },
+    { value: 'services', icon: Wrench, label: 'Servicios' },
+    { value: 'products', icon: Package, label: 'Productos' },
+    { value: 'blog', icon: FileText, label: 'Blog' },
+  ];
+
+  const isSecondaryTab = (tab: string) => {
+    if (isSupervisor) {
+      return getSupervisorSecondaryTabs().some(t => t.value === tab);
+    }
+    if (isVentas) {
+      return getVentasSecondaryTabs().some(t => t.value === tab);
+    }
+    return false;
+  };
+
+  // Contact badge component
+  const ContactBadge = ({ count }: { count: number }) => {
+    if (count <= 0) return null;
+    return (
+      <span className="ml-auto h-5 w-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+        {count > 9 ? '9+' : count}
+      </span>
+    );
+  };
+
+  // Render mobile dropdown items based on role
+  const renderMobileItems = () => {
+    if (isSupervisor) {
+      return (
+        <>
+          <DropdownMenuItem onClick={() => setActiveTab('dashboard')} className="gap-2">
+            <LayoutDashboard size={16} /> Resumen
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('special-orders')} className="gap-2">
+            <ShoppingBag size={16} /> Pedidos Especiales
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('por-surtir')} className="gap-2">
+            <PackageX size={16} /> Por Surtir
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('projects')} className="gap-2">
+            <FolderKanban size={16} /> Proyectos
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('services')} className="gap-2">
+            <Wrench size={16} /> Servicios
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-xs text-muted-foreground font-semibold pointer-events-none pt-3">
+            Tienda en línea
+          </DropdownMenuItem>
+          {getSupervisorSecondaryTabs().map(tab => (
+            <DropdownMenuItem key={tab.value} onClick={() => setActiveTab(tab.value)} className="gap-2 pl-6">
+              <tab.icon size={16} /> {tab.label}
+              {tab.badge ? <ContactBadge count={tab.badge} /> : null}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuItem onClick={() => setActiveTab('web-orders')} className="gap-2">
+            <ShoppingCart size={16} /> Pedidos Web
+          </DropdownMenuItem>
+        </>
+      );
+    }
+
+    if (isVentas) {
+      return (
+        <>
+          <DropdownMenuItem onClick={() => setActiveTab('dashboard')} className="gap-2">
+            <LayoutDashboard size={16} /> Inicio
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('projects')} className="gap-2">
+            <FolderKanban size={16} /> Proyectos
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('web-orders')} className="gap-2">
+            <ShoppingCart size={16} /> Pedidos Web
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('contacts')} className="gap-2 relative">
+            <MessageCircle size={16} /> Contacto
+            <ContactBadge count={pendingContactsCount} />
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('special-orders')} className="gap-2">
+            <ShoppingBag size={16} /> Pedidos Especiales
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('por-surtir')} className="gap-2">
+            <PackageX size={16} /> Por Surtir
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('quotations')} className="gap-2">
+            <Calculator size={16} /> Cotizaciones
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('promotions')} className="gap-2">
+            <Tag size={16} /> Promociones
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-xs text-muted-foreground font-semibold pointer-events-none pt-3">
+            Otras opciones
+          </DropdownMenuItem>
+          {getVentasSecondaryTabs().map(tab => (
+            <DropdownMenuItem key={tab.value} onClick={() => setActiveTab(tab.value)} className="gap-2 pl-6">
+              <tab.icon size={16} /> {tab.label}
+            </DropdownMenuItem>
+          ))}
+        </>
+      );
+    }
+
+    if (isTecnico) {
+      return (
+        <>
+          <DropdownMenuItem onClick={() => setActiveTab('dashboard')} className="gap-2">
+            <LayoutDashboard size={16} /> Resumen
+          </DropdownMenuItem>
+          {canAccessServices && (
+            <DropdownMenuItem onClick={() => setActiveTab('services')} className="gap-2">
+              <Wrench size={16} /> Servicios
+            </DropdownMenuItem>
+          )}
+          {canAccessSpecialOrders && (
+            <DropdownMenuItem onClick={() => setActiveTab('special-orders')} className="gap-2">
+              <ShoppingBag size={16} /> Pedidos Especiales
+            </DropdownMenuItem>
+          )}
+          {canAccessProjects && (
+            <DropdownMenuItem onClick={() => setActiveTab('projects')} className="gap-2">
+              <FolderKanban size={16} /> Proyectos
+            </DropdownMenuItem>
+          )}
+        </>
+      );
+    }
+
+    // Admin - all tabs
+    return (
+      <>
+        <DropdownMenuItem onClick={() => setActiveTab('dashboard')} className="gap-2">
+          <LayoutDashboard size={16} /> Resumen
+        </DropdownMenuItem>
+        {canAccessSync && (
+          <DropdownMenuItem onClick={() => setActiveTab('sync')} className="gap-2">
+            <RefreshCw size={16} /> Sincronizar
+          </DropdownMenuItem>
+        )}
+        {canAccessProducts && (
+          <DropdownMenuItem onClick={() => setActiveTab('products')} className="gap-2">
+            <Package size={16} /> Productos
+          </DropdownMenuItem>
+        )}
+        {canAccessPromotions && (
+          <DropdownMenuItem onClick={() => setActiveTab('promotions')} className="gap-2">
+            <Tag size={16} /> Promociones
+          </DropdownMenuItem>
+        )}
+        {canAccessUsers && (
+          <DropdownMenuItem onClick={() => setActiveTab('users')} className="gap-2">
+            <Users size={16} /> Usuarios
+          </DropdownMenuItem>
+        )}
+        {canAccessContacts && (
+          <DropdownMenuItem onClick={() => setActiveTab('contacts')} className="gap-2 relative">
+            <MessageCircle size={16} /> Contacto
+            <ContactBadge count={pendingContactsCount} />
+          </DropdownMenuItem>
+        )}
+        {canAccessServices && (
+          <DropdownMenuItem onClick={() => setActiveTab('services')} className="gap-2">
+            <Wrench size={16} /> Servicios
+          </DropdownMenuItem>
+        )}
+        {canAccessBlog && (
+          <DropdownMenuItem onClick={() => setActiveTab('blog')} className="gap-2">
+            <FileText size={16} /> Blog
+          </DropdownMenuItem>
+        )}
+        {canAccessSpecialOrders && (
+          <DropdownMenuItem onClick={() => setActiveTab('special-orders')} className="gap-2">
+            <ShoppingBag size={16} /> Pedidos Especiales
+          </DropdownMenuItem>
+        )}
+        {canAccessPorSurtir && (
+          <DropdownMenuItem onClick={() => setActiveTab('por-surtir')} className="gap-2">
+            <PackageX size={16} /> Por Surtir
+          </DropdownMenuItem>
+        )}
+        {canAccessQuotations && (
+          <DropdownMenuItem onClick={() => setActiveTab('quotations')} className="gap-2">
+            <Calculator size={16} /> Cotizaciones
+          </DropdownMenuItem>
+        )}
+        {canAccessComponentSpecs && (
+          <DropdownMenuItem onClick={() => setActiveTab('component-specs')} className="gap-2">
+            <Settings size={16} /> Componentes PC
+          </DropdownMenuItem>
+        )}
+        {canAccessWebOrders && (
+          <DropdownMenuItem onClick={() => setActiveTab('web-orders')} className="gap-2">
+            <ShoppingCart size={16} /> Pedidos Web
+          </DropdownMenuItem>
+        )}
+        {canAccessProjects && (
+          <DropdownMenuItem onClick={() => setActiveTab('projects')} className="gap-2">
+            <FolderKanban size={16} /> Proyectos
+          </DropdownMenuItem>
+        )}
+      </>
+    );
+  };
+
+  // Render desktop tabs based on role
+  const renderDesktopTabs = () => {
+    if (isSupervisor) {
+      const secondaryTabs = getSupervisorSecondaryTabs();
+      const isSecondaryActive = secondaryTabs.some(t => t.value === activeTab);
+
+      return (
+        <TabsList className="mb-6 flex-wrap bg-muted/50 hidden md:flex">
+          <TabsTrigger value="dashboard" className="gap-2">
+            <LayoutDashboard size={16} /> Resumen
+          </TabsTrigger>
+          <TabsTrigger value="special-orders" className="gap-2">
+            <ShoppingBag size={16} /> Pedidos Especiales
+          </TabsTrigger>
+          <TabsTrigger value="por-surtir" className="gap-2">
+            <PackageX size={16} /> Por Surtir
+          </TabsTrigger>
+          <TabsTrigger value="projects" className="gap-2">
+            <FolderKanban size={16} /> Proyectos
+          </TabsTrigger>
+          <TabsTrigger value="services" className="gap-2">
+            <Wrench size={16} /> Servicios
+          </TabsTrigger>
+          <TabsTrigger value="web-orders" className="gap-2">
+            <ShoppingCart size={16} /> Pedidos Web
+          </TabsTrigger>
+
+          {/* Tienda en línea dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-1.5 h-9 px-3 text-sm font-medium rounded-md ${isSecondaryActive ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Store size={16} />
+                Tienda en línea
+                <ChevronDown size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {secondaryTabs.map(tab => (
+                <DropdownMenuItem key={tab.value} onClick={() => setActiveTab(tab.value)} className="gap-2">
+                  <tab.icon size={16} /> {tab.label}
+                  {tab.badge ? <ContactBadge count={tab.badge} /> : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TabsList>
+      );
+    }
+
+    if (isVentas) {
+      const secondaryTabs = getVentasSecondaryTabs();
+      const isSecondaryActive = secondaryTabs.some(t => t.value === activeTab);
+
+      return (
+        <TabsList className="mb-6 flex-wrap bg-muted/50 hidden md:flex">
+          <TabsTrigger value="dashboard" className="gap-2">
+            <LayoutDashboard size={16} /> Inicio
+          </TabsTrigger>
+          <TabsTrigger value="projects" className="gap-2">
+            <FolderKanban size={16} /> Proyectos
+          </TabsTrigger>
+          <TabsTrigger value="web-orders" className="gap-2">
+            <ShoppingCart size={16} /> Pedidos Web
+          </TabsTrigger>
+          <TabsTrigger value="contacts" className="gap-2 relative">
+            <MessageCircle size={16} /> Contacto
+            {pendingContactsCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-notification-bounce">
+                {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="special-orders" className="gap-2">
+            <ShoppingBag size={16} /> Pedidos Especiales
+          </TabsTrigger>
+          <TabsTrigger value="por-surtir" className="gap-2">
+            <PackageX size={16} /> Por Surtir
+          </TabsTrigger>
+          <TabsTrigger value="quotations" className="gap-2">
+            <Calculator size={16} /> Cotizaciones
+          </TabsTrigger>
+          <TabsTrigger value="promotions" className="gap-2">
+            <Tag size={16} /> Promociones
+          </TabsTrigger>
+
+          {/* Otras opciones dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-1.5 h-9 px-3 text-sm font-medium rounded-md ${isSecondaryActive ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <MoreHorizontal size={16} />
+                Otras opciones
+                <ChevronDown size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {secondaryTabs.map(tab => (
+                <DropdownMenuItem key={tab.value} onClick={() => setActiveTab(tab.value)} className="gap-2">
+                  <tab.icon size={16} /> {tab.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TabsList>
+      );
+    }
+
+    if (isTecnico) {
+      return (
+        <TabsList className="mb-6 flex-wrap bg-muted/50 hidden md:flex">
+          <TabsTrigger value="dashboard" className="gap-2">
+            <LayoutDashboard size={16} /> Resumen
+          </TabsTrigger>
+          {canAccessServices && (
+            <TabsTrigger value="services" className="gap-2">
+              <Wrench size={16} /> Servicios
+            </TabsTrigger>
+          )}
+          {canAccessSpecialOrders && (
+            <TabsTrigger value="special-orders" className="gap-2">
+              <ShoppingBag size={16} /> Pedidos Especiales
+            </TabsTrigger>
+          )}
+          {canAccessProjects && (
+            <TabsTrigger value="projects" className="gap-2">
+              <FolderKanban size={16} /> Proyectos
+            </TabsTrigger>
+          )}
+        </TabsList>
+      );
+    }
+
+    // Admin - all tabs
+    return (
+      <TabsList className="mb-6 flex-wrap bg-muted/50 hidden md:flex">
+        <TabsTrigger value="dashboard" className="gap-2">
+          <LayoutDashboard size={16} /> Resumen
+        </TabsTrigger>
+        {canAccessSync && (
+          <TabsTrigger value="sync" className="gap-2">
+            <RefreshCw size={16} /> Sincronizar
+          </TabsTrigger>
+        )}
+        {canAccessProducts && (
+          <TabsTrigger value="products" className="gap-2">
+            <Package size={16} /> Productos
+          </TabsTrigger>
+        )}
+        {canAccessPromotions && (
+          <TabsTrigger value="promotions" className="gap-2">
+            <Tag size={16} /> Promociones
+          </TabsTrigger>
+        )}
+        {canAccessUsers && (
+          <TabsTrigger value="users" className="gap-2">
+            <Users size={16} /> Usuarios
+          </TabsTrigger>
+        )}
+        {canAccessContacts && (
+          <TabsTrigger value="contacts" className="gap-2 relative">
+            <MessageCircle size={16} /> Contacto
+            {pendingContactsCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-notification-bounce">
+                {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
+              </span>
+            )}
+          </TabsTrigger>
+        )}
+        {canAccessServices && (
+          <TabsTrigger value="services" className="gap-2">
+            <Wrench size={16} /> Servicios
+          </TabsTrigger>
+        )}
+        {canAccessBlog && (
+          <TabsTrigger value="blog" className="gap-2">
+            <FileText size={16} /> Blog
+          </TabsTrigger>
+        )}
+        {canAccessSpecialOrders && (
+          <TabsTrigger value="special-orders" className="gap-2">
+            <ShoppingBag size={16} /> Pedidos Especiales
+          </TabsTrigger>
+        )}
+        {canAccessPorSurtir && (
+          <TabsTrigger value="por-surtir" className="gap-2">
+            <PackageX size={16} /> Por Surtir
+          </TabsTrigger>
+        )}
+        {canAccessQuotations && (
+          <TabsTrigger value="quotations" className="gap-2">
+            <Calculator size={16} /> Cotizaciones
+          </TabsTrigger>
+        )}
+        {canAccessComponentSpecs && (
+          <TabsTrigger value="component-specs" className="gap-2">
+            <Settings size={16} /> Componentes PC
+          </TabsTrigger>
+        )}
+        {canAccessWebOrders && (
+          <TabsTrigger value="web-orders" className="gap-2">
+            <ShoppingCart size={16} /> Pedidos Web
+          </TabsTrigger>
+        )}
+        {canAccessProjects && (
+          <TabsTrigger value="projects" className="gap-2">
+            <FolderKanban size={16} /> Proyectos
+          </TabsTrigger>
+        )}
+      </TabsList>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -212,7 +674,7 @@ const Admin: React.FC = () => {
   }
 
   // Check if user has any valid role (not just 'user')
-  const hasAnyRole = userRole && ['admin', 'tecnico', 'ventas'].includes(userRole);
+  const hasAnyRole = userRole && ['admin', 'tecnico', 'ventas', 'supervisor'].includes(userRole);
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
@@ -254,232 +716,19 @@ const Admin: React.FC = () => {
                   <Button variant="outline" className="w-full justify-between">
                     <span className="flex items-center gap-2">
                       <Menu size={16} />
-                      {activeTab === 'dashboard' && 'Compusistemas de Chiapas'}
-                      {activeTab === 'sync' && 'Sincronizar'}
-                      {activeTab === 'products' && 'Productos'}
-                      {activeTab === 'por-surtir' && 'Por Surtir'}
-                      {activeTab === 'promotions' && 'Promociones'}
-                      {activeTab === 'users' && 'Usuarios'}
-                      {activeTab === 'contacts' && 'Contacto'}
-                      {activeTab === 'services' && 'Servicios'}
-                      {activeTab === 'quotations' && 'Cotizaciones'}
-                      {activeTab === 'component-specs' && 'Componentes PC'}
-                      {activeTab === 'blog' && 'Blog'}
-                      {activeTab === 'projects' && 'Proyectos'}
-                      {activeTab === 'special-orders' && 'Pedidos Especiales'}
-                      {activeTab === 'web-orders' && 'Pedidos Web'}
+                      {TAB_LABELS[activeTab] || activeTab}
                     </span>
                     <ChevronDown size={16} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[calc(100vw-2rem)] bg-background border border-border">
-                  <DropdownMenuItem onClick={() => setActiveTab('dashboard')} className="gap-2">
-                    <LayoutDashboard size={16} />
-                    Compusistemas de Chiapas
-                  </DropdownMenuItem>
-                  
-                  {canAccessSync && (
-                    <DropdownMenuItem onClick={() => setActiveTab('sync')} className="gap-2">
-                      <RefreshCw size={16} />
-                      Sincronizar
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessProducts && (
-                    <DropdownMenuItem onClick={() => setActiveTab('products')} className="gap-2">
-                      <Package size={16} />
-                      Productos
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessPromotions && (
-                    <DropdownMenuItem onClick={() => setActiveTab('promotions')} className="gap-2">
-                      <Tag size={16} />
-                      Promociones
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessUsers && (
-                    <DropdownMenuItem onClick={() => setActiveTab('users')} className="gap-2">
-                      <Users size={16} />
-                      Usuarios
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessContacts && (
-                    <DropdownMenuItem onClick={() => setActiveTab('contacts')} className="gap-2 relative">
-                      <MessageCircle size={16} />
-                      Contacto
-                      {pendingContactsCount > 0 && (
-                        <span className="ml-auto h-5 w-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
-                          {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
-                        </span>
-                      )}
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessServices && (
-                    <DropdownMenuItem onClick={() => setActiveTab('services')} className="gap-2">
-                      <Wrench size={16} />
-                      Servicios
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessBlog && (
-                    <DropdownMenuItem onClick={() => setActiveTab('blog')} className="gap-2">
-                      <FileText size={16} />
-                      Blog
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessSpecialOrders && (
-                    <DropdownMenuItem onClick={() => setActiveTab('special-orders')} className="gap-2">
-                      <ShoppingBag size={16} />
-                      Pedidos Especiales
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessPorSurtir && (
-                    <DropdownMenuItem onClick={() => setActiveTab('por-surtir')} className="gap-2">
-                      <PackageX size={16} />
-                      Por Surtir
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessQuotations && (
-                    <DropdownMenuItem onClick={() => setActiveTab('quotations')} className="gap-2">
-                      <Calculator size={16} />
-                      Cotizaciones
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessComponentSpecs && (
-                    <DropdownMenuItem onClick={() => setActiveTab('component-specs')} className="gap-2">
-                      <Settings size={16} />
-                      Componentes PC
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessWebOrders && (
-                    <DropdownMenuItem onClick={() => setActiveTab('web-orders')} className="gap-2">
-                      <ShoppingCart size={16} />
-                      Pedidos Web
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {canAccessProjects && (
-                    <DropdownMenuItem onClick={() => setActiveTab('projects')} className="gap-2">
-                      <FolderKanban size={16} />
-                      Proyectos
-                    </DropdownMenuItem>
-                  )}
+                  {renderMobileItems()}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
             {/* Desktop tabs */}
-            <TabsList className="mb-6 flex-wrap bg-muted/50 hidden md:flex">
-              <TabsTrigger value="dashboard" className="gap-2">
-                <LayoutDashboard size={16} />
-                Compusistemas de Chiapas
-              </TabsTrigger>
-              
-              {canAccessSync && (
-                <TabsTrigger value="sync" className="gap-2">
-                  <RefreshCw size={16} />
-                  Sincronizar
-                </TabsTrigger>
-              )}
-              
-              {canAccessProducts && (
-                <TabsTrigger value="products" className="gap-2">
-                  <Package size={16} />
-                  Productos
-                </TabsTrigger>
-              )}
-              
-              {canAccessPromotions && (
-                <TabsTrigger value="promotions" className="gap-2">
-                  <Tag size={16} />
-                  Promociones
-                </TabsTrigger>
-              )}
-              
-              {canAccessUsers && (
-                <TabsTrigger value="users" className="gap-2">
-                  <Users size={16} />
-                  Usuarios
-                </TabsTrigger>
-              )}
-              
-              {canAccessContacts && (
-                <TabsTrigger value="contacts" className="gap-2 relative">
-                  <MessageCircle size={16} />
-                  Contacto
-                  {pendingContactsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-notification-bounce">
-                      {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-              )}
-              
-              {canAccessServices && (
-                <TabsTrigger value="services" className="gap-2">
-                  <Wrench size={16} />
-                  Servicios
-                </TabsTrigger>
-              )}
-              
-              {canAccessBlog && (
-                <TabsTrigger value="blog" className="gap-2">
-                  <FileText size={16} />
-                  Blog
-                </TabsTrigger>
-              )}
-              
-              {canAccessSpecialOrders && (
-                <TabsTrigger value="special-orders" className="gap-2">
-                  <ShoppingBag size={16} />
-                  Pedidos Especiales
-                </TabsTrigger>
-              )}
-              
-              {canAccessPorSurtir && (
-                <TabsTrigger value="por-surtir" className="gap-2">
-                  <PackageX size={16} />
-                  Por Surtir
-                </TabsTrigger>
-              )}
-              
-              {canAccessQuotations && (
-                <TabsTrigger value="quotations" className="gap-2">
-                  <Calculator size={16} />
-                  Cotizaciones
-                </TabsTrigger>
-              )}
-              
-              {canAccessComponentSpecs && (
-                <TabsTrigger value="component-specs" className="gap-2">
-                  <Settings size={16} />
-                  Componentes PC
-                </TabsTrigger>
-              )}
-              
-              {canAccessWebOrders && (
-                <TabsTrigger value="web-orders" className="gap-2">
-                  <ShoppingCart size={16} />
-                  Pedidos Web
-                </TabsTrigger>
-              )}
-              
-              {canAccessProjects && (
-                <TabsTrigger value="projects" className="gap-2">
-                  <FolderKanban size={16} />
-                  Proyectos
-                </TabsTrigger>
-              )}
-            </TabsList>
+            {renderDesktopTabs()}
             
             <TabsContent value="dashboard">
               <AdminDashboard 
@@ -522,7 +771,7 @@ const Admin: React.FC = () => {
 
             {canAccessServices && (
               <TabsContent value="services">
-                <AdminServices />
+                <AdminServices readOnly={isServicesReadOnly} />
               </TabsContent>
             )}
 

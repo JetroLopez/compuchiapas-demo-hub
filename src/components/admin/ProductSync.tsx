@@ -38,7 +38,7 @@ interface WarehouseType {
   name: string;
 }
 
-type AppRole = 'admin' | 'tecnico' | 'ventas' | 'user';
+type AppRole = 'admin' | 'tecnico' | 'ventas' | 'supervisor' | 'user';
 
 interface ProductSyncProps {
   userRole?: AppRole | null;
