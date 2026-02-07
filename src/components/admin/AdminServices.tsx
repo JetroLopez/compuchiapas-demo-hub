@@ -54,7 +54,11 @@ interface Service {
   updated_at: string;
 }
 
-const AdminServices: React.FC = () => {
+interface AdminServicesProps {
+  readOnly?: boolean;
+}
+
+const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
   const queryClient = useQueryClient();
   const [pastedData, setPastedData] = useState('');
   const [parsedServices, setParsedServices] = useState<ParsedService[]>([]);
@@ -379,96 +383,98 @@ const AdminServices: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Sync Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" />
-            Sincronizar Servicios
-          </CardTitle>
-          <CardDescription>
-            Pega los datos de servicios para sincronizar. Los valores de estatus interno y comentarios se conservarán para servicios existentes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            placeholder={`Pega los datos aquí (formato: Clave, Cliente, Estatus, Fecha, Condición)
+      {/* Sync Section - hidden for readOnly */}
+      {!readOnly && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5" />
+              Sincronizar Servicios
+            </CardTitle>
+            <CardDescription>
+              Pega los datos de servicios para sincronizar. Los valores de estatus interno y comentarios se conservarán para servicios existentes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Textarea
+              placeholder={`Pega los datos aquí (formato: Clave, Cliente, Estatus, Fecha, Condición)
 
 Ejemplo:
 0000004667	MOSTR	Emitida	13/01/2026	CANON G2110
 0000004668	MOSTR	Emitida	13/01/2026	LAPTOP DELL LATITUDE 5400`}
-            value={pastedData}
-            onChange={(e) => setPastedData(e.target.value)}
-            rows={6}
-            className="font-mono text-sm"
-          />
-          
-          <div className="flex gap-2">
-            <Button onClick={handleParse} disabled={!pastedData.trim()}>
-              Parsear Datos
-            </Button>
+              value={pastedData}
+              onChange={(e) => setPastedData(e.target.value)}
+              rows={6}
+              className="font-mono text-sm"
+            />
+            
+            <div className="flex gap-2">
+              <Button onClick={handleParse} disabled={!pastedData.trim()}>
+                Parsear Datos
+              </Button>
+              
+              {parsedServices.length > 0 && (
+                <Button 
+                  onClick={() => syncMutation.mutate(parsedServices)}
+                  disabled={syncMutation.isPending}
+                  variant="default"
+                >
+                  {syncMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sincronizando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Sincronizar {parsedServices.length} servicios
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+            
+            {parseError && (
+              <p className="text-sm text-destructive">{parseError}</p>
+            )}
             
             {parsedServices.length > 0 && (
-              <Button 
-                onClick={() => syncMutation.mutate(parsedServices)}
-                disabled={syncMutation.isPending}
-                variant="default"
-              >
-                {syncMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sincronizando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Sincronizar {parsedServices.length} servicios
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-          
-          {parseError && (
-            <p className="text-sm text-destructive">{parseError}</p>
-          )}
-          
-          {parsedServices.length > 0 && (
-            <div className="border rounded-lg p-4 bg-muted/50">
-              <h4 className="font-medium mb-2">Vista previa ({parsedServices.length} servicios):</h4>
-              <div className="max-h-40 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Clave</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Estatus</TableHead>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Condición</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {parsedServices.slice(0, 5).map((service, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-mono">{service.clave}</TableCell>
-                        <TableCell>{service.cliente}</TableCell>
-                        <TableCell>{getStatusBadge(service.estatus)}</TableCell>
-                        <TableCell>{service.fecha_elaboracion}</TableCell>
-                        <TableCell className="max-w-xs truncate">{service.condicion}</TableCell>
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <h4 className="font-medium mb-2">Vista previa ({parsedServices.length} servicios):</h4>
+                <div className="max-h-40 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Clave</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Estatus</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Condición</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {parsedServices.length > 5 && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    ... y {parsedServices.length - 5} más
-                  </p>
-                )}
+                    </TableHeader>
+                    <TableBody>
+                      {parsedServices.slice(0, 5).map((service, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-mono">{service.clave}</TableCell>
+                          <TableCell>{service.cliente}</TableCell>
+                          <TableCell>{getStatusBadge(service.estatus)}</TableCell>
+                          <TableCell>{service.fecha_elaboracion}</TableCell>
+                          <TableCell className="max-w-xs truncate">{service.condicion}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {parsedServices.length > 5 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      ... y {parsedServices.length - 5} más
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Services List */}
       <Card>
@@ -479,7 +485,7 @@ Ejemplo:
               {filteredServices.length} servicios activos
             </CardDescription>
           </div>
-          {services && services.length > 0 && (
+          {!readOnly && services && services.length > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm">
@@ -568,7 +574,7 @@ Ejemplo:
                     <TableHead>Fecha</TableHead>
                     <TableHead>Condición</TableHead>
                     <TableHead>Comentarios</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    {!readOnly && <TableHead className="text-right">Acciones</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -577,39 +583,47 @@ Ejemplo:
                       <TableCell className="font-mono font-medium">{service.clave}</TableCell>
                       <TableCell>{service.cliente}</TableCell>
                       <TableCell>
-                        <Select
-                          value={service.estatus}
-                          onValueChange={(value: ServiceStatus) => 
-                            updateStatusMutation.mutate({ id: service.id, estatus: value })
-                          }
-                        >
-                          <SelectTrigger className="w-[130px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Emitida">Emitida</SelectItem>
-                            <SelectItem value="Remitida">Remitida</SelectItem>
-                            <SelectItem value="Facturada">Facturada</SelectItem>
-                            <SelectItem value="Cancelada">Cancelada</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {readOnly ? (
+                          getStatusBadge(service.estatus)
+                        ) : (
+                          <Select
+                            value={service.estatus}
+                            onValueChange={(value: ServiceStatus) => 
+                              updateStatusMutation.mutate({ id: service.id, estatus: value })
+                            }
+                          >
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Emitida">Emitida</SelectItem>
+                              <SelectItem value="Remitida">Remitida</SelectItem>
+                              <SelectItem value="Facturada">Facturada</SelectItem>
+                              <SelectItem value="Cancelada">Cancelada</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={service.estatus_interno}
-                          onValueChange={(value: EstatusInterno) => 
-                            updateEstatusInternoMutation.mutate({ id: service.id, estatus_interno: value })
-                          }
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            {getEstatusInternoBadge(service.estatus_interno)}
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="En tienda">En tienda</SelectItem>
-                            <SelectItem value="En proceso">En proceso</SelectItem>
-                            <SelectItem value="Listo y avisado a cliente">Listo y avisado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {readOnly ? (
+                          getEstatusInternoBadge(service.estatus_interno)
+                        ) : (
+                          <Select
+                            value={service.estatus_interno}
+                            onValueChange={(value: EstatusInterno) => 
+                              updateEstatusInternoMutation.mutate({ id: service.id, estatus_interno: value })
+                            }
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              {getEstatusInternoBadge(service.estatus_interno)}
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="En tienda">En tienda</SelectItem>
+                              <SelectItem value="En proceso">En proceso</SelectItem>
+                              <SelectItem value="Listo y avisado a cliente">Listo y avisado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </TableCell>
                       <TableCell>
                         {format(new Date(service.fecha_elaboracion + 'T12:00:00'), 'dd/MM/yyyy', { locale: es })}
@@ -618,50 +632,56 @@ Ejemplo:
                         <span className="line-clamp-2">{service.condicion}</span>
                       </TableCell>
                       <TableCell className="min-w-[200px]">
-                        <Input
-                          placeholder="Agregar comentario..."
-                          defaultValue={service.comentarios || ''}
-                          className="h-8 text-xs"
-                          onBlur={(e) => {
-                            if (e.target.value !== (service.comentarios || '')) {
-                              updateComentariosMutation.mutate({ 
-                                id: service.id, 
-                                comentarios: e.target.value 
-                              });
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.currentTarget.blur();
-                            }
-                          }}
-                        />
+                        {readOnly ? (
+                          <span className="text-sm text-muted-foreground">{service.comentarios || '—'}</span>
+                        ) : (
+                          <Input
+                            placeholder="Agregar comentario..."
+                            defaultValue={service.comentarios || ''}
+                            className="h-8 text-xs"
+                            onBlur={(e) => {
+                              if (e.target.value !== (service.comentarios || '')) {
+                                updateComentariosMutation.mutate({ 
+                                  id: service.id, 
+                                  comentarios: e.target.value 
+                                });
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                              }
+                            }}
+                          />
+                        )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar servicio?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción eliminará el servicio {service.clave} permanentemente.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteMutation.mutate(service.id)}
-                              >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
+                      {!readOnly && (
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar servicio?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción eliminará el servicio {service.clave} permanentemente.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(service.id)}
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

@@ -510,7 +510,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-          <h2 className="text-2xl font-bold">Compusistemas de Chiapas</h2>
+          <h2 className="text-2xl font-bold">Resumen</h2>
           <span className="text-sm text-muted-foreground">
             {format(currentTime, "EEEE d 'de' MMMM, HH:mm", { locale: es })}
           </span>

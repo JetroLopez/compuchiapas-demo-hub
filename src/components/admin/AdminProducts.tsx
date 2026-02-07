@@ -51,7 +51,7 @@ interface EditedProduct {
   existencias?: number | null;
 }
 
-type AppRole = 'admin' | 'tecnico' | 'ventas' | 'user';
+type AppRole = 'admin' | 'tecnico' | 'ventas' | 'supervisor' | 'user';
 
 interface AdminProductsProps {
   userRole?: AppRole | null;

@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { z } from 'zod';
 
-type AppRole = 'admin' | 'tecnico' | 'ventas' | 'user';
+type AppRole = 'admin' | 'tecnico' | 'ventas' | 'supervisor' | 'user';
 
 interface Profile {
   id: string;
@@ -148,6 +148,8 @@ const AdminUsers: React.FC = () => {
     switch (role) {
       case 'admin':
         return <Badge className="bg-primary"><Shield size={12} className="mr-1" /> Admin</Badge>;
+      case 'supervisor':
+        return <Badge className="bg-indigo-500"><Shield size={12} className="mr-1" /> Supervisor</Badge>;
       case 'tecnico':
         return <Badge className="bg-orange-500"><Wrench size={12} className="mr-1" /> Técnico</Badge>;
       case 'ventas':
@@ -281,6 +283,7 @@ const AdminUsers: React.FC = () => {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="supervisor">Supervisor</SelectItem>
                                 <SelectItem value="tecnico">Técnico</SelectItem>
                                 <SelectItem value="ventas">Ventas</SelectItem>
                                 <SelectItem value="user">Usuario</SelectItem>
@@ -301,8 +304,9 @@ const AdminUsers: React.FC = () => {
           <h4 className="font-semibold mb-2">Permisos por Rol:</h4>
           <ul className="text-sm text-muted-foreground space-y-1">
             <li><strong>Admin:</strong> Acceso completo a todas las funciones</li>
-            <li><strong>Técnico:</strong> Sincronizar y gestionar servicios únicamente</li>
-            <li><strong>Ventas:</strong> Productos, promociones, contacto y blog (sin eliminar todo/exportar)</li>
+            <li><strong>Supervisor:</strong> Acceso completo excepto Usuarios y Componentes PC</li>
+            <li><strong>Técnico:</strong> Servicios, pedidos especiales y proyectos</li>
+            <li><strong>Ventas:</strong> Productos, promociones, contacto, blog, pedidos y servicios (solo lectura)</li>
             <li><strong>Usuario:</strong> Solo visualización del dashboard</li>
           </ul>
         </div>
