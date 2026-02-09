@@ -889,6 +889,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      search_order_by_folio: {
+        Args: { p_folio: string }
+        Returns: {
+          comentarios: string
+          estatus: string
+          fecha_aprox_entrega: string
+          folio_ingreso: string
+          folio_servicio: string
+          producto: string
+          remision: string
+        }[]
+      }
       submit_contact: {
         Args: {
           p_email: string

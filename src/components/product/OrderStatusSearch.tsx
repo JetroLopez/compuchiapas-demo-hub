@@ -37,23 +37,14 @@ const OrderStatusSearch: React.FC = () => {
     setNotFound(false);
 
     try {
-      // Buscar por folio_ingreso, remision o folio_servicio - sin limit para obtener todos
+      // Use secure RPC function that only returns limited fields with exact match
       const { data, error } = await supabase
-        .from('special_orders')
-        .select('folio_ingreso, folio_servicio, remision, estatus, fecha_aprox_entrega, producto, comentarios')
-        .or(`folio_ingreso.ilike.%${searchTerm.trim()}%,remision.ilike.%${searchTerm.trim()}%,folio_servicio.ilike.%${searchTerm.trim()}%`);
+        .rpc('search_order_by_folio', { p_folio: searchTerm.trim() });
 
       if (error || !data || data.length === 0) {
         setNotFound(true);
       } else {
-        // Filtrar pedidos que no estén entregados
-        const pendingOrders = data.filter(order => order.estatus !== 'Entregado');
-        
-        if (pendingOrders.length === 0) {
-          setNotFound(true);
-        } else {
-          setOrderResults(pendingOrders);
-        }
+        setOrderResults(data as OrderResult[]);
       }
     } catch (err) {
       setNotFound(true);
