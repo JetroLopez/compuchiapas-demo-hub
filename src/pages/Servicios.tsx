@@ -125,8 +125,8 @@ const Servicios: React.FC = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="pt-24 pb-12 md:pt-28 md:pb-16 bg-gradient-to-b from-tech-lightGray to-white dark:from-slate-900 dark:to-slate-800 py-[66px] px-0 my-0 mx-[35px]">
-        <div className="container-padding max-w-7xl mx-auto text-center my-[29px]">
+      <section className="pt-24 pb-12 md:pt-28 md:pb-16 bg-gradient-to-b from-tech-lightGray to-white dark:from-slate-900 dark:to-slate-800">
+        <div className="container-padding max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 dark:text-white">Servicios Técnicos Profesionales</h1>
           <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Soluciones confiables para todos tus problemas tecnológicos</p>
           

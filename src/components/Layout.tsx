@@ -61,18 +61,18 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
         {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
       </Button>
 
-      {/* Mobile bottom buttons: dark mode + cart */}
-      <div className="fixed bottom-8 right-[4.5rem] z-50 flex flex-col gap-2 md:hidden">
+      {/* Mobile bottom buttons: dark mode + cart - side by side, left of WhatsApp */}
+      <div className="fixed bottom-[2.4rem] right-[5.25rem] z-50 flex flex-row items-center gap-2 md:hidden">
+        {showCartButton && <CartButton mobile />}
         <Button
           variant="outline"
           size="icon"
           onClick={toggleDarkMode}
-          className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm shadow-lg border-border"
+          className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm shadow-lg border-border"
           aria-label="Toggle dark mode"
         >
-          {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+          {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
         </Button>
-        {showCartButton && <CartButton mobile />}
       </div>
 
       {/* Cart button - desktop only, top right */}

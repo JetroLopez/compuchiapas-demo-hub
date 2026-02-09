@@ -522,7 +522,7 @@ const PCBuilder: React.FC = () => {
         </div>
       </div>
 
-      <ScrollArea className="h-[400px] sm:h-[450px]">
+      <ScrollArea className="h-[calc(100vh-380px)] min-h-[200px] max-h-[450px]">
         <div className="p-4">
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -681,7 +681,7 @@ const PCBuilder: React.FC = () => {
           )}
         </div>
 
-        <ScrollArea className="h-[400px] sm:h-[400px]">
+        <ScrollArea className="h-[calc(100vh-380px)] min-h-[200px] max-h-[450px]">
           <div className="p-4">
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -795,32 +795,26 @@ const PCBuilder: React.FC = () => {
           <p className="text-center text-muted-foreground">Revisa tu configuración</p>
         </div>
 
-        <div className="p-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col gap-2 mb-4">
             {components.map((comp, index) => (
               <motion.div
                 key={`${comp.label}-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="text-center p-4 bg-muted/50 rounded-xl"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.03 }}
+                className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg"
               >
-                {comp.product?.image_url ? (
-                  <img 
-                    src={comp.product.image_url} 
-                    alt={comp.label}
-                    className="w-16 h-16 object-contain mx-auto mb-2 rounded-lg bg-white"
-                  />
-                ) : (
-                  <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center mx-auto mb-2">
-                    {comp.icon}
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground mb-1">{comp.label}</p>
-                <p className="text-xs font-medium line-clamp-2">
-                  {comp.product?.name}
-                  {(comp as any).qty && (comp as any).qty > 1 && ` (x${(comp as any).qty})`}
-                </p>
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                  {comp.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-muted-foreground leading-none mb-0.5">{comp.label}</p>
+                  <p className="text-xs font-medium truncate">
+                    {comp.product?.name}
+                    {(comp as any).qty && (comp as any).qty > 1 && ` (x${(comp as any).qty})`}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -1090,7 +1084,7 @@ const PCBuilder: React.FC = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pt-6">
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pt-20">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -1134,7 +1128,7 @@ const PCBuilder: React.FC = () => {
             <div className="lg:col-span-3 space-y-4">
               {/* Step indicator - mobile */}
               {currentStep !== 'summary' && (
-                <div className="lg:hidden overflow-x-auto pb-2 mt-4">
+                <div className="lg:hidden overflow-x-auto pb-2 mt-6">
                   <div className="flex items-center gap-2">
                     {stepIndicatorItems.map((item, index) => (
                       <div
@@ -1163,7 +1157,7 @@ const PCBuilder: React.FC = () => {
 
               {/* Navigation */}
               {!isQuestionStep && currentStep !== 'summary' && (
-                <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center justify-between mt-4 sticky bottom-20 lg:bottom-0 z-20 bg-background/90 backdrop-blur-sm p-3 -mx-3 rounded-xl">
                   <Button variant="outline" onClick={handlePrev} className="gap-2">
                     <ArrowLeft size={16} />
                     Anterior
