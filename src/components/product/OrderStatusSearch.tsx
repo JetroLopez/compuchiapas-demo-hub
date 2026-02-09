@@ -19,7 +19,11 @@ interface OrderResult {
   comentarios: string | null;
 }
 
-const OrderStatusSearch: React.FC = () => {
+interface OrderStatusSearchProps {
+  embedded?: boolean;
+}
+
+const OrderStatusSearch: React.FC<OrderStatusSearchProps> = ({ embedded = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -82,6 +86,73 @@ const OrderStatusSearch: React.FC = () => {
       handleSearch();
     }
   };
+
+  // Embedded mode: render just the search content without the card wrapper
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Ingresa tu número de folio de ingreso, folio de servicio o remisión para consultar el estatus de tu pedido:
+        </p>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Número de folio o remisión"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="flex-1"
+          />
+          <Button onClick={handleSearch} disabled={isSearching}>
+            {isSearching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        {orderResults.length > 0 && (
+          <div className="space-y-3">
+            {orderResults.map((order, index) => (
+              <div key={index} className="p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                <p className="text-green-800 dark:text-green-200">
+                  Tu pedido con folio{' '}
+                  <span className="font-bold">
+                    #{order.folio_ingreso || order.folio_servicio || order.remision}
+                  </span>{' '}
+                  se encuentra{' '}
+                  <span className="font-bold">{getStatusDisplay(order.estatus)}</span>
+                  {!isInStore(order.estatus) && order.fecha_aprox_entrega && (
+                    <>
+                      {' '}y tiene como fecha estimada de entrega el día{' '}
+                      <span className="font-bold">{formatDate(order.fecha_aprox_entrega)}</span>
+                    </>
+                  )}
+                  .
+                </p>
+                <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                  Producto: {order.producto}
+                </p>
+                {order.comentarios && (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1 italic">
+                    Nota: {order.comentarios}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {notFound && (
+          <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
+            <p className="text-yellow-800 dark:text-yellow-200">
+              No se encuentra ningún pedido pendiente. Verifica tu folio de ingreso, de servicio o remisión.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <Card className="w-full border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">

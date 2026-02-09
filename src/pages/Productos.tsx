@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ProductHero from '../components/product/ProductHero';
 import CustomQuoteBanner from '../components/product/CustomQuoteBanner';
@@ -9,6 +9,8 @@ import CustomPCBuild from '../components/product/CustomPCBuild';
 import OrderStatusSearch from '../components/product/OrderStatusSearch';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Monitor, Package } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Category {
   id: string;
@@ -21,6 +23,7 @@ const Productos: React.FC = () => {
   const initialCategory = searchParams.get('categoria') || 'all';
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showOrderSearch, setShowOrderSearch] = useState(false);
 
   // Obtener categorías de la base de datos
   const { data: categories = [] } = useQuery({
@@ -61,10 +64,36 @@ const Productos: React.FC = () => {
 
   return (
     <Layout>
-      <ProductHero />
+      {/* Desktop Hero - hidden on mobile */}
+      <div className="hidden md:block">
+        <ProductHero />
+      </div>
+
+      {/* Mobile Compact Header */}
+      <div className="md:hidden pt-16 pb-3 px-4" style={{ background: 'linear-gradient(to bottom, #1e293b, #1e3a5f)' }}>
+        <h1 className="text-base font-bold text-white whitespace-nowrap text-center">
+          Catálogo de productos en tienda
+        </h1>
+        <div className="flex items-center justify-center gap-3 mt-3">
+          <Link
+            to="/productos/arma-tu-pc"
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-medium rounded-full border border-white/20 transition-colors"
+          >
+            <Monitor size={14} />
+            Arma tu PC
+          </Link>
+          <button
+            onClick={() => setShowOrderSearch(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-medium rounded-full border border-white/20 transition-colors"
+          >
+            <Package size={14} />
+            Pedidos
+          </button>
+        </div>
+      </div>
       
-      {/* Special Banner */}
-      <section className="py-8">
+      {/* Special Banner - hidden on mobile */}
+      <section className="py-8 hidden md:block">
         <div className="container-padding max-w-7xl mx-auto space-y-6">
           <CustomQuoteBanner />
           <OrderStatusSearch />
@@ -72,7 +101,7 @@ const Productos: React.FC = () => {
       </section>
       
       {/* Product Catalog */}
-      <section className="py-12">
+      <section className="py-4 md:py-12">
         <div className="container-padding max-w-7xl mx-auto">
           {/* Search and Filter */}
           <ProductFilters 
@@ -98,6 +127,16 @@ const Productos: React.FC = () => {
           <CustomPCBuild />
         </div>
       </section>
+
+      {/* Order Search Dialog for mobile */}
+      <Dialog open={showOrderSearch} onOpenChange={setShowOrderSearch}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Consulta tu pedido</DialogTitle>
+          </DialogHeader>
+          <OrderStatusSearch embedded />
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
