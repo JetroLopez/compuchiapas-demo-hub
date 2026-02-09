@@ -116,8 +116,7 @@ const AdminProjects = () => {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
-        .order('is_completed', { ascending: true })
-        .order('created_at', { ascending: false });
+        .order('project_number', { ascending: false });
       if (error) throw error;
       return data as Project[];
     }
