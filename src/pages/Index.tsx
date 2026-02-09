@@ -436,6 +436,7 @@ const Index: React.FC = () => {
                         className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         placeholder="Tu nombre"
                         required
+                        maxLength={100}
                         value={formData.name}
                         onChange={handleChange}
                       />
@@ -451,6 +452,7 @@ const Index: React.FC = () => {
                         className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         placeholder="Tu teléfono"
                         required
+                        maxLength={20}
                         value={formData.phone}
                         onChange={handleChange}
                       />
@@ -487,6 +489,7 @@ const Index: React.FC = () => {
                       className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Detalla el problema que estás experimentando..."
                       required
+                      maxLength={5000}
                       value={formData.message}
                       onChange={handleChange}
                     ></textarea>

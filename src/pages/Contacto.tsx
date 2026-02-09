@@ -220,14 +220,14 @@ const Contacto: React.FC = () => {
                     <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
                       Nombre completo
                     </label>
-                    <input type="text" id="name" className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu nombre" required value={formData.name} onChange={handleChange} />
+                    <input type="text" id="name" className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu nombre" required value={formData.name} onChange={handleChange} maxLength={100} />
                   </div>
                   
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
                       Correo electrónico
                     </label>
-                    <input type="email" id="email" className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu email" required value={formData.email} onChange={handleChange} />
+                    <input type="email" id="email" className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu email" required value={formData.email} onChange={handleChange} maxLength={255} />
                   </div>
                 </div>
                 
@@ -235,21 +235,21 @@ const Contacto: React.FC = () => {
                   <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">
                     Teléfono
                   </label>
-                  <input type="tel" id="phone" className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu teléfono" required value={formData.phone} onChange={handleChange} />
+                  <input type="tel" id="phone" className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Tu teléfono" required value={formData.phone} onChange={handleChange} maxLength={20} />
                 </div>
                 
                 <div>
                   <label htmlFor="subject" className="block text-sm font-medium text-foreground mb-1">
                     Asunto
                   </label>
-                  <input type="text" id="subject" className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Asunto de tu mensaje" required value={formData.subject} onChange={handleChange} />
+                  <input type="text" id="subject" className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Asunto de tu mensaje" required value={formData.subject} onChange={handleChange} maxLength={200} />
                 </div>
                 
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-foreground mb-1">
                     Mensaje
                   </label>
-                  <textarea id="message" rows={5} className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Escribe tu mensaje aquí..." required value={formData.message} onChange={handleChange}></textarea>
+                  <textarea id="message" rows={5} className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-tech-blue focus:border-transparent" placeholder="Escribe tu mensaje aquí..." required value={formData.message} onChange={handleChange} maxLength={5000}></textarea>
                 </div>
                 
                 <button type="submit" className="w-full bg-tech-blue hover:bg-tech-blue/90 text-white py-3 px-8 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2" disabled={isSubmitting}>
