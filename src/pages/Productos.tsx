@@ -70,8 +70,8 @@ const Productos: React.FC = () => {
       </div>
 
       {/* Mobile Compact Header */}
-      <div className="md:hidden pt-16 pb-3 px-4" style={{ background: 'linear-gradient(to bottom, #1e293b, #1e3a5f)' }}>
-        <h1 className="text-base font-bold text-white whitespace-nowrap text-center">
+      <div className="md:hidden pt-20 pb-3 px-4" style={{ background: 'linear-gradient(to bottom, #1e293b, #1e3a5f)' }}>
+        <h1 className="text-[15px] font-bold text-white whitespace-nowrap text-center leading-tight">
           Catálogo de productos en tienda
         </h1>
         <div className="flex items-center justify-center gap-3 mt-3">
