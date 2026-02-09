@@ -27,6 +27,7 @@ type BuildStep =
   | 'storage' 
   | 'case_question'
   | 'case' 
+  | 'gpu_question'
   | 'gpu' 
   | 'psu' 
   | 'cooling_question'
@@ -42,6 +43,7 @@ interface BuildFilters {
   usageType: UsageType | null;
   cpuBrand: CpuBrand | null;
   wantsCompactCase: boolean | null;
+  wantsGpu: boolean | null;
   needsCooling: boolean | null;
   coolingType: CoolingType | null;
 }
@@ -97,6 +99,7 @@ const PCBuilder: React.FC = () => {
     usageType: null,
     cpuBrand: null,
     wantsCompactCase: null,
+    wantsGpu: null,
     needsCooling: null,
     coolingType: null,
   });
@@ -336,11 +339,21 @@ const PCBuilder: React.FC = () => {
   const handleNext = () => {
     const stepOrder: BuildStep[] = [
       'usage', 'cpu_brand', 'cpu', 'motherboard', 'ram', 'storage', 
-      'case_question', 'case', 'gpu', 'psu', 'cooling_question', 'cooling_type', 'cooling', 'summary'
+      'case_question', 'case', 'gpu_question', 'gpu', 'psu', 'cooling_question', 'cooling_type', 'cooling', 'summary'
     ];
     
     const currentIndex = stepOrder.indexOf(currentStep);
     let nextIndex = currentIndex + 1;
+    
+    // Skip gpu_question if CPU has NO iGPU (GPU is mandatory, go straight to selection)
+    if (stepOrder[nextIndex] === 'gpu_question' && selectedCpu?.spec?.cpu_has_igpu === false) {
+      nextIndex++; // skip to gpu
+    }
+    
+    // Skip gpu if user said they don't want one (and CPU has iGPU)
+    if (stepOrder[nextIndex] === 'gpu' && filters.wantsGpu === false) {
+      nextIndex++; // skip to psu
+    }
     
     // Skip PSU if case includes it
     if (stepOrder[nextIndex] === 'psu' && caseIncludesPsu) {
@@ -363,11 +376,21 @@ const PCBuilder: React.FC = () => {
   const handlePrev = () => {
     const stepOrder: BuildStep[] = [
       'usage', 'cpu_brand', 'cpu', 'motherboard', 'ram', 'storage', 
-      'case_question', 'case', 'gpu', 'psu', 'cooling_question', 'cooling_type', 'cooling', 'summary'
+      'case_question', 'case', 'gpu_question', 'gpu', 'psu', 'cooling_question', 'cooling_type', 'cooling', 'summary'
     ];
     
     const currentIndex = stepOrder.indexOf(currentStep);
     let prevIndex = currentIndex - 1;
+    
+    // Skip gpu if user skipped it
+    if (stepOrder[prevIndex] === 'gpu' && filters.wantsGpu === false) {
+      prevIndex--;
+    }
+    
+    // Skip gpu_question if CPU has no iGPU
+    if (stepOrder[prevIndex] === 'gpu_question' && selectedCpu?.spec?.cpu_has_igpu === false) {
+      prevIndex--;
+    }
     
     // Skip PSU if case includes it
     if (stepOrder[prevIndex] === 'psu' && caseIncludesPsu) {
@@ -985,6 +1008,72 @@ const PCBuilder: React.FC = () => {
           () => setSelectedCase(null)
         );
 
+      case 'gpu_question':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="flex flex-col items-center justify-center min-h-[400px] p-8"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring' }}
+              className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center"
+            >
+              <Monitor className="w-8 h-8 text-primary" />
+            </motion.div>
+            
+            <h3 className="text-2xl font-bold mb-2 text-center">¿Requieres una tarjeta de video?</h3>
+            <p className="text-sm text-muted-foreground mb-8 text-center max-w-md">
+              Recomendable si requieres un mayor rendimiento o si requieres salidas de video adicionales.
+            </p>
+            
+            <div className="grid gap-4 w-full max-w-2xl grid-cols-2">
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                onClick={() => {
+                  setFilters(prev => ({ ...prev, wantsGpu: true }));
+                  setCurrentStep('gpu');
+                }}
+                className="group p-6 rounded-2xl border-2 border-border hover:border-primary bg-card hover:bg-primary/5 transition-all text-center"
+              >
+                <div className="mb-4 mx-auto w-16 h-16 rounded-xl bg-muted group-hover:bg-primary/10 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                  <Monitor className="w-8 h-8" />
+                </div>
+                <p className="font-semibold mb-1">Sí</p>
+                <p className="text-xs text-muted-foreground">Agregar tarjeta de video</p>
+              </motion.button>
+              
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                onClick={() => {
+                  setFilters(prev => ({ ...prev, wantsGpu: false }));
+                  setSelectedGpu(null);
+                  // Skip to PSU (or cooling if PSU is included)
+                  if (caseIncludesPsu) {
+                    setCurrentStep('cooling_question');
+                  } else {
+                    setCurrentStep('psu');
+                  }
+                }}
+                className="group p-6 rounded-2xl border-2 border-border hover:border-primary bg-card hover:bg-primary/5 transition-all text-center"
+              >
+                <div className="mb-4 mx-auto w-16 h-16 rounded-xl bg-muted group-hover:bg-primary/10 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                  <X className="w-8 h-8" />
+                </div>
+                <p className="font-semibold mb-1">No</p>
+                <p className="text-xs text-muted-foreground">Usar gráficos integrados</p>
+              </motion.button>
+            </div>
+          </motion.div>
+        );
+
       case 'gpu':
         return renderProductStep(
           'Tarjeta de Video',
@@ -1080,7 +1169,7 @@ const PCBuilder: React.FC = () => {
     { key: 'cooling', label: 'Enfriamiento', done: !!selectedCooling || filters.needsCooling === false },
   ];
 
-  const isQuestionStep = ['usage', 'cpu_brand', 'case_question', 'cooling_question', 'cooling_type', 'summary'].includes(currentStep);
+  const isQuestionStep = ['usage', 'cpu_brand', 'case_question', 'gpu_question', 'cooling_question', 'cooling_type', 'summary'].includes(currentStep);
 
   return (
     <Layout>
@@ -1128,7 +1217,7 @@ const PCBuilder: React.FC = () => {
             <div className="lg:col-span-3 space-y-4">
               {/* Step indicator - mobile */}
               {currentStep !== 'summary' && (
-                <div className="lg:hidden overflow-x-auto pb-2 mt-6">
+                <div className="lg:hidden overflow-x-auto pb-2 mt-2">
                   <div className="flex items-center gap-2">
                     {stepIndicatorItems.map((item, index) => (
                       <div
