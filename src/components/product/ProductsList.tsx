@@ -3,6 +3,7 @@ import ProductCard from '../ProductCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import NoProductsFound from './NoProductsFound';
+import { searchProducts } from '@/lib/product-search';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface Product {
@@ -164,19 +165,16 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     return products.filter(product => productIdsInExhibitedWarehouses.has(product.id));
   }, [products, warehouseStock, exhibitedWarehouseIds]);
   
-  // Aplicar filtros adicionales (categoría y búsqueda)
-  const filteredProducts = productsInExhibitedWarehouses.filter(product => {
-    // Filtrar por categoría
-    const categoryMatch = activeCategory === 'all' || product.category_id === activeCategory;
-    
-    // Filtrar por término de búsqueda
-    const searchLower = searchTerm.toLowerCase();
-    const searchMatch = 
-      product.name.toLowerCase().includes(searchLower) || 
-      (product.clave && product.clave.toLowerCase().includes(searchLower));
-    
-    return categoryMatch && searchMatch;
-  });
+  // Aplicar filtros adicionales (categoría y búsqueda con ranking por tokens)
+  const filteredProducts = useMemo(() => {
+    // First filter by category
+    const categoryFiltered = activeCategory === 'all'
+      ? productsInExhibitedWarehouses
+      : productsInExhibitedWarehouses.filter(p => p.category_id === activeCategory);
+
+    // Then apply token-based search with relevance ranking
+    return searchProducts(categoryFiltered, searchTerm);
+  }, [productsInExhibitedWarehouses, activeCategory, searchTerm]);
 
   const isLoading = isLoadingProducts;
   const error = productsError;
