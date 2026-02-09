@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import * as XLSX from 'xlsx';
 import ExhibitedWarehousesToggle from './ExhibitedWarehousesToggle';
 import { calculatePrice, formatPrice } from '@/lib/price-utils';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 interface Product {
   id: string;
@@ -78,11 +79,8 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
   const [showAll, setShowAll] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showZeroStock, setShowZeroStock] = useState(false);
-  const [showPublicPrices, setShowPublicPrices] = useState(() => {
-    // Load initial value from localStorage
-    const saved = localStorage.getItem('showPublicPrices');
-    return saved === 'true';
-  });
+  const { showPrices: showPublicPrices } = useStoreSettings();
+  const [isTogglingPrices, setIsTogglingPrices] = useState(false);
   const [newProduct, setNewProduct] = useState({
     clave: '',
     name: '',
@@ -658,9 +656,19 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
               <Switch
                 id="show-public-prices"
                 checked={showPublicPrices}
-                onCheckedChange={(checked) => {
-                  setShowPublicPrices(checked);
-                  localStorage.setItem('showPublicPrices', String(checked));
+                disabled={isTogglingPrices}
+                onCheckedChange={async (checked) => {
+                  setIsTogglingPrices(true);
+                  const { error } = await (supabase
+                    .from('store_settings' as any)
+                    .update({ show_public_prices: checked, updated_at: new Date().toISOString() })
+                    .eq('id', 'main') as any);
+                  if (error) {
+                    toast.error('Error al actualizar configuración de precios');
+                  } else {
+                    toast.success(checked ? 'Precios visibles para el público' : 'Precios ocultos del público');
+                  }
+                  setIsTogglingPrices(false);
                 }}
               />
               <Label htmlFor="show-public-prices" className="text-sm cursor-pointer whitespace-nowrap">
