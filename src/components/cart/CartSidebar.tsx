@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2, ShoppingCart, X } from 'lucide-react';
@@ -43,7 +43,7 @@ const CartSidebar: React.FC = () => {
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetContent className="w-full sm:max-w-md flex flex-col p-0">
+      <SheetContent className="w-full sm:max-w-md flex flex-col p-0 [&>button.absolute]:hidden">
         <SheetHeader className="p-4 border-b">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
@@ -52,7 +52,7 @@ const CartSidebar: React.FC = () => {
               {checkoutStep === 'checkout' && 'Finalizar Pedido'}
               {checkoutStep === 'confirmation' && 'Pedido Confirmado'}
             </SheetTitle>
-            <Button variant="ghost" size="icon" onClick={handleClose}>
+            <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
               <X size={18} />
             </Button>
           </div>

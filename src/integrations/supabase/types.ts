@@ -789,6 +789,24 @@ export type Database = {
         }
         Relationships: []
       }
+      store_settings: {
+        Row: {
+          id: string
+          show_public_prices: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          show_public_prices?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          show_public_prices?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -840,6 +858,7 @@ export type Database = {
           payment_method: string
           phone: string
           requires_quote: boolean
+          shipping_option: string | null
           status: string
           subtotal: number | null
           updated_at: string
@@ -855,6 +874,7 @@ export type Database = {
           payment_method: string
           phone: string
           requires_quote?: boolean
+          shipping_option?: string | null
           status?: string
           subtotal?: number | null
           updated_at?: string
@@ -870,6 +890,7 @@ export type Database = {
           payment_method?: string
           phone?: string
           requires_quote?: boolean
+          shipping_option?: string | null
           status?: string
           subtotal?: number | null
           updated_at?: string

@@ -50,19 +50,37 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
       <Toaster />
       <NavBar />
       
-      {/* Dark mode toggle button */}
+      {/* Dark mode toggle button - top right on desktop, bottom on mobile */}
       <Button
         variant="outline"
         size="icon"
         onClick={toggleDarkMode}
-        className="fixed top-24 right-4 z-40 rounded-full bg-background/80 backdrop-blur-sm shadow-lg border-border"
+        className="fixed top-24 right-4 z-40 rounded-full bg-background/80 backdrop-blur-sm shadow-lg border-border hidden md:flex"
         aria-label="Toggle dark mode"
       >
         {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
       </Button>
 
-      {/* Cart button - only on productos page */}
-      {showCartButton && <CartButton />}
+      {/* Mobile bottom buttons: dark mode + cart */}
+      <div className="fixed bottom-8 right-[4.5rem] z-50 flex flex-col gap-2 md:hidden">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleDarkMode}
+          className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm shadow-lg border-border"
+          aria-label="Toggle dark mode"
+        >
+          {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+        </Button>
+        {showCartButton && <CartButton mobile />}
+      </div>
+
+      {/* Cart button - desktop only, top right */}
+      {showCartButton && (
+        <div className="hidden md:block">
+          <CartButton />
+        </div>
+      )}
       
       {/* Cart sidebar */}
       <CartSidebar />

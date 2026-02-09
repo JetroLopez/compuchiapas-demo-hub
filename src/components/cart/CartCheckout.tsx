@@ -33,6 +33,10 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Shipping question state
+  const [wantsShipping, setWantsShipping] = useState<'yes' | 'no' | null>(null);
+  const [shippingZone, setShippingZone] = useState<'local' | 'foraneo' | null>(null);
+
   const whatsappNumber = "9622148546";
 
   const handleQuoteWhatsApp = () => {
@@ -47,6 +51,13 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
   const formatBillingData = () => {
     if (!wantsBilling) return null;
     return `Razón Social: ${billingData.razonSocial}\nRFC: ${billingData.rfc}\nCódigo Postal: ${billingData.codigoPostal}\nRégimen Fiscal: ${billingData.regimenFiscal}\nUso de CFDI: ${billingData.usoCfdi}`;
+  };
+
+  const getShippingOption = (): string | null => {
+    if (wantsShipping === 'no' || wantsShipping === null) return null;
+    if (shippingZone === 'local') return 'Dentro de la ciudad (Tapachula)';
+    if (shippingZone === 'foraneo') return 'Foráneo (Cd. Hidalgo, Huixtla, Mazatán, Tuxtla Chico, otro)';
+    return 'Envío solicitado';
   };
 
   const handleSubmitOrder = async () => {
@@ -101,7 +112,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
         clave: item.clave
       }));
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('web_orders')
         .insert({
           phone: phone.trim(),
@@ -110,10 +121,11 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
           items: orderItems,
           subtotal: subtotal,
           requires_quote: requiresQuote,
-          billing_data: formatBillingData()
-        })
+          billing_data: formatBillingData(),
+          shipping_option: getShippingOption()
+        } as any)
         .select('order_number')
-        .single();
+        .single());
 
       if (error) throw error;
 
@@ -243,6 +255,48 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
             </div>
           </div>
         )}
+
+        {/* Shipping Question */}
+        <div className="space-y-3">
+          <Label className="text-base font-semibold">¿Requieres envío a domicilio?</Label>
+          <RadioGroup
+            value={wantsShipping || ''}
+            onValueChange={(v) => {
+              setWantsShipping(v as 'yes' | 'no');
+              if (v === 'no') setShippingZone(null);
+            }}
+          >
+            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
+              <RadioGroupItem value="yes" id="shipping-yes" />
+              <Label htmlFor="shipping-yes" className="cursor-pointer flex-1">Sí</Label>
+            </div>
+            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
+              <RadioGroupItem value="no" id="shipping-no" />
+              <Label htmlFor="shipping-no" className="cursor-pointer flex-1">No</Label>
+            </div>
+          </RadioGroup>
+
+          {wantsShipping === 'yes' && (
+            <div className="space-y-3 pl-4 border-l-2 border-primary/30">
+              <RadioGroup
+                value={shippingZone || ''}
+                onValueChange={(v) => setShippingZone(v as 'local' | 'foraneo')}
+              >
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="local" id="zone-local" />
+                  <Label htmlFor="zone-local" className="cursor-pointer flex-1">Dentro de la ciudad (Tapachula)</Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="foraneo" id="zone-foraneo" />
+                  <Label htmlFor="zone-foraneo" className="cursor-pointer flex-1 text-sm">Foráneo (Cd. Hidalgo, Huixtla, Mazatán, Tuxtla Chico, otro...)</Label>
+                </div>
+              </RadioGroup>
+              <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                ⚠️ Nota: El envío puede tener costo adicional.
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Billing Checkbox */}
         <div className="space-y-4">
