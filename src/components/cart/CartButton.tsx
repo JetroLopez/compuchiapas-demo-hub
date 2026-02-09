@@ -18,15 +18,15 @@ const CartButton: React.FC<CartButtonProps> = ({ mobile = false }) => {
         variant="outline"
         size="icon"
         onClick={() => setIsOpen(true)}
-        className={`h-10 w-10 rounded-full backdrop-blur-sm shadow-lg border-border ${
+        className={`relative h-9 w-9 rounded-full backdrop-blur-sm shadow-lg border-border ${
           hasItems
             ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
             : 'bg-background/80'
         }`}
         aria-label="Abrir carrito"
       >
-        <ShoppingCart size={16} />
-        {hasItems && (
+        <ShoppingCart size={14} />
+        {totalItems > 0 && (
           <span className="absolute -top-1.5 -right-1.5 bg-white text-orange-600 text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow">
             {totalItems > 99 ? '99+' : totalItems}
           </span>
