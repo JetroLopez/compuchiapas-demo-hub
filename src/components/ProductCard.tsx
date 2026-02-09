@@ -87,93 +87,158 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div 
-      className={`glass-card rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group relative ${isInCart ? 'ring-2 ring-primary' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="relative overflow-hidden aspect-square">
-        <img 
-          src={image} 
-          alt=""
-          title=""
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          loading="lazy"
-          draggable={false}
-        />
-        
-        {/* Stock badges */}
-        {existencias > 0 && (
-          <span className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-            En stock: {existencias}
-          </span>
-        )}
-        {existencias === 0 && (
-          <span className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-            Agotado
-          </span>
-        )}
+    <>
+      {/* ===== MOBILE: Horizontal compact card ===== */}
+      <div
+        className={`md:hidden flex items-stretch rounded-xl overflow-hidden border border-border bg-card shadow-sm ${isInCart ? 'ring-2 ring-primary' : ''}`}
+      >
+        {/* Image */}
+        <div className="relative w-20 h-20 flex-shrink-0">
+          <img
+            src={image}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+            draggable={false}
+          />
+          {existencias === 0 && (
+            <span className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <span className="text-white text-[9px] font-bold">Agotado</span>
+            </span>
+          )}
+        </div>
 
-        {/* Cart overlay */}
-        {(isHovered || isInCart) && existencias > 0 && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-300">
-            {!isInCart ? (
-              <button
-                onClick={handleAddToCart}
-                className="bg-primary text-primary-foreground rounded-full p-4 hover:scale-110 transition-transform shadow-lg"
-                aria-label="Agregar al carrito"
-              >
-                <ShoppingCart size={24} />
-              </button>
-            ) : (
-              <div className="flex items-center gap-3 bg-background rounded-full px-2 py-1 shadow-lg">
+        {/* Content */}
+        <div className="flex-1 min-w-0 px-2.5 py-1.5 flex flex-col justify-center">
+          <h3 className="text-xs font-semibold line-clamp-2 leading-tight text-foreground">{name}</h3>
+          {showPrice && price > 0 ? (
+            <p className="text-sm font-bold text-primary mt-0.5">{formattedPrice}</p>
+          ) : (
+            <p className="text-[10px] text-muted-foreground mt-0.5">Consultar precio</p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col items-center justify-center gap-1 pr-2 flex-shrink-0">
+          <button
+            onClick={handleWhatsAppClick}
+            className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            aria-label="Cotizar por WhatsApp"
+          >
+            <MessageCircle size={16} />
+          </button>
+          {existencias > 0 && (
+            <>
+              {!isInCart ? (
                 <button
-                  onClick={handleDecrement}
-                  className="p-2 hover:bg-muted rounded-full transition-colors"
-                  aria-label="Reducir cantidad"
+                  onClick={handleAddToCart}
+                  className="p-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  aria-label="Agregar al carrito"
                 >
-                  <Minus size={20} />
+                  <ShoppingCart size={16} />
                 </button>
-                <span className="font-bold text-lg min-w-[2rem] text-center">{quantityInCart}</span>
+              ) : (
+                <div className="flex items-center gap-0.5">
+                  <button onClick={handleDecrement} className="p-0.5 hover:bg-muted rounded" aria-label="Reducir">
+                    <Minus size={12} />
+                  </button>
+                  <span className="text-xs font-bold w-4 text-center">{quantityInCart}</span>
+                  <button onClick={handleIncrement} className="p-0.5 hover:bg-muted rounded" aria-label="Aumentar">
+                    <Plus size={12} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ===== DESKTOP: Original vertical card ===== */}
+      <div 
+        className={`hidden md:block glass-card rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group relative ${isInCart ? 'ring-2 ring-primary' : ''}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="relative overflow-hidden aspect-square">
+          <img 
+            src={image} 
+            alt=""
+            title=""
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
+            draggable={false}
+          />
+          
+          {existencias > 0 && (
+            <span className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+              En stock: {existencias}
+            </span>
+          )}
+          {existencias === 0 && (
+            <span className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+              Agotado
+            </span>
+          )}
+
+          {(isHovered || isInCart) && existencias > 0 && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-300">
+              {!isInCart ? (
                 <button
-                  onClick={handleIncrement}
-                  className="p-2 hover:bg-muted rounded-full transition-colors"
-                  aria-label="Aumentar cantidad"
+                  onClick={handleAddToCart}
+                  className="bg-primary text-primary-foreground rounded-full p-4 hover:scale-110 transition-transform shadow-lg"
+                  aria-label="Agregar al carrito"
                 >
-                  <Plus size={20} />
+                  <ShoppingCart size={24} />
                 </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      
-      <div className="p-6">
-        {clave && (
-          <p className="text-xs text-muted-foreground mb-1">Clave: {clave}</p>
-        )}
-        <h3 className="text-lg font-semibold mb-2 line-clamp-2">{name}</h3>
+              ) : (
+                <div className="flex items-center gap-3 bg-background rounded-full px-2 py-1 shadow-lg">
+                  <button
+                    onClick={handleDecrement}
+                    className="p-2 hover:bg-muted rounded-full transition-colors"
+                    aria-label="Reducir cantidad"
+                  >
+                    <Minus size={20} />
+                  </button>
+                  <span className="font-bold text-lg min-w-[2rem] text-center">{quantityInCart}</span>
+                  <button
+                    onClick={handleIncrement}
+                    className="p-2 hover:bg-muted rounded-full transition-colors"
+                    aria-label="Aumentar cantidad"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         
-        {/* Price Display - Only when showPrice is true */}
-        {showPrice && price > 0 && (
-          <p className="text-2xl font-bold text-primary mb-4">{formattedPrice}</p>
-        )}
-        {showPrice && price === 0 && (
-          <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
-        )}
-        {!showPrice && (
-          <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
-        )}
-        
-        <button 
-          onClick={handleWhatsAppClick}
-          className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
-        >
-          <MessageCircle size={18} />
-          Cotizar por WhatsApp
-        </button>
+        <div className="p-6">
+          {clave && (
+            <p className="text-xs text-muted-foreground mb-1">Clave: {clave}</p>
+          )}
+          <h3 className="text-lg font-semibold mb-2 line-clamp-2">{name}</h3>
+          
+          {showPrice && price > 0 && (
+            <p className="text-2xl font-bold text-primary mb-4">{formattedPrice}</p>
+          )}
+          {showPrice && price === 0 && (
+            <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
+          )}
+          {!showPrice && (
+            <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
+          )}
+          
+          <button 
+            onClick={handleWhatsAppClick}
+            className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
+          >
+            <MessageCircle size={18} />
+            Cotizar por WhatsApp
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
