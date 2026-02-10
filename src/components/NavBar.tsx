@@ -1,17 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { useLocation, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Menu, X, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo-compuchiapas.png';
 
-const NavBar: React.FC = () => {
+interface NavBarProps {
+  productSearchTerm?: string;
+  onProductSearchChange?: (term: string) => void;
+}
+
+const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChange }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const headerRef = useRef<HTMLElement>(null);
   
-  // Pages that need dark header when not scrolled (all pages now maintain dark header/hero)
   const needsDarkHeader = true;
+  const isProductsPage = location.pathname === '/productos';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,12 +27,10 @@ const NavBar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close menu when route changes
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuOpen && headerRef.current && !headerRef.current.contains(event.target as Node)) {
@@ -71,8 +74,8 @@ const NavBar: React.FC = () => {
       )}
     >
       <div className="container-padding mx-auto">
-        <div className="flex items-center justify-between h-20">
-          <Link to="/" className="flex items-center gap-2">
+        <div className="flex items-center justify-between h-20 gap-4">
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <img src={logo} alt="Compuchiapas Logo" className="h-12 w-12 object-contain" />
             <span className={cn(
               "text-2xl font-bold flex items-baseline transition-colors duration-300",
@@ -82,8 +85,34 @@ const NavBar: React.FC = () => {
             </span>
           </Link>
 
+          {/* Desktop Search Bar - only on products page */}
+          {isProductsPage && onProductSearchChange && (
+            <div className="hidden md:flex flex-1 max-w-sm mx-4">
+              <div className="relative w-full">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={16} className={cn(
+                    "transition-colors",
+                    isScrolled ? "text-muted-foreground" : "text-white/60"
+                  )} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Buscar en tienda"
+                  className={cn(
+                    "w-full pl-9 pr-3 py-2 rounded-full text-sm transition-all duration-300 focus:outline-none focus:ring-2",
+                    isScrolled
+                      ? "bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
+                      : "bg-white/15 border border-white/20 text-white placeholder:text-white/60 focus:ring-white/40 focus:bg-white/20"
+                  )}
+                  value={productSearchTerm || ''}
+                  onChange={(e) => onProductSearchChange(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-6 flex-shrink-0">
             {navLinks.map((link) => (
               <Link 
                 key={link.path} 
