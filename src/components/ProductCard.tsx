@@ -3,6 +3,7 @@ import { MessageCircle, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { calculatePrice, formatPrice } from '@/lib/price-utils';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ProductCardProps {
   id: string;
@@ -30,6 +31,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const { addItem, getItemQuantity, updateQuantity } = useCart();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const whatsappNumber = "9622148546";
   const price = calculatePrice(costo, categoryId);
@@ -65,7 +67,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       price: showPrice ? price : null,
       maxStock: existencias,
       clave
-    });
+    }, !isMobile);
   };
 
   const handleIncrement = (e: React.MouseEvent) => {

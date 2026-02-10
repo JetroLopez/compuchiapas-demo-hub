@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
@@ -8,30 +8,38 @@ interface CartButtonProps {
 }
 
 const CartButton: React.FC<CartButtonProps> = ({ mobile = false }) => {
-  const { setIsOpen, totalItems } = useCart();
+  const { setIsOpen, totalItems, lastAddedAt } = useCart();
+  const [blinking, setBlinking] = useState(false);
 
   const hasItems = totalItems > 0;
 
+  // Trigger blink animation when item is added
+  useEffect(() => {
+    if (lastAddedAt > 0 && hasItems) {
+      setBlinking(true);
+      const timeout = setTimeout(() => setBlinking(false), 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [lastAddedAt, hasItems]);
+
   if (mobile) {
     return (
-      <Button
-        variant="outline"
-        size="icon"
+      <button
         onClick={() => setIsOpen(true)}
-        className={`relative h-9 w-9 rounded-full backdrop-blur-sm shadow-lg border-border ${
+        className={`relative rounded-full shadow-lg transition-transform duration-300 p-4 ${
           hasItems
-            ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
-            : 'bg-background/80'
-        }`}
+            ? 'bg-orange-500 hover:bg-orange-600 text-white'
+            : 'bg-background/80 backdrop-blur-sm border border-border text-foreground'
+        } ${blinking ? 'animate-cart-blink' : ''}`}
         aria-label="Abrir carrito"
       >
-        <ShoppingCart size={14} />
-        {totalItems > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-white text-orange-600 text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow">
+        <ShoppingCart size={28} />
+        {hasItems && (
+          <span className="absolute -top-1.5 -right-1.5 bg-white text-orange-600 text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center shadow">
             {totalItems > 99 ? '99+' : totalItems}
           </span>
         )}
-      </Button>
+      </button>
     );
   }
 

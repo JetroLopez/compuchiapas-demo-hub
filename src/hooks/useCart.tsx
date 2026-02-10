@@ -13,7 +13,7 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  addItem: (item: Omit<CartItem, 'quantity'>, openSidebar?: boolean) => void;
   removeItem: (id: string, type: 'product' | 'promotion') => void;
   updateQuantity: (id: string, type: 'product' | 'promotion', quantity: number) => void;
   getItemQuantity: (id: string, type: 'product' | 'promotion') => number;
@@ -23,6 +23,7 @@ interface CartContextType {
   totalItems: number;
   subtotal: number | null;
   requiresQuote: boolean;
+  lastAddedAt: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -39,13 +40,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
   const [isOpen, setIsOpen] = useState(false);
+  const [lastAddedAt, setLastAddedAt] = useState(0);
 
   // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  const addItem = useCallback((newItem: Omit<CartItem, 'quantity'>) => {
+  const addItem = useCallback((newItem: Omit<CartItem, 'quantity'>, openSidebar = true) => {
     setItems(prev => {
       const existingIndex = prev.findIndex(
         item => item.id === newItem.id && item.type === newItem.type
@@ -65,7 +67,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       return [...prev, { ...newItem, quantity: 1 }];
     });
-    setIsOpen(true);
+    setLastAddedAt(Date.now());
+    if (openSidebar) {
+      setIsOpen(true);
+    }
   }, []);
 
   const removeItem = useCallback((id: string, type: 'product' | 'promotion') => {
@@ -125,7 +130,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsOpen,
         totalItems,
         subtotal,
-        requiresQuote
+        requiresQuote,
+        lastAddedAt
       }}
     >
       {children}

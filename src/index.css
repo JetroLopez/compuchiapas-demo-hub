@@ -174,3 +174,15 @@
   transform: translateY(-10px);
   transition: opacity 400ms, transform 400ms;
 }
+
+/* Cart blink animation */
+@keyframes cart-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  25% { opacity: 0.6; transform: scale(1.1); }
+  50% { opacity: 1; transform: scale(1); }
+  75% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.animate-cart-blink {
+  animation: cart-blink 1.5s ease-in-out;
+}
