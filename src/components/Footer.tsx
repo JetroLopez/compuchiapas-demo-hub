@@ -113,7 +113,7 @@ const Footer: React.FC = () => {
                     rel="noopener noreferrer" 
                     className="hover:text-white transition-colors"
                   >
-                    6a. Avenida Sur, Centro, 30700 Tapachula de Córdova y Ordóñez, Chis.
+                    6a. Avenida Sur, 12, Centro, 30700. Tapachula de Córdova y Ordoñez, Chis.
                   </a>
                 </span>
               </li>

@@ -22,7 +22,7 @@ const Productos: React.FC = () => {
   const initialCategory = searchParams.get('categoria') || 'all';
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showOrderSearch, setShowOrderSearch] = useState(false);
+  const [showOrderSearch, setShowOrderSearch] = useState(searchParams.get('pedido') === 'true');
 
   // Obtener categorías de la base de datos
   const { data: categories = [] } = useQuery({
