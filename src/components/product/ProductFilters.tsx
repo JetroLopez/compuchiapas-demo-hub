@@ -324,7 +324,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   };
 
   return (
-    <div className="mb-8 space-y-4 md:space-y-6">
+    <div className="mb-8 space-y-4 md:space-y-6 sticky top-20 z-30 bg-background pb-2 -mx-4 px-4 md:-mx-0 md:px-0 pt-2">
       {/* ===== MOBILE LAYOUT ===== */}
       <div className="md:hidden space-y-3">
         {/* Search bar + filter icon */}
