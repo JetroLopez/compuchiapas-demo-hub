@@ -127,7 +127,7 @@ const Productos: React.FC = () => {
       </section>
       
       {/* Product Catalog */}
-      <section className="py-4 md:py-12">
+      <section className="py-4 md:py-4">
         <div className="container-padding max-w-7xl mx-auto">
           {/* Search and Filter */}
           <ProductFilters 

@@ -552,15 +552,15 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         ) : (
           <>
             {/* Normal non-sticky: full categories view */}
-            {/* Barra de búsqueda */}
-            <div className="relative max-w-xl mx-auto">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search size={20} className="text-muted-foreground" />
+            {/* Barra de búsqueda prominente */}
+            <div className="relative max-w-2xl mx-auto">
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <Search size={22} className="text-primary" />
               </div>
               <input
                 type="text"
                 placeholder="Buscar productos por nombre o clave..."
-                className="w-full pl-12 pr-4 py-3 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
+                className="w-full pl-14 pr-5 py-4 border-2 border-primary/30 bg-primary/5 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary shadow-md placeholder:text-muted-foreground/70"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
