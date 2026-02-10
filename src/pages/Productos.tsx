@@ -92,19 +92,19 @@ const Productos: React.FC = () => {
       </div>
       
       {/* Desktop Quick Actions - Arma tu PC + Buscar pedido */}
-      <section className="py-3 hidden md:block">
-        <div className="container-padding max-w-7xl mx-auto space-y-3">
-          <div className="flex gap-3">
+      <section className="py-6 hidden md:block">
+        <div className="container-padding max-w-7xl mx-auto">
+          <div className="flex gap-4">
             {/* Arma tu PC */}
             <Link
               to="/productos/arma-tu-pc"
-              className="flex-1 flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-tech-blue to-blue-700 text-white hover:shadow-lg transition-all duration-300 group"
+              className="flex-1 flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-tech-blue to-blue-700 text-white hover:shadow-lg transition-all duration-300 group"
             >
-              <div className="p-2.5 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
-                <Monitor size={22} />
+              <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                <Monitor size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-base">Arma tu PC</h3>
+                <h3 className="font-bold text-lg">Arma tu PC</h3>
                 <p className="text-white/80 text-sm">Ensamblamos tu PC ideal según tus necesidades y presupuesto.</p>
               </div>
             </Link>
@@ -112,13 +112,13 @@ const Productos: React.FC = () => {
             {/* Buscar mi pedido */}
             <button
               onClick={() => setShowOrderSearch(true)}
-              className="flex-1 flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 group text-left"
+              className="flex-1 flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 group text-left"
             >
-              <div className="p-2.5 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                <Package size={22} className="text-primary" />
+              <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                <Package size={24} className="text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-foreground">Buscar mi pedido</h3>
+                <h3 className="font-bold text-lg text-foreground">Buscar mi pedido</h3>
                 <p className="text-muted-foreground text-sm">Click aquí para conocer el estatus de tus pedidos.</p>
               </div>
             </button>
@@ -127,7 +127,7 @@ const Productos: React.FC = () => {
       </section>
       
       {/* Product Catalog */}
-      <section className="py-4 md:py-8">
+      <section className="py-4 md:py-12">
         <div className="container-padding max-w-7xl mx-auto">
           {/* Search and Filter */}
           <ProductFilters 
