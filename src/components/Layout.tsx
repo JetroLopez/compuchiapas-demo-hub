@@ -12,9 +12,11 @@ import { CartProvider } from '@/hooks/useCart';
 
 interface LayoutProps {
   children: React.ReactNode;
+  productSearchTerm?: string;
+  onProductSearchChange?: (term: string) => void;
 }
 
-const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
+const LayoutContent: React.FC<LayoutProps> = ({ children, productSearchTerm, onProductSearchChange }) => {
   const location = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -48,7 +50,7 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground transition-colors duration-300">
       <Toaster />
-      <NavBar />
+      <NavBar productSearchTerm={productSearchTerm} onProductSearchChange={onProductSearchChange} />
       
       {/* Dark mode toggle button - top right on desktop, bottom on mobile */}
       <Button
@@ -92,10 +94,10 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, productSearchTerm, onProductSearchChange }) => {
   return (
     <CartProvider>
-      <LayoutContent>{children}</LayoutContent>
+      <LayoutContent productSearchTerm={productSearchTerm} onProductSearchChange={onProductSearchChange}>{children}</LayoutContent>
     </CartProvider>
   );
 };

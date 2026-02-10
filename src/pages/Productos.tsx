@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ProductHero from '../components/product/ProductHero';
-import CustomQuoteBanner from '../components/product/CustomQuoteBanner';
 import ProductFilters from '../components/product/ProductFilters';
 import ProductsList from '../components/product/ProductsList';
 import CustomPCBuild from '../components/product/CustomPCBuild';
@@ -63,7 +62,7 @@ const Productos: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <Layout productSearchTerm={searchTerm} onProductSearchChange={setSearchTerm}>
       {/* Desktop Hero - hidden on mobile */}
       <div className="hidden md:block">
         <ProductHero />
@@ -92,11 +91,38 @@ const Productos: React.FC = () => {
         </div>
       </div>
       
-      {/* Special Banner - hidden on mobile */}
-      <section className="py-8 hidden md:block">
-        <div className="container-padding max-w-7xl mx-auto space-y-6">
-          <CustomQuoteBanner />
-          <OrderStatusSearch />
+      {/* Desktop Quick Actions - Arma tu PC + Buscar pedido */}
+      <section className="py-6 hidden md:block">
+        <div className="container-padding max-w-7xl mx-auto">
+          <div className="flex gap-4">
+            {/* Arma tu PC */}
+            <Link
+              to="/productos/arma-tu-pc"
+              className="flex-1 flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-tech-blue to-blue-700 text-white hover:shadow-lg transition-all duration-300 group"
+            >
+              <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                <Monitor size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Arma tu PC</h3>
+                <p className="text-white/80 text-sm">Ensamblamos tu PC ideal según tus necesidades y presupuesto.</p>
+              </div>
+            </Link>
+
+            {/* Buscar mi pedido */}
+            <button
+              onClick={() => setShowOrderSearch(true)}
+              className="flex-1 flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 group text-left"
+            >
+              <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                <Package size={24} className="text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-foreground">Buscar mi pedido</h3>
+                <p className="text-muted-foreground text-sm">Click aquí para conocer el estatus de tus pedidos.</p>
+              </div>
+            </button>
+          </div>
         </div>
       </section>
       
@@ -128,7 +154,7 @@ const Productos: React.FC = () => {
         </div>
       </section>
 
-      {/* Order Search Dialog for mobile */}
+      {/* Order Search Dialog for mobile and desktop */}
       <Dialog open={showOrderSearch} onOpenChange={setShowOrderSearch}>
         <DialogContent className="max-w-lg">
           <DialogHeader>

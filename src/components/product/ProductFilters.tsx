@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Monitor, Laptop, Cpu, HardDrive, Printer, Droplets, Network, Zap, Volume2, Mouse, Shield, ShoppingCart, FileCode, Armchair, Wrench, Tag, Building2, ChevronDown, ChevronRight, Package, ChevronUp, SlidersHorizontal, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -227,7 +227,23 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showMobileCategories, setShowMobileCategories] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
+  const [showDesktopFilterDropdown, setShowDesktopFilterDropdown] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
+
+  // Detect when sticky kicks in on desktop
+  useEffect(() => {
+    const handleScroll = () => {
+      if (stickyRef.current) {
+        const rect = stickyRef.current.getBoundingClientRect();
+        // When the element is stuck at top (near header bottom ~80px)
+        setIsSticky(rect.top <= 82);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Mapear códigos de categoría a IDs de la base de datos
   const getMatchingCategoryIds = (codes: string[]): string[] => {
@@ -324,7 +340,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   };
 
   return (
-    <div className="mb-8 space-y-4 md:space-y-6 sticky top-20 z-30 bg-background pb-2 -mx-4 px-4 md:-mx-0 md:px-0 pt-2">
+    <div ref={stickyRef} className="mb-8 space-y-4 md:space-y-6 sticky top-20 z-30 bg-background pb-2 -mx-4 px-4 md:-mx-0 md:px-0 pt-2">
       {/* ===== MOBILE LAYOUT ===== */}
       <div className="md:hidden space-y-3">
         {/* Search bar + filter icon */}
@@ -420,179 +436,297 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
 
       {/* ===== DESKTOP LAYOUT ===== */}
       <div className="hidden md:block space-y-6">
-        {/* Barra de búsqueda */}
-        <div className="relative max-w-xl mx-auto">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search size={20} className="text-muted-foreground" />
-          </div>
-          <input
-            type="text"
-            placeholder="Buscar productos por nombre o clave..."
-            className="w-full pl-12 pr-4 py-3 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        {/* When sticky: show compact bar with search + filter button */}
+        {isSticky ? (
+          <div className="flex items-center gap-3">
+            {/* Compact search bar */}
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search size={18} className="text-muted-foreground" />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar productos por nombre o clave..."
+                className="w-full pl-11 pr-4 py-2.5 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-        {/* Botón "Ver Todos" */}
-        <div className="flex justify-center">
-          <button
-            onClick={() => {
-              setActiveCategory('all');
-              setExpandedCategory(null);
-            }}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-              activeCategory === 'all'
-                ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg scale-105'
-                : 'bg-card hover:bg-accent border-2 border-border hover:border-primary/50 hover:shadow-md'
-            }`}
-          >
-            <Package size={20} />
-            Ver Todo el Catálogo
-          </button>
-        </div>
-
-        {/* Grid de categorías padre */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          {categoriesToShow.map((parent) => {
-            const IconComponent = parent.icon;
-            const isActive = isParentActive(parent.id);
-            const isExpanded = expandedCategory === parent.id;
-
-            return (
+            {/* Filter button */}
+            <div className="relative">
               <button
-                key={parent.id}
-                onClick={() => handleParentClick(parent.id)}
-                className={`relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[100px] group ${
-                  isActive || isExpanded
-                    ? `bg-gradient-to-br ${parent.color} text-white shadow-lg`
-                    : 'bg-card hover:bg-accent border border-border hover:shadow-md hover:border-primary/30'
+                onClick={() => setShowDesktopFilterDropdown(!showDesktopFilterDropdown)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all duration-300 ${
+                  showDesktopFilterDropdown || activeCategory !== 'all'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-card border border-border text-foreground hover:border-primary/50 hover:shadow-md'
                 }`}
               >
-                <div className={`p-2 rounded-lg mb-2 ${
-                  isActive || isExpanded ? 'bg-white/20' : 'bg-muted group-hover:bg-primary/10'
-                }`}>
-                  <IconComponent size={24} className={isActive || isExpanded ? 'text-white' : 'text-foreground'} />
-                </div>
-                <span className={`text-xs font-semibold text-center leading-tight ${
-                  isActive || isExpanded ? 'text-white' : 'text-foreground'
-                }`}>
-                  {parent.name}
-                </span>
-                <div className={`absolute top-2 right-2 transition-transform duration-200 ${
-                  isExpanded ? 'rotate-90' : ''
-                }`}>
-                  <ChevronRight size={14} className={isActive || isExpanded ? 'text-white/70' : 'text-muted-foreground'} />
-                </div>
+                <SlidersHorizontal size={18} />
+                <span className="text-sm">Filtrar</span>
+                {activeCategory !== 'all' && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">
+                    {categories.find(c => c.id === activeCategory)?.name || '1'}
+                  </span>
+                )}
               </button>
-            );
-          })}
-        </div>
 
-        {/* Botón "Ver más categorías" */}
-        {hasMoreCategories && (
-          <div className="flex justify-center">
-            <button
-              onClick={() => setShowAllCategories(!showAllCategories)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 bg-muted hover:bg-accent border border-border hover:border-primary/30 text-foreground"
-            >
-              {showAllCategories ? (
-                <>
-                  <ChevronUp size={18} />
-                  Ver menos categorías
-                </>
-              ) : (
-                <>
-                  <ChevronDown size={18} />
-                  Ver más categorías ({visibleCatalogStructure.length - VISIBLE_CATEGORIES_COUNT} más)
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Panel de subcategorías expandido */}
-        <AnimatePresence>
-          {expandedCategory && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {catalogStructure
-                .filter(p => p.id === expandedCategory)
-                .map((parent) => {
-                  const IconComponent = parent.icon;
-                  const visibleSubs = getVisibleSubcategories(parent.id);
-
-                  if (visibleSubs.length <= 1) return null;
-
-                  return (
-                    <div
-                      key={parent.id}
-                      className={`bg-gradient-to-r ${parent.color} rounded-xl p-5 shadow-lg`}
+              {/* Filter dropdown */}
+              <AnimatePresence>
+                {showDesktopFilterDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 top-full mt-2 w-[600px] bg-background border border-border rounded-xl shadow-xl p-4 space-y-3 max-h-[70vh] overflow-y-auto"
+                  >
+                    {/* Ver todos */}
+                    <button
+                      onClick={() => {
+                        setActiveCategory('all');
+                        setExpandedCategory(null);
+                        setShowDesktopFilterDropdown(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all ${
+                        activeCategory === 'all'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-accent text-foreground'
+                      }`}
                     >
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-white/20 rounded-lg">
-                          <IconComponent size={24} className="text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-white font-bold text-lg">{parent.name}</h3>
-                          <p className="text-white/70 text-sm">Selecciona una subcategoría</p>
-                        </div>
-                      </div>
+                      <Package size={18} />
+                      Ver Todo el Catálogo
+                    </button>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                        {visibleSubs.map((sub, idx) => {
-                          const isActive = isSubcategoryActive(sub.codes);
-
-                          return (
-                            <button
-                              key={idx}
-                              onClick={() => handleSubcategoryClick(sub.codes)}
-                              className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-left ${
-                                isActive
-                                  ? 'bg-white text-gray-900 shadow-md'
-                                  : 'bg-white/20 text-white hover:bg-white/30'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span>{sub.name}</span>
-                                <ChevronRight size={16} className={isActive ? 'text-gray-600' : 'text-white/60'} />
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
+                    {/* Category grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {visibleCatalogStructure.map((parent) => {
+                        const IconComponent = parent.icon;
+                        const isActive = isParentActive(parent.id);
+                        return (
+                          <button
+                            key={parent.id}
+                            onClick={() => {
+                              handleParentClick(parent.id);
+                              const allIds = getAllCategoryIdsForParent(parent.id);
+                              if (allIds.length > 0) {
+                                setShowDesktopFilterDropdown(false);
+                              }
+                            }}
+                            className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium transition-all ${
+                              isActive
+                                ? `bg-gradient-to-br ${parent.color} text-white`
+                                : 'bg-muted hover:bg-accent text-foreground'
+                            }`}
+                          >
+                            <IconComponent size={16} />
+                            <span className="truncate">{parent.name}</span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-        {/* Indicador de categoría activa */}
-        {activeCategory !== 'all' && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center justify-center gap-2"
-          >
-            <span className="text-sm text-muted-foreground">Filtrando por:</span>
-            <span className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-sm font-medium">
-              {categories.find(c => c.id === activeCategory)?.name || activeCategory}
-            </span>
-            <button
-              onClick={() => {
-                setActiveCategory('all');
-                setExpandedCategory(null);
-              }}
-              className="text-sm text-muted-foreground hover:text-foreground underline"
-            >
-              Limpiar
-            </button>
-          </motion.div>
+            {/* Active filter chip */}
+            {activeCategory !== 'all' && (
+              <div className="flex items-center gap-1.5">
+                <span className="px-2.5 py-1 bg-primary text-primary-foreground rounded-full text-xs font-medium">
+                  {categories.find(c => c.id === activeCategory)?.name || activeCategory}
+                </span>
+                <button
+                  onClick={() => {
+                    setActiveCategory('all');
+                    setExpandedCategory(null);
+                  }}
+                  className="p-0.5 hover:bg-muted rounded-full"
+                >
+                  <X size={14} className="text-muted-foreground" />
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Normal non-sticky: full categories view */}
+            {/* Barra de búsqueda */}
+            <div className="relative max-w-xl mx-auto">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search size={20} className="text-muted-foreground" />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar productos por nombre o clave..."
+                className="w-full pl-12 pr-4 py-3 border border-border bg-background rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Botón "Ver Todos" */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => {
+                  setActiveCategory('all');
+                  setExpandedCategory(null);
+                }}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                  activeCategory === 'all'
+                    ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg scale-105'
+                    : 'bg-card hover:bg-accent border-2 border-border hover:border-primary/50 hover:shadow-md'
+                }`}
+              >
+                <Package size={20} />
+                Ver Todo el Catálogo
+              </button>
+            </div>
+
+            {/* Grid de categorías padre */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {categoriesToShow.map((parent) => {
+                const IconComponent = parent.icon;
+                const isActive = isParentActive(parent.id);
+                const isExpanded = expandedCategory === parent.id;
+
+                return (
+                  <button
+                    key={parent.id}
+                    onClick={() => handleParentClick(parent.id)}
+                    className={`relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[100px] group ${
+                      isActive || isExpanded
+                        ? `bg-gradient-to-br ${parent.color} text-white shadow-lg`
+                        : 'bg-card hover:bg-accent border border-border hover:shadow-md hover:border-primary/30'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg mb-2 ${
+                      isActive || isExpanded ? 'bg-white/20' : 'bg-muted group-hover:bg-primary/10'
+                    }`}>
+                      <IconComponent size={24} className={isActive || isExpanded ? 'text-white' : 'text-foreground'} />
+                    </div>
+                    <span className={`text-xs font-semibold text-center leading-tight ${
+                      isActive || isExpanded ? 'text-white' : 'text-foreground'
+                    }`}>
+                      {parent.name}
+                    </span>
+                    <div className={`absolute top-2 right-2 transition-transform duration-200 ${
+                      isExpanded ? 'rotate-90' : ''
+                    }`}>
+                      <ChevronRight size={14} className={isActive || isExpanded ? 'text-white/70' : 'text-muted-foreground'} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Botón "Ver más categorías" */}
+            {hasMoreCategories && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowAllCategories(!showAllCategories)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 bg-muted hover:bg-accent border border-border hover:border-primary/30 text-foreground"
+                >
+                  {showAllCategories ? (
+                    <>
+                      <ChevronUp size={18} />
+                      Ver menos categorías
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={18} />
+                      Ver más categorías ({visibleCatalogStructure.length - VISIBLE_CATEGORIES_COUNT} más)
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Panel de subcategorías expandido */}
+            <AnimatePresence>
+              {expandedCategory && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {catalogStructure
+                    .filter(p => p.id === expandedCategory)
+                    .map((parent) => {
+                      const IconComponent = parent.icon;
+                      const visibleSubs = getVisibleSubcategories(parent.id);
+
+                      if (visibleSubs.length <= 1) return null;
+
+                      return (
+                        <div
+                          key={parent.id}
+                          className={`bg-gradient-to-r ${parent.color} rounded-xl p-5 shadow-lg`}
+                        >
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-white/20 rounded-lg">
+                              <IconComponent size={24} className="text-white" />
+                            </div>
+                            <div>
+                              <h3 className="text-white font-bold text-lg">{parent.name}</h3>
+                              <p className="text-white/70 text-sm">Selecciona una subcategoría</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                            {visibleSubs.map((sub, idx) => {
+                              const isActive = isSubcategoryActive(sub.codes);
+
+                              return (
+                                <button
+                                  key={idx}
+                                  onClick={() => handleSubcategoryClick(sub.codes)}
+                                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-left ${
+                                    isActive
+                                      ? 'bg-white text-gray-900 shadow-md'
+                                      : 'bg-white/20 text-white hover:bg-white/30'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span>{sub.name}</span>
+                                    <ChevronRight size={16} className={isActive ? 'text-gray-600' : 'text-white/60'} />
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Indicador de categoría activa */}
+            {activeCategory !== 'all' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center justify-center gap-2"
+              >
+                <span className="text-sm text-muted-foreground">Filtrando por:</span>
+                <span className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-sm font-medium">
+                  {categories.find(c => c.id === activeCategory)?.name || activeCategory}
+                </span>
+                <button
+                  onClick={() => {
+                    setActiveCategory('all');
+                    setExpandedCategory(null);
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground underline"
+                >
+                  Limpiar
+                </button>
+              </motion.div>
+            )}
+          </>
         )}
       </div>
     </div>
