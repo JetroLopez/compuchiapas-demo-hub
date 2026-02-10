@@ -16,7 +16,7 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
   const headerRef = useRef<HTMLElement>(null);
   
   const needsDarkHeader = true;
-  const isProductsPage = location.pathname === '/productos';
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,7 +51,6 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
     { name: 'Servicios', path: '/servicios' },
     { name: 'Productos', path: '/productos' },
     { name: 'Blog', path: '/blog' },
-    { name: 'Contacto', path: '/contacto' },
   ];
 
   const handleContactClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -85,31 +84,42 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
             </span>
           </Link>
 
-          {/* Desktop Search Bar - only on products page */}
-          {isProductsPage && onProductSearchChange && (
-            <div className="hidden md:flex flex-1 max-w-sm mx-4">
-              <div className="relative w-full">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={16} className={cn(
-                    "transition-colors",
-                    isScrolled ? "text-muted-foreground" : "text-white/60"
-                  )} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Buscar en tienda"
-                  className={cn(
-                    "w-full pl-9 pr-3 py-2 rounded-full text-sm transition-all duration-300 focus:outline-none focus:ring-2",
-                    isScrolled
-                      ? "bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
-                      : "bg-white/15 border border-white/20 text-white placeholder:text-white/60 focus:ring-white/40 focus:bg-white/20"
-                  )}
-                  value={productSearchTerm || ''}
-                  onChange={(e) => onProductSearchChange(e.target.value)}
-                />
+          {/* Desktop Search Bar - all pages */}
+          <div className="hidden md:flex flex-1 max-w-sm mx-4">
+            <div className="relative w-full">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={16} className={cn(
+                  "transition-colors",
+                  isScrolled ? "text-muted-foreground" : "text-white/60"
+                )} />
               </div>
+              <input
+                type="text"
+                placeholder="Buscar en tienda"
+                className={cn(
+                  "w-full pl-9 pr-3 py-2 rounded-full text-sm transition-all duration-300 focus:outline-none focus:ring-2",
+                  isScrolled
+                    ? "bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
+                    : "bg-white/15 border border-white/20 text-white placeholder:text-white/60 focus:ring-white/40 focus:bg-white/20"
+                )}
+                value={productSearchTerm || ''}
+                onChange={(e) => {
+                  if (onProductSearchChange) {
+                    onProductSearchChange(e.target.value);
+                  } else {
+                    // Navigate to products page with search
+                    navigate(`/productos`);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !onProductSearchChange) {
+                    const val = (e.target as HTMLInputElement).value;
+                    navigate(`/productos?buscar=${encodeURIComponent(val)}`);
+                  }
+                }}
+              />
             </div>
-          )}
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6 flex-shrink-0">

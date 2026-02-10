@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { Phone, Mail, MapPin, MessageCircle, Clock, ArrowRight, Gift, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Phone, Mail, MapPin, MessageCircle, Clock, ArrowRight, Gift, X, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -314,14 +315,23 @@ const Contacto: React.FC = () => {
                 </ul>
                 
                 <div className="mt-8 p-4 bg-tech-blue/10 rounded-lg">
-                  <h4 className="font-medium mb-2 text-tech-blue">Soporte técnico de emergencia</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Para emergencias técnicas fuera de horario, contacta a nuestro equipo de soporte al:
-                  </p>
-                  <a href="tel:+529624142417" className="mt-2 text-tech-blue font-medium hover:underline flex items-center">
-                    <Phone size={16} className="mr-2" />
-                    +52 (962) 414-2417
-                  </a>
+                  <h4 className="font-medium mb-2 text-tech-blue">¿Necesitas seguimiento de algún pedido o servicio?</h4>
+                  <div className="flex flex-col sm:flex-row gap-3 mt-3">
+                    <Link
+                      to="/servicios"
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-tech-blue text-white rounded-lg font-medium text-sm hover:bg-tech-blue/90 transition-colors"
+                    >
+                      <Clock size={16} />
+                      Seguimiento de servicio
+                    </Link>
+                    <Link
+                      to="/productos?pedido=true"
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-tech-blue text-tech-blue rounded-lg font-medium text-sm hover:bg-tech-blue/10 transition-colors"
+                    >
+                      <Package size={16} />
+                      Buscar mi pedido
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
