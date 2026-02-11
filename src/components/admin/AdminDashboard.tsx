@@ -1197,14 +1197,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* Warehouse Sync + Meta Mensual side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Warehouse Sync Status - Half width */}
-              <Card>
+              <Card className="flex flex-col">
                 <CardHeader className="pb-2 pt-3">
                   <CardTitle className="flex items-center gap-2 text-sm">
                     <Warehouse size={16} />
                     Última Sincronización
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pb-3">
+                <CardContent className="pb-3 flex-1 flex flex-col">
                   {warehousesLoading ? (
                     <Skeleton className="h-12 w-full" />
                   ) : warehouseInfo.length === 0 ? (
@@ -1212,7 +1212,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       Sin almacenes
                     </p>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2 flex-1">
                       {warehouseInfo.map((warehouse) => {
                         const hoursAgo = warehouse.updated_at 
                           ? differenceInHours(currentTime, new Date(warehouse.updated_at))
@@ -1223,12 +1223,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div
                             key={warehouse.id}
                             className={cn(
-                              "p-2 rounded-lg border text-xs",
+                              "p-3 rounded-lg border text-xs flex-1 flex flex-col justify-center",
                               isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
                             )}
                           >
                             <p className="font-medium text-sm">{warehouse.name}</p>
-                            <div className="flex items-center gap-1 mt-0.5">
+                            <div className="flex items-center gap-1 mt-1">
                               <Clock size={12} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
                               <span className={cn(
                                 isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
