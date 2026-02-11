@@ -846,6 +846,54 @@ export type Database = {
         }
         Relationships: []
       }
+      warranties: {
+        Row: {
+          clave_producto: string
+          clave_proveedor: string
+          cliente: string
+          comentarios: string | null
+          created_at: string
+          descripcion_problema: string
+          descripcion_producto: string
+          estatus: Database["public"]["Enums"]["warranty_status"]
+          fecha_ingreso: string
+          folio_servicio: string | null
+          id: string
+          remision_factura: string
+          updated_at: string
+        }
+        Insert: {
+          clave_producto: string
+          clave_proveedor: string
+          cliente: string
+          comentarios?: string | null
+          created_at?: string
+          descripcion_problema: string
+          descripcion_producto: string
+          estatus?: Database["public"]["Enums"]["warranty_status"]
+          fecha_ingreso?: string
+          folio_servicio?: string | null
+          id?: string
+          remision_factura: string
+          updated_at?: string
+        }
+        Update: {
+          clave_producto?: string
+          clave_proveedor?: string
+          cliente?: string
+          comentarios?: string | null
+          created_at?: string
+          descripcion_problema?: string
+          descripcion_producto?: string
+          estatus?: Database["public"]["Enums"]["warranty_status"]
+          fecha_ingreso?: string
+          folio_servicio?: string | null
+          id?: string
+          remision_factura?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       web_orders: {
         Row: {
           billing_data: string | null
@@ -941,6 +989,7 @@ export type Database = {
         | "Pedido"
         | "En tienda"
         | "Entregado"
+      warranty_status: "En revisión" | "Con proveedor" | "Listo para su entrega"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1075,6 +1124,11 @@ export const Constants = {
         "Pedido",
         "En tienda",
         "Entregado",
+      ],
+      warranty_status: [
+        "En revisión",
+        "Con proveedor",
+        "Listo para su entrega",
       ],
     },
   },

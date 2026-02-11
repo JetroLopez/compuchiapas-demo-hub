@@ -28,7 +28,8 @@ import {
   ShoppingBag,
   ShoppingCart,
   FolderKanban,
-  User
+  User,
+  ShieldCheck
 } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -1195,6 +1196,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 )}
               </CardContent>
             </Card>
+
+            {/* Warranties Monitor - Below Special Orders (admin/supervisor only) */}
+            {(isAdmin || hasAccess(['supervisor'])) && (
+              <WarrantiesDashboardWidget onNavigateToTab={onNavigateToTab} />
+            )}
           </div>
 
           {/* Right Column */}
@@ -1450,6 +1456,82 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
     </div>
+  );
+};
+
+// Warranties dashboard widget for admin/supervisor
+const WarrantiesDashboardWidget: React.FC<{ onNavigateToTab: (tab: string) => void }> = ({ onNavigateToTab }) => {
+  const { data: warranties = [], isLoading } = useQuery({
+    queryKey: ['dashboard-warranties'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('warranties')
+        .select('id, descripcion_producto, clave_proveedor, estatus, fecha_ingreso')
+        .neq('estatus', 'Listo para su entrega')
+        .order('fecha_ingreso', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: 60000,
+  });
+
+  const getWarrantyStatusBadge = (estatus: string) => {
+    switch (estatus) {
+      case 'En revisión':
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500 text-[10px] px-1.5">En revisión</Badge>;
+      case 'Con proveedor':
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500 text-[10px] px-1.5">Con proveedor</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] px-1.5">{estatus}</Badge>;
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2 pt-3">
+        <CardTitle className="flex items-center justify-between text-base">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={16} />
+            Garantías Activas
+            <Badge variant="secondary" className="text-xs">{warranties.length}</Badge>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pb-3">
+        {isLoading ? (
+          <div className="space-y-1">
+            {[...Array(2)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : warranties.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground">
+            <ShieldCheck className="h-6 w-6 mx-auto mb-1 opacity-30" />
+            <p className="text-sm">Sin garantías pendientes</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[180px] min-h-[120px]">
+            <div className="space-y-2 pr-4">
+              {warranties.map((w: any) => (
+                <div
+                  key={w.id}
+                  className="p-2 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => onNavigateToTab('warranties')}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium truncate block">{w.descripcion_producto}</span>
+                      <span className="text-xs text-muted-foreground">{w.clave_proveedor} • {format(new Date(w.fecha_ingreso), "d MMM", { locale: es })}</span>
+                    </div>
+                    {getWarrantyStatusBadge(w.estatus)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
