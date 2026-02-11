@@ -132,26 +132,22 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
         transfer: 'Transferencia electrónica',
       };
 
-      const { data, error } = await supabase
-        .from('web_orders')
-        .insert({
-          phone: phone.trim(),
-          payment_method: paymentLabels[paymentMethod || 'cash'] || paymentMethod || 'cash',
-          delivery_method: deliveryMethod === 'pickup' ? 'Pickup en tienda' : 'Entrega a domicilio',
-          items: orderItems as unknown as import('@/integrations/supabase/types').Json,
-          subtotal: subtotal,
-          requires_quote: requiresQuote,
-          billing_data: formatBillingData(),
-          shipping_option: getShippingOption()
-        })
-        .select('order_number')
-        .single();
+      const { data, error } = await supabase.rpc('create_web_order', {
+        p_phone: phone.trim(),
+        p_payment_method: paymentLabels[paymentMethod || 'cash'] || paymentMethod || 'cash',
+        p_delivery_method: deliveryMethod === 'pickup' ? 'Pickup en tienda' : 'Entrega a domicilio',
+        p_items: orderItems as unknown as import('@/integrations/supabase/types').Json,
+        p_subtotal: subtotal,
+        p_requires_quote: requiresQuote,
+        p_billing_data: formatBillingData(),
+        p_shipping_option: getShippingOption()
+      });
 
       if (error) throw error;
 
       clearCart();
       onOrderComplete({
-        orderNumber: data.order_number,
+        orderNumber: data,
         deliveryMethod: deliveryMethod,
         paymentMethod: paymentMethod || 'cash'
       });
