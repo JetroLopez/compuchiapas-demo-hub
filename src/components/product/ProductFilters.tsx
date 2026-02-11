@@ -340,7 +340,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   };
 
   return (
-    <div ref={stickyRef} className="mb-8 space-y-4 md:space-y-6 sticky top-20 z-30 bg-background pb-2 -mx-4 px-4 md:-mx-0 md:px-0 pt-2">
+    <div ref={stickyRef} className="mb-8 space-y-4 md:space-y-6 sticky top-20 z-30 bg-background pb-2 -mx-4 px-4 md:static md:top-auto md:z-auto md:-mx-0 md:px-0 pt-2">
       {/* ===== MOBILE LAYOUT ===== */}
       <div className="md:hidden space-y-3">
         {/* Search bar + filter icon */}
@@ -435,213 +435,88 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
       </div>
 
       {/* ===== DESKTOP LAYOUT ===== */}
-      <div className="hidden md:block space-y-6">
-        {/* When sticky: show compact bar with search + filter button */}
-        {isSticky ? (
-          <div className="flex items-center gap-3">
-            {/* Compact search bar */}
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search size={18} className="text-muted-foreground" />
-              </div>
-              <input
-                type="text"
-                placeholder="Buscar productos por nombre o clave..."
-                className="w-full pl-11 pr-4 py-2.5 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      <div className="hidden md:block space-y-4">
+        {/* Search bar + "Ver todo" button inline */}
+        <div className="flex items-center gap-3 max-w-3xl mx-auto">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+              <Search size={22} className="text-primary" />
             </div>
-
-            {/* Filter button */}
-            <div className="relative">
-              <button
-                onClick={() => setShowDesktopFilterDropdown(!showDesktopFilterDropdown)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all duration-300 ${
-                  showDesktopFilterDropdown || activeCategory !== 'all'
-                    ? 'bg-primary text-primary-foreground shadow-md'
-                    : 'bg-card border border-border text-foreground hover:border-primary/50 hover:shadow-md'
-                }`}
-              >
-                <SlidersHorizontal size={18} />
-                <span className="text-sm">Filtrar</span>
-                {activeCategory !== 'all' && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">
-                    {categories.find(c => c.id === activeCategory)?.name || '1'}
-                  </span>
-                )}
-              </button>
-
-              {/* Filter dropdown */}
-              <AnimatePresence>
-                {showDesktopFilterDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-2 w-[600px] bg-background border border-border rounded-xl shadow-xl p-4 space-y-3 max-h-[70vh] overflow-y-auto"
-                  >
-                    {/* Ver todos */}
-                    <button
-                      onClick={() => {
-                        setActiveCategory('all');
-                        setExpandedCategory(null);
-                        setShowDesktopFilterDropdown(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all ${
-                        activeCategory === 'all'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted hover:bg-accent text-foreground'
-                      }`}
-                    >
-                      <Package size={18} />
-                      Ver Todo el Catálogo
-                    </button>
-
-                    {/* Category grid */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {visibleCatalogStructure.map((parent) => {
-                        const IconComponent = parent.icon;
-                        const isActive = isParentActive(parent.id);
-                        return (
-                          <button
-                            key={parent.id}
-                            onClick={() => {
-                              handleParentClick(parent.id);
-                              const allIds = getAllCategoryIdsForParent(parent.id);
-                              if (allIds.length > 0) {
-                                setShowDesktopFilterDropdown(false);
-                              }
-                            }}
-                            className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium transition-all ${
-                              isActive
-                                ? `bg-gradient-to-br ${parent.color} text-white`
-                                : 'bg-muted hover:bg-accent text-foreground'
-                            }`}
-                          >
-                            <IconComponent size={16} />
-                            <span className="truncate">{parent.name}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Active filter chip */}
-            {activeCategory !== 'all' && (
-              <div className="flex items-center gap-1.5">
-                <span className="px-2.5 py-1 bg-primary text-primary-foreground rounded-full text-xs font-medium">
-                  {categories.find(c => c.id === activeCategory)?.name || activeCategory}
-                </span>
-                <button
-                  onClick={() => {
-                    setActiveCategory('all');
-                    setExpandedCategory(null);
-                  }}
-                  className="p-0.5 hover:bg-muted rounded-full"
-                >
-                  <X size={14} className="text-muted-foreground" />
-                </button>
-              </div>
-            )}
+            <input
+              type="text"
+              placeholder="Buscar productos por nombre o clave..."
+              className="w-full pl-14 pr-5 py-3.5 border-2 border-primary/30 bg-primary/5 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary shadow-md placeholder:text-muted-foreground/70"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        ) : (
-          <>
-            {/* Normal non-sticky: full categories view */}
-            {/* Barra de búsqueda prominente */}
-            <div className="relative max-w-2xl mx-auto">
-              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                <Search size={22} className="text-primary" />
-              </div>
-              <input
-                type="text"
-                placeholder="Buscar productos por nombre o clave..."
-                className="w-full pl-14 pr-5 py-4 border-2 border-primary/30 bg-primary/5 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary shadow-md placeholder:text-muted-foreground/70"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+          <button
+            onClick={() => {
+              setActiveCategory('all');
+              setExpandedCategory(null);
+            }}
+            className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl font-semibold transition-all duration-300 whitespace-nowrap ${
+              activeCategory === 'all'
+                ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg'
+                : 'bg-card hover:bg-accent border-2 border-border hover:border-primary/50 hover:shadow-md'
+            }`}
+          >
+            <Package size={20} />
+            Ver Todo
+          </button>
+        </div>
 
-            {/* Botón "Ver Todos" */}
-            <div className="flex justify-center">
+        {/* Grid de categorías padre + "Ver más" card */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
+          {categoriesToShow.map((parent) => {
+            const IconComponent = parent.icon;
+            const isActive = isParentActive(parent.id);
+            const isExpanded = expandedCategory === parent.id;
+
+            return (
               <button
-                onClick={() => {
-                  setActiveCategory('all');
-                  setExpandedCategory(null);
-                }}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                  activeCategory === 'all'
-                    ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg scale-105'
-                    : 'bg-card hover:bg-accent border-2 border-border hover:border-primary/50 hover:shadow-md'
+                key={parent.id}
+                onClick={() => handleParentClick(parent.id)}
+                className={`relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[100px] group ${
+                  isActive || isExpanded
+                    ? `bg-gradient-to-br ${parent.color} text-white shadow-lg`
+                    : 'bg-card hover:bg-accent border border-border hover:shadow-md hover:border-primary/30'
                 }`}
               >
-                <Package size={20} />
-                Ver Todo el Catálogo
+                <div className={`p-2 rounded-lg mb-2 ${
+                  isActive || isExpanded ? 'bg-white/20' : 'bg-muted group-hover:bg-primary/10'
+                }`}>
+                  <IconComponent size={24} className={isActive || isExpanded ? 'text-white' : 'text-foreground'} />
+                </div>
+                <span className={`text-xs font-semibold text-center leading-tight ${
+                  isActive || isExpanded ? 'text-white' : 'text-foreground'
+                }`}>
+                  {parent.name}
+                </span>
+                <div className={`absolute top-2 right-2 transition-transform duration-200 ${
+                  isExpanded ? 'rotate-90' : ''
+                }`}>
+                  <ChevronRight size={14} className={isActive || isExpanded ? 'text-white/70' : 'text-muted-foreground'} />
+                </div>
               </button>
-            </div>
+            );
+          })}
 
-            {/* Grid de categorías padre */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-              {categoriesToShow.map((parent) => {
-                const IconComponent = parent.icon;
-                const isActive = isParentActive(parent.id);
-                const isExpanded = expandedCategory === parent.id;
-
-                return (
-                  <button
-                    key={parent.id}
-                    onClick={() => handleParentClick(parent.id)}
-                    className={`relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[100px] group ${
-                      isActive || isExpanded
-                        ? `bg-gradient-to-br ${parent.color} text-white shadow-lg`
-                        : 'bg-card hover:bg-accent border border-border hover:shadow-md hover:border-primary/30'
-                    }`}
-                  >
-                    <div className={`p-2 rounded-lg mb-2 ${
-                      isActive || isExpanded ? 'bg-white/20' : 'bg-muted group-hover:bg-primary/10'
-                    }`}>
-                      <IconComponent size={24} className={isActive || isExpanded ? 'text-white' : 'text-foreground'} />
-                    </div>
-                    <span className={`text-xs font-semibold text-center leading-tight ${
-                      isActive || isExpanded ? 'text-white' : 'text-foreground'
-                    }`}>
-                      {parent.name}
-                    </span>
-                    <div className={`absolute top-2 right-2 transition-transform duration-200 ${
-                      isExpanded ? 'rotate-90' : ''
-                    }`}>
-                      <ChevronRight size={14} className={isActive || isExpanded ? 'text-white/70' : 'text-muted-foreground'} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Botón "Ver más categorías" */}
-            {hasMoreCategories && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setShowAllCategories(!showAllCategories)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 bg-muted hover:bg-accent border border-border hover:border-primary/30 text-foreground"
-                >
-                  {showAllCategories ? (
-                    <>
-                      <ChevronUp size={18} />
-                      Ver menos categorías
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown size={18} />
-                      Ver más categorías ({visibleCatalogStructure.length - VISIBLE_CATEGORIES_COUNT} más)
-                    </>
-                  )}
-                </button>
+          {/* "Ver más/menos" as a card in the grid */}
+          {hasMoreCategories && (
+            <button
+              onClick={() => setShowAllCategories(!showAllCategories)}
+              className="relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 min-h-[100px] bg-muted hover:bg-accent border border-dashed border-border hover:border-primary/30"
+            >
+              <div className="p-2 rounded-lg mb-2 bg-background">
+                {showAllCategories ? <ChevronUp size={24} className="text-muted-foreground" /> : <ChevronDown size={24} className="text-muted-foreground" />}
               </div>
-            )}
+              <span className="text-xs font-semibold text-center leading-tight text-muted-foreground">
+                {showAllCategories ? 'Ver menos' : `+${visibleCatalogStructure.length - VISIBLE_CATEGORIES_COUNT} más`}
+              </span>
+            </button>
+          )}
+        </div>
 
             {/* Panel de subcategorías expandido */}
             <AnimatePresence>
@@ -726,8 +601,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 </button>
               </motion.div>
             )}
-          </>
-        )}
       </div>
     </div>
   );

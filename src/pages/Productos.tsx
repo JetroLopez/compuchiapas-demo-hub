@@ -92,7 +92,7 @@ const Productos: React.FC = () => {
       </div>
       
       {/* Desktop Quick Actions - Arma tu PC + Buscar pedido */}
-      <section className="py-6 hidden md:block">
+      <section className="py-4 hidden md:block">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="flex gap-4">
             {/* Arma tu PC */}
