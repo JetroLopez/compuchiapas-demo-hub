@@ -266,6 +266,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   const isParentActive = (parentId: string) => {
     const parent = catalogStructure.find(p => p.id === parentId);
     if (!parent) return false;
+    const allIds = getAllCategoryIdsForParent(parentId);
+    const parentKey = allIds.join(',');
+    if (activeCategory === parentKey) return true;
     return parent.subcategories.some(sub => {
       const matchingIds = getMatchingCategoryIds(sub.codes);
       return matchingIds.includes(activeCategory);
@@ -309,22 +312,41 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     const parent = catalogStructure.find(p => p.id === parentId);
     if (!parent) return;
 
-    if (expandedCategory === parentId) {
+    const allCategoryIds = getAllCategoryIdsForParent(parentId);
+    const parentKey = allCategoryIds.join(',');
+
+    if (activeCategory === parentKey || isParentActive(parentId)) {
+      if (activeCategory !== parentKey && allCategoryIds.length > 1) {
+        setExpandedCategory(parentId);
+        setActiveCategory(parentKey);
+        return;
+      }
       setExpandedCategory(null);
+      setActiveCategory('all');
       return;
     }
 
     setExpandedCategory(parentId);
-    const allCategoryIds = getAllCategoryIdsForParent(parentId);
     if (allCategoryIds.length > 0) {
-      setActiveCategory(allCategoryIds[0]);
+      setActiveCategory(parentKey);
     }
   };
 
   const handleSubcategoryClick = (codes: string[]) => {
     const matchingIds = getMatchingCategoryIds(codes);
     if (matchingIds.length > 0) {
-      setActiveCategory(matchingIds[0]);
+      const targetId = matchingIds[0];
+      if (activeCategory === targetId) {
+        const parent = catalogStructure.find(p =>
+          p.subcategories.some(sub => sub.codes.some(c => codes.includes(c)))
+        );
+        if (parent) {
+          const allCategoryIds = getAllCategoryIdsForParent(parent.id);
+          setActiveCategory(allCategoryIds.join(','));
+        }
+        return;
+      }
+      setActiveCategory(targetId);
     }
   };
 
@@ -588,7 +610,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
               >
                 <span className="text-sm text-muted-foreground">Filtrando por:</span>
                 <span className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-sm font-medium">
-                  {categories.find(c => c.id === activeCategory)?.name || activeCategory}
+                  {activeCategory.includes(',')
+                    ? catalogStructure.find(p => getAllCategoryIdsForParent(p.id).join(',') === activeCategory)?.name || activeCategory
+                    : categories.find(c => c.id === activeCategory)?.name || activeCategory}
                 </span>
                 <button
                   onClick={() => {
