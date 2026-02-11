@@ -1010,6 +1010,19 @@ export type Database = {
     }
     Functions: {
       check_phone_exists: { Args: { phone_to_check: string }; Returns: boolean }
+      create_web_order: {
+        Args: {
+          p_billing_data?: string
+          p_delivery_method: string
+          p_items: Json
+          p_payment_method: string
+          p_phone: string
+          p_requires_quote: boolean
+          p_shipping_option?: string
+          p_subtotal: number
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
