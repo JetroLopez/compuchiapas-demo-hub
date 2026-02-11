@@ -155,11 +155,36 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
         deliveryMethod: deliveryMethod,
         paymentMethod: paymentMethod || 'cash'
       });
-    } catch (error) {
-      console.error('Error creating order:', error);
+    } catch (error: any) {
+      const pgCode = error?.code || 'UNKNOWN';
+      const isRLS = pgCode === '42501' || error?.message?.includes('row-level security');
+      const isNetwork = error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError');
+      const isTimeout = error?.message?.includes('timeout') || pgCode === '57014';
+
+      let errorCode = 'ERR-ORDER-000';
+      let errorDesc = 'Error desconocido. Intenta nuevamente.';
+
+      if (isRLS) {
+        errorCode = 'ERR-ORDER-403';
+        errorDesc = 'Permiso denegado al crear el pedido. Contacta soporte.';
+      } else if (isNetwork) {
+        errorCode = 'ERR-ORDER-NET';
+        errorDesc = 'Sin conexión a internet. Verifica tu red e intenta de nuevo.';
+      } else if (isTimeout) {
+        errorCode = 'ERR-ORDER-TMO';
+        errorDesc = 'El servidor tardó demasiado. Intenta en unos momentos.';
+      } else if (pgCode === '23505') {
+        errorCode = 'ERR-ORDER-DUP';
+        errorDesc = 'Pedido duplicado detectado. Verifica tus pedidos anteriores.';
+      } else if (pgCode === '23502') {
+        errorCode = 'ERR-ORDER-VAL';
+        errorDesc = 'Faltan datos obligatorios en el pedido.';
+      }
+
+      console.error(`[${errorCode}] Error creating order:`, error);
       toast({
-        title: "Error al crear pedido",
-        description: "Hubo un problema al procesar tu pedido. Intenta nuevamente.",
+        title: `Error al crear pedido (${errorCode})`,
+        description: errorDesc,
         variant: "destructive"
       });
     } finally {
