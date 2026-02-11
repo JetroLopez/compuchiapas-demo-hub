@@ -160,7 +160,7 @@ const Contacto: React.FC = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3 text-card-foreground">Correo Electrónico</h3>
               <p className="text-muted-foreground mb-6">Escríbenos para consultas detalladas</p>
-              <a href="mailto:contacto@compuchiapas.com" className="bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2">
+              <a href="mailto:contacto@compuchiapas.com.mx" className="bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center gap-2">
                 <Mail size={18} />
                 Email
               </a>

@@ -401,11 +401,30 @@ const AdminProjects = () => {
     return !project.is_completed && !project.is_discarded;
   };
 
+  // Calculate monthly total for current user
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthlyTotal = (completedProjects || [])
+    .filter(p => {
+      if (!p.completed_at) return false;
+      const completedDate = new Date(p.completed_at);
+      const matchesMonth = completedDate.getMonth() === currentMonth && completedDate.getFullYear() === currentYear;
+      // For non-admin, only count own projects
+      if (!isAdmin && user?.id) return matchesMonth && p.assigned_user_id === user.id;
+      return matchesMonth;
+    })
+    .reduce((sum, p) => sum + (p.monto_total || 0), 0);
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Proyectos</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h2 className="text-2xl font-bold">Proyectos</h2>
+          <span className="text-sm font-medium px-3 py-1 rounded-full bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20">
+            Proyectos del mes: ${monthlyTotal.toLocaleString('es-MX')}
+          </span>
+        </div>
         <Button onClick={() => setIsNewProjectOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Proyecto
