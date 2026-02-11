@@ -97,27 +97,27 @@ const Hero: React.FC = () => {
       />
 
       {/* Main content */}
-      <div className="container-padding max-w-6xl mx-auto text-center flex-1 flex flex-col justify-center mb-12 md:mb-16">
+      <div className="container-padding max-w-6xl mx-auto text-center flex-1 flex flex-col justify-center mb-4 md:mb-16">
         <motion.div
-          className="space-y-8"
+          className="space-y-4 md:space-y-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <motion.h1
-            className="text-4xl md:text-5xl lg:text-7xl font-bold text-white"
+            className="text-[7vw] md:text-5xl lg:text-7xl font-bold text-white leading-tight"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <span className="block mb-3">Expertos en tecnología</span>
+            <span className="block mb-1 md:mb-3">Expertos en tecnología</span>
             <span className="block bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent pb-2">
               Para tu negocio y hogar
             </span>
           </motion.h1>
 
           <motion.p
-            className="text-lg md:text-xl lg:text-2xl text-blue-100/80 max-w-3xl mx-auto"
+            className="hidden md:block text-lg md:text-xl lg:text-2xl text-blue-100/80 max-w-3xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -134,96 +134,65 @@ const Hero: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.6 }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 w-full">
+        {/* Mobile: stacked compact buttons */}
+        <div className="flex flex-col w-full md:hidden">
+          <a
+            href="/servicios"
+            className="flex items-center gap-3 bg-gradient-to-r from-tech-blue to-blue-700 py-4 px-6 text-white"
+          >
+            <Wrench className="w-6 h-6 shrink-0" />
+            <span className="text-lg font-bold">Nuestros Servicios</span>
+            <span className="ml-auto">→</span>
+          </a>
+          <a
+            href="/productos"
+            className="flex items-center gap-3 bg-gradient-to-r from-tech-orange to-orange-600 py-4 px-6 text-white"
+          >
+            <ShoppingBag className="w-6 h-6 shrink-0" />
+            <span className="text-lg font-bold">Catálogo de Productos</span>
+            <span className="ml-auto">→</span>
+          </a>
+        </div>
+
+        {/* Desktop: full banners */}
+        <div className="hidden md:grid grid-cols-2 w-full">
           {/* Services Banner */}
           <a
             href="/servicios"
-            className="group relative overflow-hidden bg-gradient-to-br from-tech-blue to-blue-700 py-12 md:py-16 px-8 flex flex-col items-center justify-center cursor-pointer"
+            className="group relative overflow-hidden bg-gradient-to-br from-tech-blue to-blue-700 py-16 px-8 flex flex-col items-center justify-center cursor-pointer"
           >
-            {/* Hover overlay effect */}
-            <div
-              className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            />
-            
-            {/* Animated background circles */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="absolute inset-0 overflow-hidden">
-              <motion.div
-                className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 4, repeat: Infinity }}
-              />
-              <motion.div
-                className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full"
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-              />
+              <motion.div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 4, repeat: Infinity }} />
+              <motion.div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 5, repeat: Infinity, delay: 1 }} />
             </div>
-
             <div className="relative z-10 text-center">
-              <motion.div
-                className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-colors duration-300"
-                whileHover={{ rotate: 360 }}
-                transition={{ duration: 0.6 }}
-              >
+              <motion.div className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-colors duration-300" whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
                 <Wrench className="w-8 h-8 text-white" />
               </motion.div>
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300 origin-center">
-                Nuestros Servicios
-              </h3>
-              <p className="text-blue-100/80 text-sm md:text-base max-w-xs mx-auto">
-                Reparación, mantenimiento y soporte técnico especializado
-              </p>
-              <span
-                className="inline-block mt-4 text-white font-medium group-hover:translate-x-2 transition-transform duration-300"
-              >
-                Explorar →
-              </span>
+              <h3 className="text-3xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300 origin-center">Nuestros Servicios</h3>
+              <p className="text-blue-100/80 text-base max-w-xs mx-auto">Reparación, mantenimiento y soporte técnico especializado</p>
+              <span className="inline-block mt-4 text-white font-medium group-hover:translate-x-2 transition-transform duration-300">Explorar →</span>
             </div>
           </a>
 
           {/* Products Banner */}
           <a
             href="/productos"
-            className="group relative overflow-hidden bg-gradient-to-br from-tech-orange to-orange-600 py-12 md:py-16 px-8 flex flex-col items-center justify-center cursor-pointer"
+            className="group relative overflow-hidden bg-gradient-to-br from-tech-orange to-orange-600 py-16 px-8 flex flex-col items-center justify-center cursor-pointer"
           >
-            {/* Hover overlay effect */}
-            <div
-              className="absolute inset-0 bg-gradient-to-br from-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            />
-            
-            {/* Animated background circles */}
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="absolute inset-0 overflow-hidden">
-              <motion.div
-                className="absolute -top-10 -left-10 w-40 h-40 bg-white/5 rounded-full"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 4, repeat: Infinity, delay: 0.5 }}
-              />
-              <motion.div
-                className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/5 rounded-full"
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ duration: 5, repeat: Infinity, delay: 1.5 }}
-              />
+              <motion.div className="absolute -top-10 -left-10 w-40 h-40 bg-white/5 rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 4, repeat: Infinity, delay: 0.5 }} />
+              <motion.div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/5 rounded-full" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 5, repeat: Infinity, delay: 1.5 }} />
             </div>
-
             <div className="relative z-10 text-center">
-              <motion.div
-                className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-colors duration-300"
-                whileHover={{ rotate: 360 }}
-                transition={{ duration: 0.6 }}
-              >
+              <motion.div className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-colors duration-300" whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
                 <ShoppingBag className="w-8 h-8 text-white" />
               </motion.div>
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300 origin-center">
-                Catálogo de Productos
-              </h3>
-              <p className="text-orange-100/80 text-sm md:text-base max-w-xs mx-auto">
-                Equipos, componentes y accesorios de las mejores marcas
-              </p>
-              <span
-                className="inline-block mt-4 text-white font-medium group-hover:translate-x-2 transition-transform duration-300"
-              >
-                Ver productos →
-              </span>
+              <h3 className="text-3xl font-bold text-white mb-2 group-hover:scale-110 transition-transform duration-300 origin-center">Catálogo de Productos</h3>
+              <p className="text-orange-100/80 text-base max-w-xs mx-auto">Equipos, componentes y accesorios de las mejores marcas</p>
+              <span className="inline-block mt-4 text-white font-medium group-hover:translate-x-2 transition-transform duration-300">Ver productos →</span>
             </div>
           </a>
         </div>
