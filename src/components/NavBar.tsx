@@ -75,7 +75,7 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
       <div className="container-padding mx-auto">
         <div className="flex items-center justify-between h-20 gap-4">
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <img src={logo} alt="Compuchiapas Logo" className="h-12 w-12 object-contain" />
+            <img src={logo} alt="Compuchiapas Logo" className="h-14 w-14 object-contain" />
             <span className={cn(
               "text-2xl font-bold flex items-baseline transition-colors duration-300",
               isScrolled ? "text-tech-blue dark:text-white" : "text-white"

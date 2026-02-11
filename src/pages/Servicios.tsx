@@ -117,29 +117,54 @@ const Servicios: React.FC = () => {
   }];
   return <Layout>
       {/* Hero Section */}
-      <section className="pt-24 pb-12 md:pt-28 md:pb-16 bg-gradient-to-b from-tech-lightGray to-white dark:from-slate-900 dark:to-slate-800">
-        <div className="container-padding max-w-7xl mx-auto text-center py-0">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 dark:text-white">Servicios Técnicos Profesionales</h1>
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Soluciones confiables para todos tus problemas tecnológicos</p>
+      <section className="pt-24 pb-14 md:pt-28 md:pb-20 bg-gradient-to-br from-tech-blue via-tech-blue/90 to-blue-700 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-300 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="container-padding max-w-7xl mx-auto text-center relative z-10 py-0">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Servicios Técnicos Profesionales</h1>
+          <p className="text-lg md:text-xl text-white/80 max-w-3xl mx-auto mb-10">Soluciones confiables para todos tus problemas tecnológicos</p>
           
-          {/* Status Lookup Box */}
-          <div className="mt-8 max-w-xl mx-auto">
-            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-2 border-tech-blue/20">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-2 text-tech-blue dark:text-blue-400">
-                  ¿Tienes en servicio un equipo con nosotros?
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Consulta su estado aquí
-                </p>
-                <div className="flex gap-2">
-                  <Input placeholder="Ingresa tu número de folio" value={folio} onChange={e => setFolio(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearchFolio()} className="flex-1" />
-                  <Button onClick={handleSearchFolio} disabled={isSearching || !folio.trim()}>
-                    {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  </Button>
+          {/* Status Lookup Box - More visual */}
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/15 dark:bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6 md:p-8 shadow-2xl">
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="p-2.5 rounded-full bg-white/20">
+                  <Search className="h-5 w-5 text-white" />
                 </div>
-                
-                {searchResult && <div className={cn("mt-4 p-4 rounded-lg text-left", searchResult.found ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800")}>
+                <h3 className="text-xl font-bold text-white">
+                  ¿Tienes un equipo en servicio?
+                </h3>
+              </div>
+              <p className="text-sm text-white/70 mb-5">
+                Ingresa tu número de folio para consultar el estado de tu equipo
+              </p>
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <Input 
+                    placeholder="Escribe tu número de folio aquí..." 
+                    value={folio} 
+                    onChange={e => setFolio(e.target.value)} 
+                    onKeyDown={e => e.key === 'Enter' && handleSearchFolio()} 
+                    className="h-12 pl-4 pr-4 rounded-xl bg-white/90 dark:bg-slate-800/90 border-0 text-foreground placeholder:text-muted-foreground text-base shadow-lg focus-visible:ring-2 focus-visible:ring-white/50"
+                  />
+                </div>
+                <Button 
+                  onClick={handleSearchFolio} 
+                  disabled={isSearching || !folio.trim()}
+                  className="h-12 px-6 rounded-xl bg-white text-tech-blue hover:bg-white/90 font-semibold shadow-lg text-base"
+                >
+                  {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : <>
+                    <Search className="h-5 w-5 mr-2" />
+                    Buscar
+                  </>}
+                </Button>
+              </div>
+              
+              {searchResult && <div className={cn("mt-5 p-4 rounded-xl text-left", searchResult.found ? "bg-green-50 dark:bg-green-900/30 border border-green-300/50" : "bg-red-50 dark:bg-red-900/30 border border-red-300/50")}>
                     {searchResult.found ? <div>
                         <p className="text-green-800 dark:text-green-300">
                           Tu equipo con folio <strong>#{searchResult.clave}</strong> recepcionado el día{' '}
@@ -161,8 +186,7 @@ const Servicios: React.FC = () => {
                         </a>.
                       </p>}
                   </div>}
-              </CardContent>
-            </Card>
+            </div>
           </div>
         </div>
       </section>

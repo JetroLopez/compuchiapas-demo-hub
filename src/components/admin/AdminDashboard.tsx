@@ -713,19 +713,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('sync')}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-500/10">
-                  <Warehouse className="h-5 w-5 text-purple-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{warehouseInfo.length}</p>
-                  <p className="text-xs text-muted-foreground">Almacenes</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <WarrantiesStatCard onNavigateToTab={onNavigateToTab} />
 
           <Card 
             className={cn(
@@ -1206,68 +1194,59 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Right Column */}
           <div className="space-y-4">
 
-            {/* Warehouse Sync Status */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Warehouse size={18} />
-                  Última Sincronización
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {warehousesLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(2)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : warehouseInfo.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No hay almacenes configurados
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {warehouseInfo.map((warehouse) => {
-                      const hoursAgo = warehouse.updated_at 
-                        ? differenceInHours(currentTime, new Date(warehouse.updated_at))
-                        : null;
-                      const isStale = hoursAgo !== null && hoursAgo > 24;
-                      
-                      return (
-                        <div
-                          key={warehouse.id}
-                          className={cn(
-                            "flex items-center justify-between p-3 rounded-lg border",
-                            isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
-                          )}
-                        >
-                          <div>
-                            <p className="font-medium">{warehouse.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {warehouse.product_count} productos con stock
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-1">
-                              <Clock size={14} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
+            {/* Warehouse Sync + Meta Mensual side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Warehouse Sync Status - Half width */}
+              <Card>
+                <CardHeader className="pb-2 pt-3">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <Warehouse size={16} />
+                    Última Sincronización
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pb-3">
+                  {warehousesLoading ? (
+                    <Skeleton className="h-12 w-full" />
+                  ) : warehouseInfo.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      Sin almacenes
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {warehouseInfo.map((warehouse) => {
+                        const hoursAgo = warehouse.updated_at 
+                          ? differenceInHours(currentTime, new Date(warehouse.updated_at))
+                          : null;
+                        const isStale = hoursAgo !== null && hoursAgo > 24;
+                        
+                        return (
+                          <div
+                            key={warehouse.id}
+                            className={cn(
+                              "p-2 rounded-lg border text-xs",
+                              isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
+                            )}
+                          >
+                            <p className="font-medium text-sm">{warehouse.name}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Clock size={12} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
                               <span className={cn(
-                                "text-sm",
                                 isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
                               )}>
                                 {formatTimeAgo(warehouse.updated_at)}
                               </span>
                             </div>
-                            {isStale && (
-                              <p className="text-xs text-yellow-600 dark:text-yellow-400">Requiere sincronización</p>
-                            )}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Meta Mensual - Half width */}
+              <MonthlyGoalWidget />
+            </div>
 
             {/* Projects Monitor */}
             <Card>
@@ -1456,6 +1435,108 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
     </div>
+  );
+};
+
+// Monthly Goal Widget - editable, ephemeral (not stored in DB)
+const MonthlyGoalWidget: React.FC = () => {
+  const [csc, setCsc] = useState('');
+  const [at, setAt] = useState('');
+  
+  const cscVal = parseFloat(csc) || 0;
+  const atVal = parseFloat(at) || 0;
+  const totalGoal = cscVal + atVal;
+
+  // For the "Ventas actuales" display - this is just the sum of the two fields
+  const getGoalColor = () => {
+    if (totalGoal === 0) return 'text-muted-foreground';
+    // Since this is just a goal tracker with no actual sales data integrated,
+    // we show it as the combined value they type
+    return 'text-foreground';
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2 pt-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          🎯 Meta Mensual
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pb-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium w-10">CSC</span>
+          <div className="relative flex-1">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+            <input
+              type="number"
+              value={csc}
+              onChange={(e) => setCsc(e.target.value)}
+              className="w-full pl-5 pr-2 py-1.5 text-xs rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="0"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium w-10">AT</span>
+          <div className="relative flex-1">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+            <input
+              type="number"
+              value={at}
+              onChange={(e) => setAt(e.target.value)}
+              className="w-full pl-5 pr-2 py-1.5 text-xs rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="0"
+            />
+          </div>
+        </div>
+        <div className={cn(
+          "pt-2 border-t border-border text-center",
+          totalGoal >= 1000000 ? "text-amber-500 font-bold" : 
+          totalGoal >= 900000 ? "text-green-600 dark:text-green-400 font-semibold" :
+          totalGoal >= 500000 ? "text-orange-500 font-semibold" :
+          totalGoal > 0 ? "text-red-500 font-semibold" :
+          "text-muted-foreground"
+        )}>
+          <p className="text-xs text-muted-foreground">Ventas actuales</p>
+          <p className="text-lg font-bold">
+            ${totalGoal.toLocaleString('es-MX')}
+            {totalGoal >= 1000000 && ' 🥳'}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Warranties stat card for the top stats grid
+const WarrantiesStatCard: React.FC<{ onNavigateToTab: (tab: string) => void }> = ({ onNavigateToTab }) => {
+  const { data: activeWarrantiesCount = 0 } = useQuery({
+    queryKey: ['dashboard-warranties-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('warranties')
+        .select('id', { count: 'exact', head: true })
+        .neq('estatus', 'Listo para su entrega');
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 60000,
+  });
+
+  return (
+    <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('warranties')}>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-purple-500/10">
+            <ShieldCheck className="h-5 w-5 text-purple-500" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold">{activeWarrantiesCount}</p>
+            <p className="text-xs text-muted-foreground">Garantías activas</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

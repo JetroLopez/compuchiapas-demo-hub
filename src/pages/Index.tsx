@@ -403,7 +403,7 @@ const Index: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-foreground">Email</h3>
-                      <p className="text-muted-foreground">info@compuchiapas.com</p>
+                      <p className="text-muted-foreground">contacto@compuchiapas.com.mx</p>
                     </div>
                   </div>
                   
