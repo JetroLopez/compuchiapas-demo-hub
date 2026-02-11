@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, Upload, Search, Trash2, RefreshCw } from 'lucide-react';
+import { Loader2, Upload, Search, Trash2, RefreshCw, Warehouse } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -22,6 +22,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -66,6 +73,18 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [estatusInternoFilter, setEstatusInternoFilter] = useState<string>('all');
+  const [bodegaDialogOpen, setBodegaDialogOpen] = useState(false);
+  const [bodegaService, setBodegaService] = useState<Service | null>(null);
+  const [bodegaForm, setBodegaForm] = useState({
+    marca: '',
+    modelo: '',
+    color: '',
+    numero_serie: '',
+    nombre_cliente: '',
+    telefono_cliente: '',
+    fecha_ultimo_contacto: '',
+    estatus_al_almacenar: ''
+  });
 
   // Fetch existing services
   const { data: services, isLoading: servicesLoading } = useQuery({
@@ -341,6 +360,52 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
     }
   });
 
+  // Bodega mutation
+  const sendToBodegaMutation = useMutation({
+    mutationFn: async () => {
+      if (!bodegaService) throw new Error('No service selected');
+      const { error } = await supabase
+        .from('bodega_equipos')
+        .insert({
+          service_id: bodegaService.id,
+          service_clave: bodegaService.clave,
+          fecha_ingreso_servicio: bodegaService.fecha_elaboracion,
+          marca: bodegaForm.marca,
+          modelo: bodegaForm.modelo,
+          color: bodegaForm.color,
+          numero_serie: bodegaForm.numero_serie,
+          nombre_cliente: bodegaForm.nombre_cliente,
+          telefono_cliente: bodegaForm.telefono_cliente,
+          fecha_ultimo_contacto: bodegaForm.fecha_ultimo_contacto || null,
+          estatus_al_almacenar: bodegaForm.estatus_al_almacenar
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Equipo enviado a bodega');
+      setBodegaDialogOpen(false);
+      setBodegaService(null);
+      setBodegaForm({ marca: '', modelo: '', color: '', numero_serie: '', nombre_cliente: '', telefono_cliente: '', fecha_ultimo_contacto: '', estatus_al_almacenar: '' });
+      queryClient.invalidateQueries({ queryKey: ['admin-bodega'] });
+    },
+    onError: () => toast.error('Error al enviar a bodega')
+  });
+
+  const openBodegaDialog = (service: Service) => {
+    setBodegaService(service);
+    setBodegaForm({
+      marca: '',
+      modelo: '',
+      color: '',
+      numero_serie: '',
+      nombre_cliente: service.cliente,
+      telefono_cliente: '',
+      fecha_ultimo_contacto: '',
+      estatus_al_almacenar: service.estatus_interno
+    });
+    setBodegaDialogOpen(true);
+  };
+
   const getStatusBadge = (status: ServiceStatus) => {
     const variants: Record<ServiceStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       'Emitida': 'default',
@@ -382,6 +447,7 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
   });
 
   return (
+    <>
     <div className="space-y-6">
       {/* Sync Section - hidden for readOnly */}
       {!readOnly && (
@@ -656,7 +722,17 @@ Ejemplo:
                         )}
                       </TableCell>
                       {!readOnly && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-right flex items-center justify-end gap-1">
+                          {service.estatus_interno === 'Listo y avisado a cliente' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Enviar a bodega"
+                              onClick={() => openBodegaDialog(service)}
+                            >
+                              <Warehouse className="h-4 w-4 text-amber-600" />
+                            </Button>
+                          )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon">
@@ -691,6 +767,64 @@ Ejemplo:
         </CardContent>
       </Card>
     </div>
+
+      {/* Bodega Dialog */}
+      <Dialog open={bodegaDialogOpen} onOpenChange={setBodegaDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar equipo a almacén</DialogTitle>
+          </DialogHeader>
+          {bodegaService && (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
+                <p><span className="font-medium">Clave:</span> {bodegaService.clave}</p>
+                <p><span className="font-medium">Fecha ingreso:</span> {bodegaService.fecha_elaboracion}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Marca *</Label>
+                <Input value={bodegaForm.marca} onChange={e => setBodegaForm(p => ({ ...p, marca: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Modelo *</Label>
+                <Input value={bodegaForm.modelo} onChange={e => setBodegaForm(p => ({ ...p, modelo: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Color</Label>
+                <Input value={bodegaForm.color} onChange={e => setBodegaForm(p => ({ ...p, color: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Número de serie</Label>
+                <Input value={bodegaForm.numero_serie} onChange={e => setBodegaForm(p => ({ ...p, numero_serie: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Nombre del cliente *</Label>
+                <Input value={bodegaForm.nombre_cliente} onChange={e => setBodegaForm(p => ({ ...p, nombre_cliente: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Teléfono del cliente</Label>
+                <Input value={bodegaForm.telefono_cliente} onChange={e => setBodegaForm(p => ({ ...p, telefono_cliente: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Fecha último intento de contacto</Label>
+                <Input type="date" value={bodegaForm.fecha_ultimo_contacto} onChange={e => setBodegaForm(p => ({ ...p, fecha_ultimo_contacto: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Estatus al almacenar</Label>
+                <Input value={bodegaForm.estatus_al_almacenar} onChange={e => setBodegaForm(p => ({ ...p, estatus_al_almacenar: e.target.value }))} />
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => sendToBodegaMutation.mutate()}
+                disabled={!bodegaForm.marca || !bodegaForm.modelo || !bodegaForm.nombre_cliente || sendToBodegaMutation.isPending}
+              >
+                {sendToBodegaMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Warehouse className="h-4 w-4 mr-2" />}
+                Enviar a almacén
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

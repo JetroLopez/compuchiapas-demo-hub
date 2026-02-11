@@ -59,6 +59,65 @@ export type Database = {
         }
         Relationships: []
       }
+      bodega_equipos: {
+        Row: {
+          color: string
+          created_at: string
+          estatus_al_almacenar: string
+          fecha_ingreso_servicio: string
+          fecha_ultimo_contacto: string | null
+          id: string
+          marca: string
+          modelo: string
+          nombre_cliente: string
+          numero_serie: string
+          service_clave: string
+          service_id: string
+          telefono_cliente: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          estatus_al_almacenar: string
+          fecha_ingreso_servicio: string
+          fecha_ultimo_contacto?: string | null
+          id?: string
+          marca: string
+          modelo: string
+          nombre_cliente: string
+          numero_serie?: string
+          service_clave: string
+          service_id: string
+          telefono_cliente?: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          estatus_al_almacenar?: string
+          fecha_ingreso_servicio?: string
+          fecha_ultimo_contacto?: string | null
+          id?: string
+          marca?: string
+          modelo?: string
+          nombre_cliente?: string
+          numero_serie?: string
+          service_clave?: string
+          service_id?: string
+          telefono_cliente?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bodega_equipos_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
