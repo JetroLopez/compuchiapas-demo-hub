@@ -65,7 +65,7 @@ const ProductCategories: React.FC = () => {
     },
     {
       title: 'Punto de Venta',
-      image: 'https://cervantes.srv.br/lz/getfile.php?file=&id=0337b072bf67d2d155103851a4f90466',
+      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZ3_swGtzbPjKWzUOGnbAJne5Juv8B8J6NHg&s',
       slug: 'PTVTA'
     }
   ];

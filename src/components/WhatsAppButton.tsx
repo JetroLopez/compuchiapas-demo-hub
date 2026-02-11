@@ -22,9 +22,9 @@ const WhatsAppButton: React.FC = () => {
             className="p-1 hover:bg-gray-100 rounded-full"
             aria-label="Cerrar mensaje"
           >
-            <X size={16} />
+            <X size={16} className="text-gray-700" />
           </button>
-          <p className="text-sm">¡Hola! ¿En qué podemos ayudarte? Escríbenos por WhatsApp 😊</p>
+          <p className="text-sm text-gray-800">¡Hola! ¿En qué podemos ayudarte? Escríbenos por WhatsApp 😊</p>
         </div>
         <div className="w-4 h-4 bg-white transform rotate-45 absolute -bottom-2 right-6"></div>
       </div>
