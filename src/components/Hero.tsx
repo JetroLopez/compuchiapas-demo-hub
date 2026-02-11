@@ -34,7 +34,7 @@ const Hero: React.FC = () => {
 
   return (
     <section 
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-28 md:pt-32"
+      className="relative flex flex-col items-center justify-start overflow-hidden pt-20 md:pt-32 md:min-h-screen md:justify-center"
       style={{ 
         background: 'linear-gradient(to bottom right, #0f172a, #172554, #0f172a)',
         colorScheme: 'dark' 
@@ -97,7 +97,7 @@ const Hero: React.FC = () => {
       />
 
       {/* Main content */}
-      <div className="container-padding max-w-6xl mx-auto text-center flex-1 flex flex-col justify-center mb-4 md:mb-16">
+      <div className="container-padding max-w-6xl mx-auto text-center py-6 md:py-0 md:flex-1 md:flex md:flex-col md:justify-center md:mb-16">
         <motion.div
           className="space-y-4 md:space-y-8"
           initial={{ opacity: 0, y: 30 }}
