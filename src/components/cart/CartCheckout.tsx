@@ -3,25 +3,30 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, MessageCircle, Store, Truck, Loader2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Store, Truck, Loader2, MapPin, Globe, CreditCard, Banknote, Building2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCart } from '@/hooks/useCart';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface CartCheckoutProps {
   onBack: () => void;
-  onOrderComplete: (result: { orderNumber: number; deliveryMethod: 'pickup' | 'delivery' | null; paymentMethod: 'cash' | 'transfer' }) => void;
+  onOrderComplete: (result: { orderNumber: number; deliveryMethod: 'pickup' | 'delivery' | null; paymentMethod: string }) => void;
   requiresQuote: boolean;
 }
+
+type DeliveryMethod = 'pickup' | 'delivery';
+type ShippingZone = 'local' | 'foraneo';
+type PaymentMethod = 'cash' | 'card' | 'transfer';
 
 const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, requiresQuote }) => {
   const { items, subtotal, clearCart } = useCart();
   const { toast } = useToast();
-  
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | null>(null);
-  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery' | null>(null);
+
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(null);
+  const [shippingZone, setShippingZone] = useState<ShippingZone | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [phone, setPhone] = useState('');
   const [wantsBilling, setWantsBilling] = useState(false);
   const [billingData, setBillingData] = useState({
@@ -33,15 +38,51 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [shippingZone, setShippingZone] = useState<'local' | 'foraneo' | null>(null);
-
   const whatsappNumber = "9622148546";
 
+  // Derived state
+  const showShippingZone = deliveryMethod === 'delivery';
+  const showPaymentOptions = deliveryMethod === 'pickup' || (deliveryMethod === 'delivery' && shippingZone !== null);
+  const showContactSection = showPaymentOptions && paymentMethod !== null;
+  const canSubmit = showContactSection && phone.trim().length > 0 && !isSubmitting;
+
+  const handleDeliveryChange = (method: DeliveryMethod) => {
+    setDeliveryMethod(method);
+    setShippingZone(null);
+    setPaymentMethod(null);
+  };
+
+  const handleShippingZoneChange = (zone: ShippingZone) => {
+    setShippingZone(zone);
+    setPaymentMethod(null);
+  };
+
+  const getPaymentOptions = (): { value: PaymentMethod; label: string; icon: React.ReactNode }[] => {
+    if (deliveryMethod === 'pickup') {
+      return [
+        { value: 'cash', label: 'Efectivo', icon: <Banknote size={16} /> },
+        { value: 'card', label: 'Tarjeta de crédito o débito', icon: <CreditCard size={16} /> },
+        { value: 'transfer', label: 'Transferencia electrónica', icon: <Building2 size={16} /> },
+      ];
+    }
+    if (deliveryMethod === 'delivery' && shippingZone === 'local') {
+      return [
+        { value: 'cash', label: 'Efectivo contra entrega', icon: <Banknote size={16} /> },
+        { value: 'transfer', label: 'Transferencia electrónica', icon: <Building2 size={16} /> },
+      ];
+    }
+    if (deliveryMethod === 'delivery' && shippingZone === 'foraneo') {
+      return [
+        { value: 'transfer', label: 'Transferencia electrónica', icon: <Building2 size={16} /> },
+      ];
+    }
+    return [];
+  };
+
   const handleQuoteWhatsApp = () => {
-    const productList = items.map(item => 
+    const productList = items.map(item =>
       `- ${item.name} (${item.quantity} pza${item.quantity > 1 ? 's' : ''})`
     ).join('\n');
-    
     const message = `Hola, me gustaría cotizar los siguientes productos:\n\n${productList}\n\n¿Podrían darme información de precios y disponibilidad?`;
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -59,41 +100,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
   };
 
   const handleSubmitOrder = async () => {
-    if (!phone.trim()) {
-      toast({
-        title: "Teléfono requerido",
-        description: "Por favor ingresa tu número de teléfono de contacto",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!requiresQuote && !paymentMethod) {
-      toast({
-        title: "Método de pago requerido",
-        description: "Por favor selecciona un método de pago",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!deliveryMethod) {
-      toast({
-        title: "Método de entrega requerido",
-        description: "Por favor selecciona pickup o entrega a domicilio",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (deliveryMethod === 'delivery' && !shippingZone) {
-      toast({
-        title: "Zona de envío requerida",
-        description: "Por favor selecciona tu zona de envío",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!canSubmit) return;
 
     if (wantsBilling) {
       if (!billingData.razonSocial || !billingData.rfc || !billingData.codigoPostal || !billingData.regimenFiscal || !billingData.usoCfdi) {
@@ -142,7 +149,6 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
         deliveryMethod: deliveryMethod,
         paymentMethod: paymentMethod || 'cash'
       });
-
     } catch (error) {
       console.error('Error creating order:', error);
       toast({
@@ -155,7 +161,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
     }
   };
 
-  // If requires quote, show simplified version
+  // Quote-only mode
   if (requiresQuote) {
     return (
       <ScrollArea className="h-full">
@@ -164,13 +170,11 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
             <ArrowLeft size={16} className="mr-2" />
             Volver al carrito
           </Button>
-
           <div className="text-center space-y-4">
             <h3 className="text-lg font-semibold">Cotización Requerida</h3>
             <p className="text-muted-foreground text-sm">
               Algunos productos de tu carrito no tienen precio disponible. Contáctanos para obtener una cotización personalizada.
             </p>
-            
             <div className="bg-muted/50 p-4 rounded-lg">
               <p className="text-sm font-medium mb-2">Productos a cotizar:</p>
               <ul className="text-sm text-left space-y-1">
@@ -181,9 +185,8 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
                 ))}
               </ul>
             </div>
-
-            <Button 
-              className="w-full bg-green-500 hover:bg-green-600" 
+            <Button
+              className="w-full bg-green-500 hover:bg-green-600"
               size="lg"
               onClick={handleQuoteWhatsApp}
             >
@@ -196,158 +199,170 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
     );
   }
 
+  const paymentOptions = getPaymentOptions();
+
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-5">
         <Button variant="ghost" size="sm" onClick={onBack}>
           <ArrowLeft size={16} className="mr-2" />
           Volver al carrito
         </Button>
 
-        {/* Payment Method */}
-        <div className="space-y-3">
-          <Label className="text-base font-semibold">Método de pago</Label>
-          <RadioGroup 
-            value={paymentMethod || ''} 
-            onValueChange={(v) => setPaymentMethod(v as 'cash' | 'transfer')}
-          >
-            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-              <RadioGroupItem value="cash" id="cash" />
-              <Label htmlFor="cash" className="cursor-pointer flex-1">Efectivo contra entrega</Label>
-            </div>
-            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-              <RadioGroupItem value="transfer" id="transfer" />
-              <Label htmlFor="transfer" className="cursor-pointer flex-1">Transferencia electrónica</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Phone Number */}
-        <div className="space-y-2">
-          <Label htmlFor="phone">Número telefónico de contacto (WhatsApp)</Label>
-          <Input
-            id="phone"
-            type="tel"
-            placeholder="Ej: 961 123 4567"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            maxLength={15}
-          />
-        </div>
-
-        {/* Delivery Method - Always visible */}
+        {/* Step 1: Delivery Method */}
         <div className="space-y-3">
           <Label className="text-base font-semibold">Método de entrega</Label>
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant={deliveryMethod === 'pickup' ? 'default' : 'outline'}
-              className="h-auto py-4 flex flex-col gap-2"
-              onClick={() => { setDeliveryMethod('pickup'); setShippingZone(null); }}
+            <button
+              onClick={() => handleDeliveryChange('pickup')}
+              className={cn(
+                "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
+                deliveryMethod === 'pickup'
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-muted hover:border-muted-foreground/30"
+              )}
             >
-              <Store size={24} />
-              <span>Pickup en tienda</span>
-            </Button>
-            <Button
-              variant={deliveryMethod === 'delivery' ? 'default' : 'outline'}
-              className="h-auto py-4 flex flex-col gap-2"
-              onClick={() => setDeliveryMethod('delivery')}
+              <Store size={24} className={deliveryMethod === 'pickup' ? 'text-primary' : 'text-muted-foreground'} />
+              <span className={cn("text-sm font-medium", deliveryMethod === 'pickup' ? 'text-primary' : 'text-muted-foreground')}>
+                Pickup en tienda
+              </span>
+            </button>
+            <button
+              onClick={() => handleDeliveryChange('delivery')}
+              className={cn(
+                "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
+                deliveryMethod === 'delivery'
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-muted hover:border-muted-foreground/30"
+              )}
             >
-              <Truck size={24} />
-              <span>Entrega a domicilio</span>
-            </Button>
+              <Truck size={24} className={deliveryMethod === 'delivery' ? 'text-primary' : 'text-muted-foreground'} />
+              <span className={cn("text-sm font-medium", deliveryMethod === 'delivery' ? 'text-primary' : 'text-muted-foreground')}>
+                Entrega a domicilio
+              </span>
+            </button>
           </div>
+        </div>
 
-          {deliveryMethod === 'delivery' && (
-            <div className="space-y-3 pl-4 border-l-2 border-primary/30">
-              <Label className="text-sm font-medium">Zona de envío</Label>
-              <RadioGroup
-                value={shippingZone || ''}
-                onValueChange={(v) => setShippingZone(v as 'local' | 'foraneo')}
+        {/* Step 1b: Shipping Zone (if delivery) */}
+        {showShippingZone && (
+          <div className="space-y-3 pl-3 border-l-2 border-primary/30 animate-in fade-in slide-in-from-top-2 duration-200">
+            <Label className="text-sm font-semibold">Zona de envío</Label>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleShippingZoneChange('local')}
+                className={cn(
+                  "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
+                  shippingZone === 'local'
+                    ? "border-primary bg-primary/5"
+                    : "border-muted hover:border-muted-foreground/30"
+                )}
               >
-                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="local" id="zone-local" />
-                  <Label htmlFor="zone-local" className="cursor-pointer flex-1">Dentro de la ciudad (Tapachula)</Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="foraneo" id="zone-foraneo" />
-                  <Label htmlFor="zone-foraneo" className="cursor-pointer flex-1 text-sm">Foráneo (Cd. Hidalgo, Huixtla, Mazatán, Tuxtla Chico, otro...)</Label>
-                </div>
-              </RadioGroup>
-              <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                ⚠️ Nota: El envío puede tener costo adicional.
-              </p>
+                <MapPin size={16} className={shippingZone === 'local' ? 'text-primary' : 'text-muted-foreground'} />
+                <span className="text-sm">Dentro de la ciudad (Tapachula)</span>
+              </button>
+              <button
+                onClick={() => handleShippingZoneChange('foraneo')}
+                className={cn(
+                  "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
+                  shippingZone === 'foraneo'
+                    ? "border-primary bg-primary/5"
+                    : "border-muted hover:border-muted-foreground/30"
+                )}
+              >
+                <Globe size={16} className={shippingZone === 'foraneo' ? 'text-primary' : 'text-muted-foreground'} />
+                <span className="text-sm">Foráneo (Cd. Hidalgo, Huixtla, Mazatán, Tuxtla Chico, otro...)</span>
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* Billing Checkbox */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="billing" 
-              checked={wantsBilling} 
-              onCheckedChange={(checked) => setWantsBilling(checked === true)}
-            />
-            <Label htmlFor="billing" className="cursor-pointer">Deseo facturar</Label>
+            <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+              ⚠️ El envío puede tener costo adicional.
+            </p>
           </div>
+        )}
 
-          {wantsBilling && (
-            <div className="space-y-3 pl-6 border-l-2">
-              <div className="space-y-2">
-                <Label htmlFor="razonSocial">Razón Social</Label>
-                <Input
-                  id="razonSocial"
-                  value={billingData.razonSocial}
-                  onChange={(e) => setBillingData(prev => ({ ...prev, razonSocial: e.target.value }))}
-                  maxLength={150}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rfc">RFC</Label>
-                <Input
-                  id="rfc"
-                  value={billingData.rfc}
-                  onChange={(e) => setBillingData(prev => ({ ...prev, rfc: e.target.value.toUpperCase() }))}
-                  maxLength={13}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cp">Código Postal</Label>
-                <Input
-                  id="cp"
-                  value={billingData.codigoPostal}
-                  onChange={(e) => setBillingData(prev => ({ ...prev, codigoPostal: e.target.value }))}
-                  maxLength={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="regimen">Régimen Fiscal</Label>
-                <Input
-                  id="regimen"
-                  value={billingData.regimenFiscal}
-                  onChange={(e) => setBillingData(prev => ({ ...prev, regimenFiscal: e.target.value }))}
-                  maxLength={100}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cfdi">Uso de CFDI</Label>
-                <Input
-                  id="cfdi"
-                  value={billingData.usoCfdi}
-                  onChange={(e) => setBillingData(prev => ({ ...prev, usoCfdi: e.target.value }))}
-                  maxLength={50}
-                />
-              </div>
+        {/* Step 2: Payment Method */}
+        {showPaymentOptions && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <Label className="text-sm font-semibold">Método de pago</Label>
+            <div className="space-y-2">
+              {paymentOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPaymentMethod(opt.value)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
+                    paymentMethod === opt.value
+                      ? "border-primary bg-primary/5"
+                      : "border-muted hover:border-muted-foreground/30"
+                  )}
+                >
+                  <span className={paymentMethod === opt.value ? 'text-primary' : 'text-muted-foreground'}>{opt.icon}</span>
+                  <span className="text-sm">{opt.label}</span>
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Submit Button */}
-        <Button 
-          className="w-full" 
-          size="lg" 
+        {/* Step 3: Contact & Billing */}
+        {showContactSection && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Número telefónico de contacto (WhatsApp)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Ej: 961 123 4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                maxLength={15}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="billing"
+                  checked={wantsBilling}
+                  onCheckedChange={(checked) => setWantsBilling(checked === true)}
+                />
+                <Label htmlFor="billing" className="cursor-pointer">¿Deseo facturar?</Label>
+              </div>
+
+              {wantsBilling && (
+                <div className="space-y-3 pl-6 border-l-2 border-muted animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="space-y-2">
+                    <Label htmlFor="razonSocial">Razón Social</Label>
+                    <Input id="razonSocial" value={billingData.razonSocial} onChange={(e) => setBillingData(prev => ({ ...prev, razonSocial: e.target.value }))} maxLength={150} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rfc">RFC</Label>
+                    <Input id="rfc" value={billingData.rfc} onChange={(e) => setBillingData(prev => ({ ...prev, rfc: e.target.value.toUpperCase() }))} maxLength={13} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cp">Código Postal</Label>
+                    <Input id="cp" value={billingData.codigoPostal} onChange={(e) => setBillingData(prev => ({ ...prev, codigoPostal: e.target.value }))} maxLength={5} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="regimen">Régimen Fiscal</Label>
+                    <Input id="regimen" value={billingData.regimenFiscal} onChange={(e) => setBillingData(prev => ({ ...prev, regimenFiscal: e.target.value }))} maxLength={100} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cfdi">Uso de CFDI</Label>
+                    <Input id="cfdi" value={billingData.usoCfdi} onChange={(e) => setBillingData(prev => ({ ...prev, usoCfdi: e.target.value }))} maxLength={50} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Submit */}
+        <Button
+          className="w-full"
+          size="lg"
           onClick={handleSubmitOrder}
-          disabled={isSubmitting}
+          disabled={!canSubmit}
         >
           {isSubmitting ? (
             <>
