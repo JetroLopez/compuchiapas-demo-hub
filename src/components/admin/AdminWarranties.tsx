@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -73,9 +74,11 @@ export default function AdminWarranties() {
   const queryClient = useQueryClient();
   const { hasAccess } = useAuth();
   const canEdit = hasAccess(["admin", "supervisor"]);
+  const isMobile = useIsMobile();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWarranty, setEditingWarranty] = useState<Warranty | null>(null);
+  const [expandedWarranty, setExpandedWarranty] = useState<string | null>(null);
 
   // Form state
   const [cliente, setCliente] = useState("");
@@ -326,12 +329,64 @@ export default function AdminWarranties() {
           <p>No hay garantías registradas</p>
         </div>
       ) : (
+        isMobile ? (
+          <div className="space-y-2">
+            {warranties.map((w) => (
+              <div
+                key={w.id}
+                className="border rounded-lg p-3 space-y-2 cursor-pointer hover:bg-muted/30"
+                onClick={() => setExpandedWarranty(expandedWarranty === w.id ? null : w.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium line-clamp-1 flex-1">{w.descripcion_producto}</p>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    {canEdit ? (
+                      <Select
+                        value={w.estatus}
+                        onValueChange={(v) => updateStatusMutation.mutate({ id: w.id, estatus: v as WarrantyStatus })}
+                      >
+                        <SelectTrigger className="w-auto h-7 text-xs border-0 p-0">
+                          {getStatusBadge(w.estatus)}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : getStatusBadge(w.estatus)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>{format(new Date(w.fecha_ingreso), "d MMM yyyy", { locale: es })}</span>
+                  <span>•</span>
+                  <span>{w.clave_proveedor}</span>
+                </div>
+                {expandedWarranty === w.id && (
+                  <div className="pt-2 border-t space-y-1 text-sm">
+                    <p><span className="text-muted-foreground">Cliente:</span> {w.cliente}</p>
+                    <p><span className="text-muted-foreground">Clave:</span> {w.clave_producto}</p>
+                    <p><span className="text-muted-foreground">Problema:</span> {w.descripcion_problema}</p>
+                    <p><span className="text-muted-foreground">Remisión:</span> {w.remision_factura}</p>
+                    {w.folio_servicio && <p><span className="text-muted-foreground">Folio:</span> {w.folio_servicio}</p>}
+                    {w.comentarios && <p><span className="text-muted-foreground">Comentarios:</span> {w.comentarios}</p>}
+                    {canEdit && (
+                      <Button size="sm" variant="outline" className="mt-2 w-full" onClick={(e) => { e.stopPropagation(); handleEdit(w); }}>
+                        Editar
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="rounded-md border">
           <div className="grid grid-cols-[1fr_auto_auto_auto] md:grid-cols-[2fr_1fr_1fr_auto] gap-0">
             {/* Header */}
             <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Producto</div>
             <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Proveedor</div>
-            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50 hidden md:block">Ingreso</div>
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Ingreso</div>
             <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50 text-right">Estatus</div>
             {/* Rows */}
             {warranties.map((w) => (
@@ -343,7 +398,7 @@ export default function AdminWarranties() {
                   {w.descripcion_producto}
                 </div>
                 <div className="px-3 py-2.5 text-sm text-muted-foreground border-b">{w.clave_proveedor}</div>
-                <div className="px-3 py-2.5 text-sm text-muted-foreground border-b hidden md:block">
+                <div className="px-3 py-2.5 text-sm text-muted-foreground border-b">
                   {format(new Date(w.fecha_ingreso), "d MMM yyyy", { locale: es })}
                 </div>
                 <div className="px-3 py-2 border-b flex justify-end items-center" onClick={(e) => e.stopPropagation()}>
@@ -369,6 +424,7 @@ export default function AdminWarranties() {
             ))}
           </div>
         </div>
+        )
       )}
     </div>
   );

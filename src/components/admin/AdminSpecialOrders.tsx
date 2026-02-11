@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -83,8 +84,10 @@ export default function AdminSpecialOrders() {
   const queryClient = useQueryClient();
   const { hasAccess } = useAuth();
   const isAdmin = hasAccess(["admin"]);
+  const isMobile = useIsMobile();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<SpecialOrder | null>(null);
   const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
   const [orderToDeliver, setOrderToDeliver] = useState<SpecialOrder | null>(null);
@@ -633,6 +636,71 @@ export default function AdminSpecialOrders() {
       {isLoading ? (
         <div className="text-center py-8">Cargando...</div>
       ) : orders && orders.length > 0 ? (
+        isMobile ? (
+          <div className="space-y-2">
+            {orders.map((order) => {
+              const getDateColor = () => {
+                if (!order.fecha_aprox_entrega) return "";
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const target = new Date(order.fecha_aprox_entrega + "T00:00:00");
+                const diffDays = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 1) return "text-red-600 font-semibold";
+                if (diffDays <= 3) return "text-yellow-600 font-semibold";
+                return "text-green-600 font-semibold";
+              };
+              return (
+                <div
+                  key={order.id}
+                  className="border rounded-lg p-3 space-y-2 cursor-pointer hover:bg-muted/30"
+                  onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium line-clamp-1 flex-1">{order.producto}</p>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={order.estatus}
+                        onValueChange={(v) => handleStatusChange(order, v as SpecialOrderStatus)}
+                      >
+                        <SelectTrigger className="w-auto h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{order.precio ? `$${order.precio.toFixed(2)}` : "Sin precio"}</span>
+                    <span>•</span>
+                    <span className={getDateColor()}>
+                      {order.fecha_aprox_entrega
+                        ? format(new Date(order.fecha_aprox_entrega + "T00:00:00"), "d MMM yyyy", { locale: es })
+                        : "Sin fecha"}
+                    </span>
+                  </div>
+                  {expandedOrder === order.id && (
+                    <div className="pt-2 border-t space-y-1 text-sm">
+                      <p><span className="text-muted-foreground">Cliente:</span> {order.cliente}</p>
+                      <p><span className="text-muted-foreground">Fecha:</span> {order.fecha}</p>
+                      {order.telefono && <p><span className="text-muted-foreground">Tel:</span> {order.telefono}</p>}
+                      {order.clave && <p><span className="text-muted-foreground">Clave:</span> {order.clave}</p>}
+                      {order.anticipo != null && <p><span className="text-muted-foreground">Anticipo:</span> ${order.anticipo.toFixed(2)}</p>}
+                      {order.resta != null && <p><span className="text-muted-foreground">Resta:</span> ${order.resta.toFixed(2)}</p>}
+                      {order.comentarios && <p><span className="text-muted-foreground">Comentarios:</span> {order.comentarios}</p>}
+                      <Button size="sm" variant="outline" className="mt-2 w-full" onClick={(e) => { e.stopPropagation(); handleEdit(order); }}>
+                        <Pencil className="h-3 w-3 mr-1" /> Editar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
         <div className="rounded-md border">
           <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-0">
             {/* Header */}
@@ -693,6 +761,7 @@ export default function AdminSpecialOrders() {
             })}
           </div>
         </div>
+        )
       ) : (
         <div className="text-center py-8 text-muted-foreground">
           No hay pedidos especiales pendientes

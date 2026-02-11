@@ -432,15 +432,15 @@ const AdminPorSurtir: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex md:flex-row flex-col items-center gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             className="text-green-600 hover:bg-green-50 hover:text-green-700 border-green-300"
                             onClick={() => markAsOrderedMutation.mutate(product.id)}
                           >
-                            <Truck className="h-4 w-4 mr-1" />
-                            Pedido y en camino
+                            <Truck className="h-4 w-4 md:mr-1" />
+                            <span className="hidden md:inline">Pedido y en camino</span>
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -448,8 +448,8 @@ const AdminPorSurtir: React.FC = () => {
                                 size="sm"
                                 variant="destructive"
                               >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                Borrar producto
+                                <Trash2 className="h-4 w-4 md:mr-1" />
+                                <span className="hidden md:inline">Borrar producto</span>
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
@@ -513,14 +513,14 @@ const AdminPorSurtir: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex md:flex-row flex-col items-center gap-2">
                           <button
                             onClick={() => markAsPendingMutation.mutate(product.id)}
                             className="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full flex items-center gap-1 hover:bg-green-300 dark:hover:bg-green-700 transition-colors cursor-pointer"
                             title="Click para regresar a pendiente"
                           >
                             <Truck className="h-3 w-3" />
-                            En camino
+                            <span className="hidden md:inline">En camino</span>
                           </button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
