@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-
 const Servicios: React.FC = () => {
   const [folio, setFolio] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -20,26 +19,19 @@ const Servicios: React.FC = () => {
     estatus_interno?: string;
     comentarios?: string;
   } | null>(null);
-
   useEffect(() => {
     document.title = "Servicios Técnicos | Compuchiapas";
   }, []);
-
   const handleSearchFolio = async () => {
     if (!folio.trim()) return;
-    
     setIsSearching(true);
     setSearchResult(null);
-    
     try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('clave, fecha_elaboracion, estatus_interno, comentarios')
-        .eq('clave', folio.trim())
-        .maybeSingle();
-      
+      const {
+        data,
+        error
+      } = await supabase.from('services').select('clave, fecha_elaboracion, estatus_interno, comentarios').eq('clave', folio.trim()).maybeSingle();
       if (error) throw error;
-      
       if (data) {
         setSearchResult({
           found: true,
@@ -49,16 +41,19 @@ const Servicios: React.FC = () => {
           comentarios: data.comentarios
         });
       } else {
-        setSearchResult({ found: false });
+        setSearchResult({
+          found: false
+        });
       }
     } catch (error) {
       console.error('Error searching folio:', error);
-      setSearchResult({ found: false });
+      setSearchResult({
+        found: false
+      });
     } finally {
       setIsSearching(false);
     }
   };
-
   const getStatusMessage = (estatusInterno: string) => {
     switch (estatusInterno) {
       case 'En tienda':
@@ -71,7 +66,6 @@ const Servicios: React.FC = () => {
         return estatusInterno;
     }
   };
-
   const services = [{
     title: 'Reparación de Laptops',
     description: 'Solucionamos problemas de hardware y software en todas las marcas con diagnóstico el mismo día.',
@@ -121,12 +115,10 @@ const Servicios: React.FC = () => {
     description: 'Análisis detallado para identificar problemas complejos en tus equipos.',
     icon: <Cpu size={32} />
   }];
-
-  return (
-    <Layout>
+  return <Layout>
       {/* Hero Section */}
       <section className="pt-24 pb-12 md:pt-28 md:pb-16 bg-gradient-to-b from-tech-lightGray to-white dark:from-slate-900 dark:to-slate-800">
-        <div className="container-padding max-w-7xl mx-auto text-center">
+        <div className="container-padding max-w-7xl mx-auto text-center py-0">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 dark:text-white">Servicios Técnicos Profesionales</h1>
           <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Soluciones confiables para todos tus problemas tecnológicos</p>
           
@@ -141,60 +133,34 @@ const Servicios: React.FC = () => {
                   Consulta su estado aquí
                 </p>
                 <div className="flex gap-2">
-                  <Input
-                    placeholder="Ingresa tu número de folio"
-                    value={folio}
-                    onChange={(e) => setFolio(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearchFolio()}
-                    className="flex-1"
-                  />
+                  <Input placeholder="Ingresa tu número de folio" value={folio} onChange={e => setFolio(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearchFolio()} className="flex-1" />
                   <Button onClick={handleSearchFolio} disabled={isSearching || !folio.trim()}>
-                    {isSearching ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Search className="h-4 w-4" />
-                    )}
+                    {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                   </Button>
                 </div>
                 
-                {searchResult && (
-                  <div className={cn(
-                    "mt-4 p-4 rounded-lg text-left",
-                    searchResult.found 
-                      ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" 
-                      : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-                  )}>
-                    {searchResult.found ? (
-                      <div>
+                {searchResult && <div className={cn("mt-4 p-4 rounded-lg text-left", searchResult.found ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800")}>
+                    {searchResult.found ? <div>
                         <p className="text-green-800 dark:text-green-300">
                           Tu equipo con folio <strong>#{searchResult.clave}</strong> recepcionado el día{' '}
                           <strong>
-                            {searchResult.fecha_elaboracion && format(new Date(searchResult.fecha_elaboracion + 'T12:00:00'), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                            {searchResult.fecha_elaboracion && format(new Date(searchResult.fecha_elaboracion + 'T12:00:00'), "d 'de' MMMM 'de' yyyy", {
+                        locale: es
+                      })}
                           </strong>{' '}
                           se encuentra en tienda y está <strong>{getStatusMessage(searchResult.estatus_interno || 'En tienda')}</strong>.
                         </p>
-                        {searchResult.comentarios && (
-                          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        {searchResult.comentarios && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                             <strong>Comentarios:</strong> {searchResult.comentarios}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-red-800 dark:text-red-300">
+                          </p>}
+                      </div> : <p className="text-red-800 dark:text-red-300">
                         No se encontró ningún servicio pendiente con el folio <strong>#{folio}</strong>. 
                         Verifica el número e intenta de nuevo o{' '}
-                        <a 
-                          href="https://wa.me/529622148546?text=Tengo%20dudas%20respecto%20a%20un%20servicio."
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline font-medium hover:text-red-600 dark:hover:text-red-200"
-                        >
+                        <a href="https://wa.me/529622148546?text=Tengo%20dudas%20respecto%20a%20un%20servicio." target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-red-600 dark:hover:text-red-200">
                           comunícate con nosotros
                         </a>.
-                      </p>
-                    )}
-                  </div>
-                )}
+                      </p>}
+                  </div>}
               </CardContent>
             </Card>
           </div>
@@ -202,7 +168,7 @@ const Servicios: React.FC = () => {
       </section>
       
       {/* Services Grid */}
-      <section className="py-10 md:py-0 mx-0 px-0 my-0 bg-white dark:bg-slate-900">
+      <section className="py-10 mx-0 px-0 my-0 bg-white dark:bg-slate-900 md:py-[30px]">
         <div className="container-padding max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => <ServiceCard key={index} title={service.title} description={service.description} icon={service.icon} className={cn("animate-fade-up h-full")} style={{
@@ -389,8 +355,6 @@ const Servicios: React.FC = () => {
           </div>
         </div>
       </section>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default Servicios;
