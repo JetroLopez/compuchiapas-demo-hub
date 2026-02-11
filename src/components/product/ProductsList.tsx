@@ -148,10 +148,16 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
   
   // Aplicar filtros adicionales (categoría y búsqueda con ranking por tokens)
   const filteredProducts = useMemo(() => {
-    // First filter by category
-    const categoryFiltered = activeCategory === 'all'
-      ? productsInExhibitedWarehouses
-      : productsInExhibitedWarehouses.filter(p => p.category_id === activeCategory);
+    // Filter by category - supports comma-separated multi-category from parent selection
+    let categoryFiltered;
+    if (activeCategory === 'all') {
+      categoryFiltered = productsInExhibitedWarehouses;
+    } else if (activeCategory.includes(',')) {
+      const categoryIds = activeCategory.split(',');
+      categoryFiltered = productsInExhibitedWarehouses.filter(p => p.category_id && categoryIds.includes(p.category_id));
+    } else {
+      categoryFiltered = productsInExhibitedWarehouses.filter(p => p.category_id === activeCategory);
+    }
 
     // Then apply token-based search with relevance ranking
     return searchProducts(categoryFiltered, searchTerm);
