@@ -160,7 +160,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     }
 
     // Then apply token-based search with relevance ranking
-    return searchProducts(categoryFiltered, searchTerm);
+    return searchProducts(categoryFiltered, searchTerm) as Product[];
   }, [productsInExhibitedWarehouses, activeCategory, searchTerm]);
 
   const isLoading = isLoadingProducts;

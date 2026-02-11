@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
@@ -32,17 +32,48 @@ const CartSidebar: React.FC = () => {
     setCheckoutStep('cart');
   };
 
+  const cartOpenRef = React.useRef(false);
+
   const handleClose = () => {
+    if (cartOpenRef.current) {
+      cartOpenRef.current = false;
+      window.history.back();
+    }
     setIsOpen(false);
-    // Reset to cart view after closing
     setTimeout(() => {
       setCheckoutStep('cart');
       setOrderResult(null);
     }, 300);
   };
 
+  const handleSheetChange = (open: boolean) => {
+    if (!open) {
+      handleClose();
+    } else {
+      setIsOpen(true);
+    }
+  };
+
+  // Handle Android back button
+  useEffect(() => {
+    if (isOpen) {
+      cartOpenRef.current = true;
+      window.history.pushState({ cartOpen: true }, '');
+      const onPopState = () => {
+        cartOpenRef.current = false;
+        setIsOpen(false);
+        setTimeout(() => {
+          setCheckoutStep('cart');
+          setOrderResult(null);
+        }, 300);
+      };
+      window.addEventListener('popstate', onPopState);
+      return () => window.removeEventListener('popstate', onPopState);
+    }
+  }, [isOpen, setIsOpen]);
+
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+    <Sheet open={isOpen} onOpenChange={handleSheetChange}>
       <SheetContent className="w-full sm:max-w-md flex flex-col p-0 [&>button.absolute]:hidden">
         <SheetHeader className="p-4 border-b">
           <div className="flex items-center justify-between">
