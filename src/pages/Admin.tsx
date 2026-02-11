@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban, Store, MoreHorizontal, Eye } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban, Store, MoreHorizontal, Eye, ShieldCheck } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ import AdminQuotations from '@/components/admin/AdminQuotations';
 import AdminComponentSpecs from '@/components/admin/AdminComponentSpecs';
 import AdminWebOrders from '@/components/admin/AdminWebOrders';
 import AdminProjects from '@/components/admin/AdminProjects';
+import AdminWarranties from '@/components/admin/AdminWarranties';
 import { Badge } from '@/components/ui/badge';
 
 // Tab label mapping
@@ -44,6 +45,7 @@ const TAB_LABELS: Record<string, string> = {
   'projects': 'Proyectos',
   'special-orders': 'Pedidos Especiales',
   'web-orders': 'Pedidos Web',
+  'warranties': 'Garantías',
 };
 
 const Admin: React.FC = () => {
@@ -80,7 +82,9 @@ const Admin: React.FC = () => {
   const canAccessComponentSpecs = hasAccess(['admin']);
   const canAccessWebOrders = hasAccess(['admin', 'ventas', 'supervisor']);
   const canAccessProjects = hasAccess(['admin', 'ventas', 'tecnico', 'supervisor']);
+  const canAccessWarranties = hasAccess(['admin', 'supervisor', 'tecnico', 'ventas']);
   const isServicesReadOnly = isVentas;
+  const isWarrantiesReadOnly = !hasAccess(['admin', 'supervisor']);
 
   // Initialize dark mode
   useEffect(() => {
@@ -177,8 +181,9 @@ const Admin: React.FC = () => {
       if (activeTab === 'component-specs' && !canAccessComponentSpecs) setActiveTab('dashboard');
       if (activeTab === 'web-orders' && !canAccessWebOrders) setActiveTab('dashboard');
       if (activeTab === 'projects' && !canAccessProjects) setActiveTab('dashboard');
+      if (activeTab === 'warranties' && !canAccessWarranties) setActiveTab('dashboard');
     }
-  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs, canAccessWebOrders, canAccessProjects]);
+  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs, canAccessWebOrders, canAccessProjects, canAccessWarranties]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -297,6 +302,9 @@ const Admin: React.FC = () => {
           <DropdownMenuItem onClick={() => setActiveTab('web-orders')} className="gap-2">
             <ShoppingCart size={16} /> Pedidos Web
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('warranties')} className="gap-2">
+            <ShieldCheck size={16} /> Garantías
+          </DropdownMenuItem>
         </>
       );
     }
@@ -329,6 +337,9 @@ const Admin: React.FC = () => {
           <DropdownMenuItem onClick={() => setActiveTab('promotions')} className="gap-2">
             <Tag size={16} /> Promociones
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('warranties')} className="gap-2">
+            <ShieldCheck size={16} /> Garantías
+          </DropdownMenuItem>
           <DropdownMenuItem className="text-xs text-muted-foreground font-semibold pointer-events-none pt-3">
             Otras opciones
           </DropdownMenuItem>
@@ -360,6 +371,11 @@ const Admin: React.FC = () => {
           {canAccessProjects && (
             <DropdownMenuItem onClick={() => setActiveTab('projects')} className="gap-2">
               <FolderKanban size={16} /> Proyectos
+            </DropdownMenuItem>
+          )}
+          {canAccessWarranties && (
+            <DropdownMenuItem onClick={() => setActiveTab('warranties')} className="gap-2">
+              <ShieldCheck size={16} /> Garantías
             </DropdownMenuItem>
           )}
         </>
@@ -438,6 +454,11 @@ const Admin: React.FC = () => {
             <FolderKanban size={16} /> Proyectos
           </DropdownMenuItem>
         )}
+        {canAccessWarranties && (
+          <DropdownMenuItem onClick={() => setActiveTab('warranties')} className="gap-2">
+            <ShieldCheck size={16} /> Garantías
+          </DropdownMenuItem>
+        )}
       </>
     );
   };
@@ -467,6 +488,9 @@ const Admin: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="web-orders" className="gap-2">
             <ShoppingCart size={16} /> Pedidos Web
+          </TabsTrigger>
+          <TabsTrigger value="warranties" className="gap-2">
+            <ShieldCheck size={16} /> Garantías
           </TabsTrigger>
 
           {/* Tienda en línea dropdown */}
@@ -577,6 +601,11 @@ const Admin: React.FC = () => {
               <FolderKanban size={16} /> Proyectos
             </TabsTrigger>
           )}
+          {canAccessWarranties && (
+            <TabsTrigger value="warranties" className="gap-2">
+              <ShieldCheck size={16} /> Garantías
+            </TabsTrigger>
+          )}
         </TabsList>
       );
     }
@@ -655,6 +684,11 @@ const Admin: React.FC = () => {
         {canAccessProjects && (
           <TabsTrigger value="projects" className="gap-2">
             <FolderKanban size={16} /> Proyectos
+          </TabsTrigger>
+        )}
+        {canAccessWarranties && (
+          <TabsTrigger value="warranties" className="gap-2">
+            <ShieldCheck size={16} /> Garantías
           </TabsTrigger>
         )}
       </TabsList>
@@ -814,6 +848,12 @@ const Admin: React.FC = () => {
             {canAccessProjects && (
               <TabsContent value="projects">
                 <AdminProjects />
+              </TabsContent>
+            )}
+
+            {canAccessWarranties && (
+              <TabsContent value="warranties">
+                <AdminWarranties />
               </TabsContent>
             )}
           </Tabs>
