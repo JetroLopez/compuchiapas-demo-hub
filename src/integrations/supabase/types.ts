@@ -851,18 +851,27 @@ export type Database = {
       store_settings: {
         Row: {
           id: string
+          meta_mensual: number | null
           show_public_prices: boolean
           updated_at: string
+          ventas_at: number | null
+          ventas_csc: number | null
         }
         Insert: {
           id?: string
+          meta_mensual?: number | null
           show_public_prices?: boolean
           updated_at?: string
+          ventas_at?: number | null
+          ventas_csc?: number | null
         }
         Update: {
           id?: string
+          meta_mensual?: number | null
           show_public_prices?: boolean
           updated_at?: string
+          ventas_at?: number | null
+          ventas_csc?: number | null
         }
         Relationships: []
       }

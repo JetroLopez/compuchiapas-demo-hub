@@ -1489,12 +1489,57 @@ const InlineMoneyField: React.FC<{
   );
 };
 
-// Monthly Goal Widget - editable, ephemeral (not stored in DB)
+// Monthly Goal Widget - persisted in store_settings
 const MonthlyGoalWidget: React.FC = () => {
   const [csc, setCsc] = useState('');
   const [at, setAt] = useState('');
   const [meta, setMeta] = useState('');
-  
+  const [loaded, setLoaded] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load values from store_settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data, error } = await (supabase
+        .from('store_settings' as any)
+        .select('meta_mensual, ventas_csc, ventas_at')
+        .eq('id', 'main')
+        .single() as any);
+      if (!error && data) {
+        setCsc(data.ventas_csc ? String(data.ventas_csc) : '');
+        setAt(data.ventas_at ? String(data.ventas_at) : '');
+        setMeta(data.meta_mensual ? String(data.meta_mensual) : '');
+      }
+      setLoaded(true);
+    };
+    fetchSettings();
+  }, []);
+
+  // Debounced save to DB
+  const saveToDb = useCallback((field: string, value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      const numVal = parseFloat(value) || 0;
+      await (supabase
+        .from('store_settings' as any)
+        .update({ [field]: numVal, updated_at: new Date().toISOString() })
+        .eq('id', 'main') as any);
+    }, 500);
+  }, []);
+
+  const handleCscChange = (val: string) => {
+    setCsc(val);
+    saveToDb('ventas_csc', val);
+  };
+  const handleAtChange = (val: string) => {
+    setAt(val);
+    saveToDb('ventas_at', val);
+  };
+  const handleMetaChange = (val: string) => {
+    setMeta(val);
+    saveToDb('meta_mensual', val);
+  };
+
   const cscVal = parseFloat(csc) || 0;
   const atVal = parseFloat(at) || 0;
   const metaVal = parseFloat(meta) || 0;
@@ -1523,12 +1568,12 @@ const MonthlyGoalWidget: React.FC = () => {
           <CardTitle className="text-base flex items-center gap-2">
             🎯 Meta Mensual
           </CardTitle>
-          <InlineMoneyField label="" value={meta} onChange={setMeta} colorClass="text-foreground" />
+          <InlineMoneyField label="" value={meta} onChange={handleMetaChange} colorClass="text-foreground" />
         </div>
       </CardHeader>
       <CardContent className="pb-4 space-y-1">
-        <InlineMoneyField label="CSC" value={csc} onChange={setCsc} colorClass="text-blue-600 dark:text-blue-400" />
-        <InlineMoneyField label="AT" value={at} onChange={setAt} colorClass="text-emerald-600 dark:text-emerald-400" />
+        <InlineMoneyField label="CSC" value={csc} onChange={handleCscChange} colorClass="text-blue-600 dark:text-blue-400" />
+        <InlineMoneyField label="AT" value={at} onChange={handleAtChange} colorClass="text-emerald-600 dark:text-emerald-400" />
         
         <div className={cn(
           "pt-3 border-t border-border text-center rounded-lg py-3 mt-2",
