@@ -64,11 +64,11 @@ const OfferPopup: React.FC<OfferPopupProps> = ({
           className="absolute right-0.5 top-0.5 p-1 rounded-full hover:bg-gray-200 transition-colors"
           aria-label="Cerrar"
         >
-          <X size={14} className="text-gray-500" />
+          <X size={14} className="text-gray-500 dark:text-gray-500" />
         </button>
         
-        <h3 className="text-xs md:text-sm font-bold mb-0.5 pr-4">{title}</h3>
-        <p className="text-[10px] md:text-xs text-gray-600 mb-1 md:mb-1.5">
+        <h3 className="text-xs md:text-sm font-bold mb-0.5 pr-4 text-gray-900 dark:text-gray-900">{title}</h3>
+        <p className="text-[10px] md:text-xs text-gray-600 dark:text-gray-600 mb-1 md:mb-1.5">
           {description}
         </p>
         <div className="flex justify-end">
