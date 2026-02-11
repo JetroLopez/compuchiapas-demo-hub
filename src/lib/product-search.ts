@@ -8,7 +8,7 @@
  * A product must match at least one token to be included.
  */
 
-interface SearchableProduct {
+export interface SearchableProduct {
   id: string;
   name: string;
   clave: string | null;
