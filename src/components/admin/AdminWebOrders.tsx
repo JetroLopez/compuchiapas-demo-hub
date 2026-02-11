@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -65,6 +66,7 @@ const deliveryLabels: Record<string, string> = {
 const AdminWebOrders: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [selectedOrder, setSelectedOrder] = useState<WebOrder | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -148,6 +150,61 @@ const AdminWebOrders: React.FC = () => {
         </Select>
       </div>
 
+      {isMobile ? (
+        <div className="space-y-2">
+          {filteredOrders.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">No hay pedidos</p>
+          ) : filteredOrders.map((order) => (
+            <div
+              key={order.id}
+              className="border rounded-lg p-3 space-y-2 cursor-pointer hover:bg-muted/30"
+              onClick={() => setSelectedOrder(order)}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm">#{order.order_number}</span>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={order.status}
+                    onValueChange={(v) => handleStatusChange(order.id, v)}
+                  >
+                    <SelectTrigger className={`w-[120px] h-7 text-xs ${statusColors[order.status]}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendiente</SelectItem>
+                      <SelectItem value="confirmed">Confirmado</SelectItem>
+                      <SelectItem value="completed">Completado</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{format(new Date(order.created_at), 'dd MMM yyyy', { locale: es })}</span>
+                <span>•</span>
+                <span>{order.phone}</span>
+                <span>•</span>
+                <span>{paymentLabels[order.payment_method] || order.payment_method}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {order.requires_quote ? (
+                    <Badge variant="outline">Cotización</Badge>
+                  ) : formatPrice(order.subtotal || 0)}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7 text-green-600"
+                  onClick={(e) => { e.stopPropagation(); handleWhatsApp(order.phone, order.order_number); }}
+                >
+                  <MessageCircle size={14} />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
@@ -227,6 +284,7 @@ const AdminWebOrders: React.FC = () => {
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Order Detail Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>

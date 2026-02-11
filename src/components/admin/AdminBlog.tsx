@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -69,6 +70,7 @@ const generateSlug = (title: string): string => {
 const AdminBlog: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<BlogEntry | null>(null);
   const [formData, setFormData] = useState<BlogFormData>({
@@ -426,6 +428,53 @@ const AdminBlog: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
+        isMobile ? (
+          <div className="space-y-2">
+            {entries.map((entry) => (
+              <div key={entry.id} className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold truncate">{entry.title}</h3>
+                    <p className="text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleDateString('es-MX')}</p>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Badge variant={entry.is_published ? "default" : "outline"} className="text-[10px]">
+                      {entry.is_published ? 'Pub' : 'Borr'}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => togglePublishedMutation.mutate({ id: entry.id, is_published: !entry.is_published })}>
+                    {entry.is_published ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleFeaturedMutation.mutate({ id: entry.id, is_featured: !entry.is_featured })}>
+                    {entry.is_featured ? <StarOff size={14} /> : <Star size={14} />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEdit(entry)}>
+                    <Pencil size={14} />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Trash2 size={14} />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar entrada?</AlertDialogTitle>
+                        <AlertDialogDescription>Se eliminará permanentemente "{entry.title}".</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(entry.id)}>Eliminar</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="grid gap-4">
           {entries.map((entry) => (
             <Card key={entry.id} className="bg-card">
@@ -525,6 +574,7 @@ const AdminBlog: React.FC = () => {
             </Card>
           ))}
         </div>
+        )
       )}
     </div>
   );
