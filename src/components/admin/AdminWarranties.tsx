@@ -225,10 +225,12 @@ export default function AdminWarranties() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Garantías</h2>
         <div className="flex gap-2">
-          <Button onClick={exportToExcel} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar XLSX
-          </Button>
+          {!isMobile && (
+            <Button onClick={exportToExcel} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Exportar XLSX
+            </Button>
+          )}
           {canEdit && (
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
               setIsDialogOpen(open);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -67,7 +68,9 @@ interface AdminServicesProps {
 
 const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [pastedData, setPastedData] = useState('');
+  const [expandedService, setExpandedService] = useState<string | null>(null);
   const [parsedServices, setParsedServices] = useState<ParsedService[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -449,8 +452,8 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
   return (
     <>
     <div className="space-y-6">
-      {/* Sync Section - hidden for readOnly */}
-      {!readOnly && (
+      {/* Sync Section - hidden for readOnly and mobile */}
+      {!readOnly && !isMobile && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -627,6 +630,71 @@ Ejemplo:
           ) : filteredServices.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No hay servicios registrados
+            </div>
+          ) : isMobile ? (
+            <div className="space-y-2">
+              {filteredServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="border rounded-lg p-3 space-y-2 cursor-pointer hover:bg-muted/30"
+                  onClick={() => setExpandedService(expandedService === service.id ? null : service.id)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-mono font-medium text-sm">{service.clave}</span>
+                    {getEstatusInternoBadge(service.estatus_interno)}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="line-clamp-1 flex-1">{service.condicion}</span>
+                    <span>{format(new Date(service.fecha_elaboracion + 'T12:00:00'), 'dd/MM/yy', { locale: es })}</span>
+                  </div>
+                  {expandedService === service.id && (
+                    <div className="pt-2 border-t space-y-2 text-sm">
+                      <p><span className="text-muted-foreground">Cliente:</span> {service.cliente}</p>
+                      <p><span className="text-muted-foreground">Estatus:</span> {getStatusBadge(service.estatus)}</p>
+                      <p><span className="text-muted-foreground">Condición:</span> {service.condicion}</p>
+                      <p><span className="text-muted-foreground">Comentarios:</span> {service.comentarios || '—'}</p>
+                      {!readOnly && (
+                        <div className="space-y-2 pt-1">
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={service.estatus_interno}
+                              onValueChange={(value: EstatusInterno) => 
+                                updateEstatusInternoMutation.mutate({ id: service.id, estatus_interno: value })
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-xs flex-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="En tienda">En tienda</SelectItem>
+                                <SelectItem value="En proceso">En proceso</SelectItem>
+                                <SelectItem value="Listo y avisado a cliente">Listo y avisado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {service.estatus_interno === 'Listo y avisado a cliente' && (
+                              <Button variant="outline" size="sm" onClick={() => openBodegaDialog(service)}>
+                                <Warehouse className="h-4 w-4 text-amber-600" />
+                              </Button>
+                            )}
+                          </div>
+                          <Input
+                            placeholder="Agregar comentario..."
+                            defaultValue={service.comentarios || ''}
+                            className="h-8 text-xs"
+                            onClick={(e) => e.stopPropagation()}
+                            onBlur={(e) => {
+                              if (e.target.value !== (service.comentarios || '')) {
+                                updateComentariosMutation.mutate({ id: service.id, comentarios: e.target.value });
+                              }
+                            }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="border rounded-lg overflow-x-auto">
