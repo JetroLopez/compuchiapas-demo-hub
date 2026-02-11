@@ -1438,6 +1438,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   );
 };
 
+// Inline editable money field - looks like text, editable on click
+const InlineMoneyField: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  colorClass?: string;
+}> = ({ label, value, onChange, colorClass = 'text-foreground' }) => {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const numVal = parseFloat(value) || 0;
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className={cn("text-base font-bold tracking-wide", colorClass)}>{label}</span>
+      {editing ? (
+        <div className="relative">
+          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">$</span>
+          <input
+            ref={inputRef}
+            type="number"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={() => setEditing(false)}
+            onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
+            className="w-36 pl-7 pr-2 py-1 text-xl font-bold rounded-md border border-primary/30 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-right"
+            placeholder="0"
+          />
+        </div>
+      ) : (
+        <button
+          onClick={() => setEditing(true)}
+          className={cn(
+            "text-xl font-bold cursor-pointer hover:opacity-70 transition-opacity px-2 py-0.5 rounded-md hover:bg-muted/50",
+            colorClass
+          )}
+          title="Click para editar"
+        >
+          ${numVal > 0 ? numVal.toLocaleString('es-MX') : '___'}
+        </button>
+      )}
+    </div>
+  );
+};
+
 // Monthly Goal Widget - editable, ephemeral (not stored in DB)
 const MonthlyGoalWidget: React.FC = () => {
   const [csc, setCsc] = useState('');
@@ -1447,58 +1498,34 @@ const MonthlyGoalWidget: React.FC = () => {
   const atVal = parseFloat(at) || 0;
   const totalGoal = cscVal + atVal;
 
-  // For the "Ventas actuales" display - this is just the sum of the two fields
-  const getGoalColor = () => {
+  const getGoalColorClass = () => {
     if (totalGoal === 0) return 'text-muted-foreground';
-    // Since this is just a goal tracker with no actual sales data integrated,
-    // we show it as the combined value they type
-    return 'text-foreground';
+    if (totalGoal >= 1000000) return 'text-amber-500';
+    if (totalGoal >= 900000) return 'text-green-600 dark:text-green-400';
+    if (totalGoal >= 500000) return 'text-orange-500';
+    return 'text-red-500';
   };
 
   return (
     <Card>
-      <CardHeader className="pb-2 pt-3">
-        <CardTitle className="text-sm flex items-center gap-2">
+      <CardHeader className="pb-1 pt-3">
+        <CardTitle className="text-base flex items-center gap-2">
           🎯 Meta Mensual
         </CardTitle>
       </CardHeader>
-      <CardContent className="pb-3 space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium w-10">CSC</span>
-          <div className="relative flex-1">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-            <input
-              type="number"
-              value={csc}
-              onChange={(e) => setCsc(e.target.value)}
-              className="w-full pl-5 pr-2 py-1.5 text-xs rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="0"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium w-10">AT</span>
-          <div className="relative flex-1">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-            <input
-              type="number"
-              value={at}
-              onChange={(e) => setAt(e.target.value)}
-              className="w-full pl-5 pr-2 py-1.5 text-xs rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="0"
-            />
-          </div>
-        </div>
+      <CardContent className="pb-4 space-y-3">
+        <InlineMoneyField label="CSC" value={csc} onChange={setCsc} colorClass="text-blue-600 dark:text-blue-400" />
+        <InlineMoneyField label="AT" value={at} onChange={setAt} colorClass="text-emerald-600 dark:text-emerald-400" />
+        
         <div className={cn(
-          "pt-2 border-t border-border text-center",
-          totalGoal >= 1000000 ? "text-amber-500 font-bold" : 
-          totalGoal >= 900000 ? "text-green-600 dark:text-green-400 font-semibold" :
-          totalGoal >= 500000 ? "text-orange-500 font-semibold" :
-          totalGoal > 0 ? "text-red-500 font-semibold" :
-          "text-muted-foreground"
+          "pt-3 border-t border-border text-center rounded-lg py-3",
+          totalGoal >= 1000000 ? "bg-amber-500/10" :
+          totalGoal >= 900000 ? "bg-green-500/10" :
+          totalGoal >= 500000 ? "bg-orange-500/10" :
+          totalGoal > 0 ? "bg-red-500/10" : ""
         )}>
-          <p className="text-xs text-muted-foreground">Ventas actuales</p>
-          <p className="text-lg font-bold">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Ventas actuales</p>
+          <p className={cn("text-2xl font-extrabold", getGoalColorClass())}>
             ${totalGoal.toLocaleString('es-MX')}
             {totalGoal >= 1000000 && ' 🥳'}
           </p>
