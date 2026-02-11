@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -66,19 +66,42 @@ const AdminPromotions: React.FC = () => {
     },
   });
 
-  // Fetch products for "add from product" feature
-  const { data: products = [] } = useQuery({
-    queryKey: ['products-for-promo'],
+  // Debounced product search term for server-side search
+  const [debouncedProductSearch, setDebouncedProductSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedProductSearch(productSearchTerm.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [productSearchTerm]);
+
+  // Fetch products with server-side search (only when dialog is open and there's a search term)
+  const { data: products = [], isFetching: productsFetching } = useQuery({
+    queryKey: ['products-for-promo', debouncedProductSearch],
     queryFn: async (): Promise<Product[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('id, clave, name, image_url, existencias')
         .eq('is_active', true)
-        .order('name', { ascending: true });
-      
+        .order('name', { ascending: true })
+        .limit(30);
+
+      if (debouncedProductSearch.length >= 2) {
+        // Split into tokens and build OR filter
+        const tokens = debouncedProductSearch.toLowerCase().split(/\s+/).filter(t => t.length >= 2);
+        if (tokens.length > 0) {
+          const orClauses = tokens.map(t => `name.ilike.%${t}%,clave.ilike.%${t}%`).join(',');
+          query = query.or(orClauses);
+        }
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
+    enabled: isProductDialogOpen,
+    staleTime: 30 * 1000,
   });
 
   // Add/Update promotion mutation
@@ -209,10 +232,6 @@ const AdminPromotions: React.FC = () => {
     p.clave.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-    (p.clave && p.clave.toLowerCase().includes(productSearchTerm.toLowerCase()))
-  );
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -252,7 +271,15 @@ const AdminPromotions: React.FC = () => {
                     />
                   </div>
                   <div className="max-h-96 overflow-y-auto space-y-2">
-                    {filteredProducts.slice(0, 20).map((product) => (
+                    {productsFetching ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : products.length === 0 ? (
+                      <p className="text-center py-8 text-sm text-muted-foreground">
+                        {debouncedProductSearch.length >= 2 ? 'Sin resultados. Intenta con otro término.' : 'Escribe al menos 2 caracteres para buscar...'}
+                      </p>
+                    ) : products.map((product) => (
                       <div
                         key={product.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted cursor-pointer transition-colors"
