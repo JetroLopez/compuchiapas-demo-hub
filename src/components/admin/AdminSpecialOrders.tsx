@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -629,49 +629,49 @@ export default function AdminSpecialOrders() {
         </DialogContent>
       </Dialog>
 
-      {/* Orders table */}
+      {/* Orders list */}
       {isLoading ? (
         <div className="text-center py-8">Cargando...</div>
       ) : orders && orders.length > 0 ? (
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Producto</TableHead>
-                <TableHead>Clave</TableHead>
-                <TableHead>Precio</TableHead>
-                <TableHead>Anticipo</TableHead>
-                <TableHead>Resta</TableHead>
-                <TableHead>Folio Ingreso</TableHead>
-                <TableHead>Fecha Aprox.</TableHead>
-                <TableHead>Estatus</TableHead>
-                <TableHead>Folio Servicio</TableHead>
-                <TableHead>Comentarios</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell>{order.fecha}</TableCell>
-                  <TableCell>{order.cliente}</TableCell>
-                  <TableCell>{order.telefono || "-"}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{order.producto}</TableCell>
-                  <TableCell>{order.clave || "-"}</TableCell>
-                  <TableCell>{order.precio ? `$${order.precio.toFixed(2)}` : "-"}</TableCell>
-                  <TableCell>{order.anticipo ? `$${order.anticipo.toFixed(2)}` : "-"}</TableCell>
-                  <TableCell>{order.resta ? `$${order.resta.toFixed(2)}` : "-"}</TableCell>
-                  <TableCell>{order.folio_ingreso || "-"}</TableCell>
-                  <TableCell>{order.fecha_aprox_entrega || "-"}</TableCell>
-                  <TableCell>
+        <div className="rounded-md border">
+          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-0">
+            {/* Header */}
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Fecha</div>
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Producto</div>
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Precio</div>
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Estatus</div>
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Fecha aprox.</div>
+            {/* Rows */}
+            {orders.map((order) => {
+              const getDateColor = () => {
+                if (!order.fecha_aprox_entrega) return "";
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const target = new Date(order.fecha_aprox_entrega + "T00:00:00");
+                const diffDays = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 1) return "text-red-600 font-semibold";
+                if (diffDays <= 3) return "text-yellow-600 font-semibold";
+                return "text-green-600 font-semibold";
+              };
+
+              return (
+                <React.Fragment key={order.id}>
+                  <div className="px-3 py-2.5 text-sm text-muted-foreground border-b">{order.fecha}</div>
+                  <div
+                    className="px-3 py-2.5 text-sm truncate border-b cursor-pointer hover:underline hover:bg-muted/30"
+                    onClick={() => handleEdit(order)}
+                  >
+                    {order.producto}
+                  </div>
+                  <div className="px-3 py-2.5 text-sm border-b">
+                    {order.precio ? `$${order.precio.toFixed(2)}` : "-"}
+                  </div>
+                  <div className="px-3 py-2 border-b flex items-center">
                     <Select
                       value={order.estatus}
                       onValueChange={(v) => handleStatusChange(order, v as SpecialOrderStatus)}
                     >
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-[160px] h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -682,24 +682,16 @@ export default function AdminSpecialOrders() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </TableCell>
-                  <TableCell>{order.folio_servicio || "-"}</TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={order.comentarios || ""}>
-                    {order.comentarios || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(order)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+                  <div className={cn("px-3 py-2.5 text-sm border-b", getDateColor())}>
+                    {order.fecha_aprox_entrega
+                      ? format(new Date(order.fecha_aprox_entrega + "T00:00:00"), "d MMM yyyy", { locale: es })
+                      : "-"}
+                  </div>
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <div className="text-center py-8 text-muted-foreground">

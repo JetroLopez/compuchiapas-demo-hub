@@ -126,20 +126,26 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
         clave: item.clave
       }));
 
-      const { data, error } = await (supabase
+      const paymentLabels: Record<string, string> = {
+        cash: deliveryMethod === 'delivery' ? 'Efectivo contra entrega' : 'Efectivo',
+        card: 'Tarjeta de crédito o débito',
+        transfer: 'Transferencia electrónica',
+      };
+
+      const { data, error } = await supabase
         .from('web_orders')
         .insert({
           phone: phone.trim(),
-          payment_method: paymentMethod || 'cash',
-          delivery_method: deliveryMethod,
-          items: orderItems,
+          payment_method: paymentLabels[paymentMethod || 'cash'] || paymentMethod || 'cash',
+          delivery_method: deliveryMethod === 'pickup' ? 'Pickup en tienda' : 'Entrega a domicilio',
+          items: orderItems as unknown as import('@/integrations/supabase/types').Json,
           subtotal: subtotal,
           requires_quote: requiresQuote,
           billing_data: formatBillingData(),
           shipping_option: getShippingOption()
-        } as any)
+        })
         .select('order_number')
-        .single());
+        .single();
 
       if (error) throw error;
 
@@ -301,6 +307,26 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
                 </button>
               ))}
             </div>
+
+            {/* Transfer info */}
+            {paymentMethod === 'transfer' && (
+              <div className="bg-muted/50 p-4 rounded-lg space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <p className="text-sm font-semibold">Datos para transferencia (BBVA Bancomer)</p>
+                <div className="text-sm space-y-1">
+                  <p>Cuenta: <span className="font-mono font-medium">0132358026</span></p>
+                  <p>CLABE: <span className="font-mono font-medium">012133001323580268</span></p>
+                </div>
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Hola, ya realicé mi transferencia para mi pedido.')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-green-600 hover:text-green-700 font-medium mt-1"
+                >
+                  <MessageCircle size={14} />
+                  Enviar comprobante por WhatsApp
+                </a>
+              </div>
+            )}
           </div>
         )}
 

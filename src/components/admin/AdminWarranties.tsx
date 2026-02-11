@@ -1,11 +1,10 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -327,27 +326,33 @@ export default function AdminWarranties() {
           <p>No hay garantías registradas</p>
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {warranties.map((w) => (
-            <Card
-              key={w.id}
-              className={cn(
-                "cursor-pointer hover:shadow-md transition-all border",
-                canEdit && "hover:ring-2 hover:ring-primary/30"
-              )}
-              onClick={() => canEdit ? handleEdit(w) : undefined}
-            >
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm truncate flex-1">{w.descripcion_producto}</span>
+        <div className="rounded-md border">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] md:grid-cols-[2fr_1fr_1fr_auto] gap-0">
+            {/* Header */}
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Producto</div>
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50">Proveedor</div>
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50 hidden md:block">Ingreso</div>
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/50 text-right">Estatus</div>
+            {/* Rows */}
+            {warranties.map((w) => (
+              <React.Fragment key={w.id}>
+                <div
+                  className={cn("px-3 py-2.5 text-sm truncate border-b cursor-pointer hover:bg-muted/30", canEdit && "hover:underline")}
+                  onClick={() => canEdit ? handleEdit(w) : undefined}
+                >
+                  {w.descripcion_producto}
+                </div>
+                <div className="px-3 py-2.5 text-sm text-muted-foreground border-b">{w.clave_proveedor}</div>
+                <div className="px-3 py-2.5 text-sm text-muted-foreground border-b hidden md:block">
+                  {format(new Date(w.fecha_ingreso), "d MMM yyyy", { locale: es })}
+                </div>
+                <div className="px-3 py-2 border-b flex justify-end items-center" onClick={(e) => e.stopPropagation()}>
                   {canEdit ? (
                     <Select
                       value={w.estatus}
-                      onValueChange={(v) => {
-                        updateStatusMutation.mutate({ id: w.id, estatus: v as WarrantyStatus });
-                      }}
+                      onValueChange={(v) => updateStatusMutation.mutate({ id: w.id, estatus: v as WarrantyStatus })}
                     >
-                      <SelectTrigger className="w-auto h-7 text-xs border-0 p-0" onClick={(e) => e.stopPropagation()}>
+                      <SelectTrigger className="w-auto h-7 text-xs border-0 p-0">
                         {getStatusBadge(w.estatus)}
                       </SelectTrigger>
                       <SelectContent>
@@ -360,13 +365,9 @@ export default function AdminWarranties() {
                     getStatusBadge(w.estatus)
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground space-y-0.5">
-                  <p>Proveedor: <span className="font-medium text-foreground">{w.clave_proveedor}</span></p>
-                  <p>Ingreso: <span className="font-medium text-foreground">{format(new Date(w.fecha_ingreso), "d MMM yyyy", { locale: es })}</span></p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       )}
     </div>
