@@ -1493,41 +1493,54 @@ const InlineMoneyField: React.FC<{
 const MonthlyGoalWidget: React.FC = () => {
   const [csc, setCsc] = useState('');
   const [at, setAt] = useState('');
+  const [meta, setMeta] = useState('');
   
   const cscVal = parseFloat(csc) || 0;
   const atVal = parseFloat(at) || 0;
-  const totalGoal = cscVal + atVal;
+  const metaVal = parseFloat(meta) || 0;
+  const totalSales = cscVal + atVal;
+
+  const getProgress = () => {
+    if (metaVal === 0) return 0;
+    return totalSales / metaVal;
+  };
+
+  const progress = getProgress();
 
   const getGoalColorClass = () => {
-    if (totalGoal === 0) return 'text-muted-foreground';
-    if (totalGoal >= 1000000) return 'text-amber-500';
-    if (totalGoal >= 900000) return 'text-green-600 dark:text-green-400';
-    if (totalGoal >= 500000) return 'text-orange-500';
-    return 'text-red-500';
+    if (metaVal === 0 && totalSales === 0) return 'text-muted-foreground';
+    if (metaVal > 0 && progress >= 1) return 'text-amber-500';
+    if (metaVal > 0 && progress >= 0.9) return 'text-green-600 dark:text-green-400';
+    if (metaVal > 0 && progress >= 0.5) return 'text-orange-500';
+    if (metaVal > 0) return 'text-red-500';
+    return 'text-foreground';
   };
 
   return (
     <Card>
       <CardHeader className="pb-1 pt-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          🎯 Meta Mensual
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            🎯 Meta Mensual
+          </CardTitle>
+          <InlineMoneyField label="" value={meta} onChange={setMeta} colorClass="text-foreground" />
+        </div>
       </CardHeader>
-      <CardContent className="pb-4 space-y-3">
+      <CardContent className="pb-4 space-y-1">
         <InlineMoneyField label="CSC" value={csc} onChange={setCsc} colorClass="text-blue-600 dark:text-blue-400" />
         <InlineMoneyField label="AT" value={at} onChange={setAt} colorClass="text-emerald-600 dark:text-emerald-400" />
         
         <div className={cn(
-          "pt-3 border-t border-border text-center rounded-lg py-3",
-          totalGoal >= 1000000 ? "bg-amber-500/10" :
-          totalGoal >= 900000 ? "bg-green-500/10" :
-          totalGoal >= 500000 ? "bg-orange-500/10" :
-          totalGoal > 0 ? "bg-red-500/10" : ""
+          "pt-3 border-t border-border text-center rounded-lg py-3 mt-2",
+          metaVal > 0 && progress >= 1 ? "bg-amber-500/10" :
+          metaVal > 0 && progress >= 0.9 ? "bg-green-500/10" :
+          metaVal > 0 && progress >= 0.5 ? "bg-orange-500/10" :
+          totalSales > 0 ? "bg-red-500/10" : ""
         )}>
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Ventas actuales</p>
           <p className={cn("text-2xl font-extrabold", getGoalColorClass())}>
-            ${totalGoal.toLocaleString('es-MX')}
-            {totalGoal >= 1000000 && ' 🥳'}
+            ${totalSales.toLocaleString('es-MX')}
+            {metaVal > 0 && progress >= 1 && ' 🥳'}
           </p>
         </div>
       </CardContent>
