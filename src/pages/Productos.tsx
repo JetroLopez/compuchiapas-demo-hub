@@ -20,8 +20,9 @@ interface Category {
 const Productos: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('categoria') || 'all';
+  const initialSearch = searchParams.get('buscar') || '';
   const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [showOrderSearch, setShowOrderSearch] = useState(searchParams.get('pedido') === 'true');
 
   // Obtener categorías de la base de datos
@@ -53,8 +54,13 @@ const Productos: React.FC = () => {
     } else {
       searchParams.set('categoria', activeCategory);
     }
+    if (searchTerm.trim()) {
+      searchParams.set('buscar', searchTerm.trim());
+    } else {
+      searchParams.delete('buscar');
+    }
     setSearchParams(searchParams, { replace: true });
-  }, [activeCategory, searchParams, setSearchParams]);
+  }, [activeCategory, searchTerm, searchParams, setSearchParams]);
 
   const resetFilters = () => {
     setSearchTerm('');
