@@ -139,7 +139,7 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
             ))}
             <a 
               href={location.pathname === '/contacto' ? '#contact-form' : '/contacto'} 
-              className="btn-primary"
+              className="btn-primary bg-orange-500 hover:bg-orange-600 border-orange-500"
               onClick={handleContactClick}
             >
               Contáctanos
@@ -180,7 +180,7 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
             ))}
             <a 
               href={location.pathname === '/contacto' ? '#contact-form' : '/contacto'} 
-              className="btn-primary text-center mt-2"
+              className="btn-primary bg-orange-500 hover:bg-orange-600 border-orange-500 text-center mt-2"
               onClick={handleContactClick}
             >
               Contáctanos
