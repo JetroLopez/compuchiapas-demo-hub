@@ -75,12 +75,12 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
       <div className="container-padding mx-auto">
         <div className="flex items-center justify-between h-14 md:h-20 gap-4">
           <Link to="/" className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
-            <img src={logo} alt="Compuchiapas Logo" className="h-8 w-8 md:h-16 md:w-16 object-contain" />
+            <img src={logo} alt="Compuchiapas Logo" className="h-10 w-10 md:h-16 md:w-16 object-contain" />
             <span className={cn(
-              "text-base md:text-2xl font-bold flex items-baseline transition-colors duration-300",
+              "text-lg md:text-2xl font-bold flex items-baseline transition-colors duration-300",
               isScrolled ? "text-tech-blue dark:text-white" : "text-white"
             )}>
-              Compuchiapas<span className="text-[9px] md:text-sm ml-0.5">.com.mx</span>
+              Compuchiapas<span className="text-[10px] md:text-sm ml-0.5">.com.mx</span>
             </span>
           </Link>
 
