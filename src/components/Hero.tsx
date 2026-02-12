@@ -61,10 +61,14 @@ const Hero: React.FC = () => {
   // Fallback when no slides
   if (slides.length === 0) {
     return (
-      <section className="relative w-full aspect-[12/5] md:aspect-[12/4] bg-gradient-to-br from-slate-900 to-blue-950 flex items-center justify-center">
-        <div className="text-center text-white px-4">
-          <h1 className="text-3xl md:text-5xl font-bold mb-2">Compuchiapas</h1>
-          <p className="text-lg text-white/70">Expertos en tecnología</p>
+      <section className="w-full bg-background pt-20 md:pt-24 pb-4 md:pb-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="w-full aspect-[16/7] md:aspect-[21/8] rounded-xl md:rounded-2xl bg-muted flex items-center justify-center shadow-lg">
+            <div className="text-center px-4">
+              <h1 className="text-3xl md:text-5xl font-bold mb-2 text-foreground">Compuchiapas</h1>
+              <p className="text-lg text-muted-foreground">Expertos en tecnología</p>
+            </div>
+          </div>
         </div>
       </section>
     );
@@ -114,135 +118,99 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative w-full">
-      {/* Carousel */}
-      <div className="relative w-full aspect-[16/7] md:aspect-[12/4] overflow-hidden bg-slate-900">
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={currentSlide.id}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-            className="absolute inset-0"
-          >
-            <SlideContent slide={currentSlide} />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Navigation arrows */}
-        {slides.length > 1 && (
-          <>
-            <button
-              onClick={goPrev}
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-black/30 hover:bg-black/50 text-white rounded-full p-1.5 md:p-2 transition-colors backdrop-blur-sm"
-              aria-label="Anterior"
+    <section className="w-full bg-background pt-20 md:pt-24 pb-4 md:pb-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
+        {/* Carousel container - delimited block with rounded corners */}
+        <div className="relative w-full aspect-[16/7] md:aspect-[21/8] overflow-hidden rounded-xl md:rounded-2xl shadow-lg">
+          <AnimatePresence initial={false} custom={direction} mode="popLayout">
+            <motion.div
+              key={currentSlide.id}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.5, ease: 'easeInOut' }}
+              className="absolute inset-0"
             >
-              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
-            <button
-              onClick={goNext}
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-black/30 hover:bg-black/50 text-white rounded-full p-1.5 md:p-2 transition-colors backdrop-blur-sm"
-              aria-label="Siguiente"
-            >
-              <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
-          </>
-        )}
+              <SlideContent slide={currentSlide} />
+            </motion.div>
+          </AnimatePresence>
 
-        {/* Dots indicator */}
-        {slides.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-            {slides.map((_, idx) => (
+          {/* Navigation arrows */}
+          {slides.length > 1 && (
+            <>
               <button
-                key={idx}
-                onClick={() => goTo(idx)}
-                className={`w-2.5 h-2.5 rounded-full transition-all ${
-                  idx === currentIndex
-                    ? 'bg-white scale-110'
-                    : 'bg-white/40 hover:bg-white/60'
-                }`}
-                aria-label={`Slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+                onClick={goPrev}
+                className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-black/30 hover:bg-black/50 text-white rounded-full p-1.5 md:p-2.5 transition-colors backdrop-blur-sm"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+              <button
+                onClick={goNext}
+                className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-black/30 hover:bg-black/50 text-white rounded-full p-1.5 md:p-2.5 transition-colors backdrop-blur-sm"
+                aria-label="Siguiente"
+              >
+                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+            </>
+          )}
 
-      {/* CTA Buttons */}
-      {/* Mobile: stacked compact */}
-      <div className="flex flex-col w-full md:hidden">
-        <a
-          href="/servicios"
-          className="flex items-center gap-3 bg-gradient-to-r from-tech-blue to-blue-700 py-4 px-6 text-white"
-        >
-          <Wrench className="w-6 h-6 shrink-0" />
-          <span className="text-lg font-bold">Nuestros Servicios</span>
-          <span className="ml-auto">→</span>
-        </a>
-        <a
-          href="/productos"
-          className="flex items-center gap-3 bg-gradient-to-r from-tech-orange to-orange-600 py-4 px-6 text-white"
-        >
-          <ShoppingBag className="w-6 h-6 shrink-0" />
-          <span className="text-lg font-bold">Catálogo de Productos</span>
-          <span className="ml-auto">→</span>
-        </a>
-      </div>
+          {/* Dots indicator */}
+          {slides.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => goTo(idx)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all ${
+                    idx === currentIndex
+                      ? 'bg-white scale-110 shadow-md'
+                      : 'bg-white/40 hover:bg-white/60'
+                  }`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* Desktop: full banners */}
-      <div className="hidden md:grid grid-cols-2 w-full">
-        <a
-          href="/servicios"
-          className="group relative overflow-hidden bg-gradient-to-br from-tech-blue to-blue-700 py-12 px-8 flex flex-col items-center justify-center cursor-pointer"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative z-10 text-center">
-            <motion.div
-              className="mb-3 inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-colors duration-300"
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Wrench className="w-7 h-7 text-white" />
-            </motion.div>
-            <h3 className="text-2xl font-bold text-white mb-1 group-hover:scale-110 transition-transform duration-300">
-              Nuestros Servicios
-            </h3>
-            <p className="text-blue-100/80 text-sm max-w-xs mx-auto">
-              Reparación, mantenimiento y soporte técnico especializado
-            </p>
-            <span className="inline-block mt-3 text-white font-medium group-hover:translate-x-2 transition-transform duration-300">
-              Explorar →
-            </span>
-          </div>
-        </a>
-
-        <a
-          href="/productos"
-          className="group relative overflow-hidden bg-gradient-to-br from-tech-orange to-orange-600 py-12 px-8 flex flex-col items-center justify-center cursor-pointer"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative z-10 text-center">
-            <motion.div
-              className="mb-3 inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-colors duration-300"
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-            >
-              <ShoppingBag className="w-7 h-7 text-white" />
-            </motion.div>
-            <h3 className="text-2xl font-bold text-white mb-1 group-hover:scale-110 transition-transform duration-300">
-              Catálogo de Productos
-            </h3>
-            <p className="text-orange-100/80 text-sm max-w-xs mx-auto">
-              Equipos, componentes y accesorios de las mejores marcas
-            </p>
-            <span className="inline-block mt-3 text-white font-medium group-hover:translate-x-2 transition-transform duration-300">
-              Ver productos →
-            </span>
-          </div>
-        </a>
+        {/* CTA Buttons - inside the same container */}
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <a
+            href="/servicios"
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-tech-blue to-blue-700 py-3 md:py-5 px-4 md:px-6 flex items-center gap-3 text-white transition-shadow hover:shadow-lg"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
+            <div className="relative z-10 flex items-center gap-3 w-full">
+              <div className="shrink-0 w-9 h-9 md:w-11 md:h-11 rounded-full bg-white/15 flex items-center justify-center">
+                <Wrench className="w-4 h-4 md:w-5 md:h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-sm md:text-lg font-bold block leading-tight">Nuestros Servicios</span>
+                <span className="text-[10px] md:text-xs text-blue-100/70 hidden md:block">Reparación y soporte técnico</span>
+              </div>
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 shrink-0 opacity-60 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </a>
+          <a
+            href="/productos"
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-tech-orange to-orange-600 py-3 md:py-5 px-4 md:px-6 flex items-center gap-3 text-white transition-shadow hover:shadow-lg"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
+            <div className="relative z-10 flex items-center gap-3 w-full">
+              <div className="shrink-0 w-9 h-9 md:w-11 md:h-11 rounded-full bg-white/15 flex items-center justify-center">
+                <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-sm md:text-lg font-bold block leading-tight">Catálogo de Productos</span>
+                <span className="text-[10px] md:text-xs text-orange-100/70 hidden md:block">Equipos y accesorios de calidad</span>
+              </div>
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 shrink-0 opacity-60 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </a>
+        </div>
       </div>
     </section>
   );
