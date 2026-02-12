@@ -61,7 +61,7 @@ const Hero: React.FC = () => {
   // Fallback when no slides
   if (slides.length === 0) {
     return (
-      <section className="w-full bg-background pt-24 md:pt-24 pb-2 md:pb-6">
+      <section className="w-full bg-background pt-16 md:pt-24 pb-2 md:pb-6">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="w-full aspect-[16/7] md:aspect-[21/8] rounded-xl md:rounded-2xl bg-muted flex items-center justify-center shadow-lg">
             <div className="text-center px-4">
@@ -118,7 +118,7 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <section className="w-full bg-background pt-24 md:pt-24 pb-2 md:pb-6">
+    <section className="w-full bg-background pt-16 md:pt-24 pb-2 md:pb-6">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         {/* Carousel container - delimited block with rounded corners */}
         <div className="relative w-full aspect-[16/7] md:aspect-[21/8] overflow-hidden rounded-xl md:rounded-2xl shadow-lg">
