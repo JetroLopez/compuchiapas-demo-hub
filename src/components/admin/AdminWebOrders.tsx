@@ -53,15 +53,14 @@ const statusLabels: Record<string, string> = {
   cancelled: 'Cancelado'
 };
 
-const paymentLabels: Record<string, string> = {
-  cash: 'Efectivo',
-  transfer: 'Transferencia'
+const getPaymentLabel = (method: string) => method || '-';
+const getDeliveryLabel = (method: string | null) => {
+  if (!method) return 'No';
+  const lower = method.toLowerCase();
+  if (lower.includes('domicilio') || lower.includes('delivery') || lower.includes('envío') || lower.includes('envio')) return 'Sí';
+  return 'No';
 };
-
-const deliveryLabels: Record<string, string> = {
-  pickup: 'Pickup en tienda',
-  delivery: 'Entrega a domicilio'
-};
+const getDeliveryFull = (method: string | null) => method || 'N/A';
 
 const AdminWebOrders: React.FC = () => {
   const { toast } = useToast();
@@ -179,12 +178,11 @@ const AdminWebOrders: React.FC = () => {
                   </Select>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span>{format(new Date(order.created_at), 'dd MMM yyyy', { locale: es })}</span>
-                <span>•</span>
-                <span>{order.phone}</span>
-                <span>•</span>
-                <span>{paymentLabels[order.payment_method] || order.payment_method}</span>
+                <span>Tel: {order.phone}</span>
+                <span>Pago: {getPaymentLabel(order.payment_method)}</span>
+                <span>Envío: {getDeliveryLabel(order.delivery_method)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">
@@ -213,7 +211,7 @@ const AdminWebOrders: React.FC = () => {
               <TableHead>Fecha</TableHead>
               <TableHead>Teléfono</TableHead>
               <TableHead>Pago</TableHead>
-              <TableHead>Entrega</TableHead>
+              <TableHead>Envío</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
@@ -234,10 +232,8 @@ const AdminWebOrders: React.FC = () => {
                     {format(new Date(order.created_at), 'dd MMM yyyy HH:mm', { locale: es })}
                   </TableCell>
                   <TableCell>{order.phone}</TableCell>
-                  <TableCell>{paymentLabels[order.payment_method] || order.payment_method}</TableCell>
-                  <TableCell>
-                    {order.delivery_method ? deliveryLabels[order.delivery_method] : '-'}
-                  </TableCell>
+                  <TableCell>{getPaymentLabel(order.payment_method)}</TableCell>
+                  <TableCell>{getDeliveryLabel(order.delivery_method)}</TableCell>
                   <TableCell>
                     {order.requires_quote ? (
                       <Badge variant="outline">Cotización</Badge>
@@ -308,13 +304,11 @@ const AdminWebOrders: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Método de pago</p>
-                    <p className="font-medium">{paymentLabels[selectedOrder.payment_method]}</p>
+                    <p className="font-medium">{getPaymentLabel(selectedOrder.payment_method)}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Entrega</p>
-                    <p className="font-medium">
-                      {selectedOrder.delivery_method ? deliveryLabels[selectedOrder.delivery_method] : 'N/A'}
-                    </p>
+                    <p className="font-medium">{getDeliveryFull(selectedOrder.delivery_method)}</p>
                   </div>
                 </div>
 
