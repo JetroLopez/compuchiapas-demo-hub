@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban, Store, MoreHorizontal, Eye, ShieldCheck, Warehouse } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban, Store, MoreHorizontal, Eye, ShieldCheck, Warehouse, Image } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +28,7 @@ import AdminWebOrders from '@/components/admin/AdminWebOrders';
 import AdminProjects from '@/components/admin/AdminProjects';
 import AdminWarranties from '@/components/admin/AdminWarranties';
 import AdminBodega from '@/components/admin/AdminBodega';
+import AdminLandingPage from '@/components/admin/AdminLandingPage';
 import { Badge } from '@/components/ui/badge';
 
 // Tab label mapping
@@ -48,6 +49,7 @@ const TAB_LABELS: Record<string, string> = {
   'web-orders': 'Pedidos Web',
   'warranties': 'Garantías',
   'bodega': 'Bodega',
+  'landing-page': 'Landing Page',
 };
 
 const Admin: React.FC = () => {
@@ -86,6 +88,7 @@ const Admin: React.FC = () => {
   const canAccessProjects = hasAccess(['admin', 'ventas', 'tecnico', 'supervisor']);
   const canAccessWarranties = hasAccess(['admin', 'supervisor', 'tecnico', 'ventas']);
   const canAccessBodega = hasAccess(['admin', 'supervisor', 'tecnico', 'ventas']);
+  const canAccessLandingPage = hasAccess(['admin', 'supervisor', 'ventas']);
   const isServicesReadOnly = isVentas;
   const isWarrantiesReadOnly = !hasAccess(['admin', 'supervisor']);
 
@@ -186,8 +189,9 @@ const Admin: React.FC = () => {
       if (activeTab === 'projects' && !canAccessProjects) setActiveTab('dashboard');
       if (activeTab === 'warranties' && !canAccessWarranties) setActiveTab('dashboard');
       if (activeTab === 'bodega' && !canAccessBodega) setActiveTab('dashboard');
+      if (activeTab === 'landing-page' && !canAccessLandingPage) setActiveTab('dashboard');
     }
-  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs, canAccessWebOrders, canAccessProjects, canAccessWarranties, canAccessBodega]);
+  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs, canAccessWebOrders, canAccessProjects, canAccessWarranties, canAccessBodega, canAccessLandingPage]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -311,6 +315,9 @@ const Admin: React.FC = () => {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setActiveTab('bodega')} className="gap-2">
             <Warehouse size={16} /> Bodega
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setActiveTab('landing-page')} className="gap-2">
+            <Image size={16} /> Landing Page
           </DropdownMenuItem>
         </>
       );
@@ -477,6 +484,11 @@ const Admin: React.FC = () => {
         {canAccessBodega && (
           <DropdownMenuItem onClick={() => setActiveTab('bodega')} className="gap-2">
             <Warehouse size={16} /> Bodega
+          </DropdownMenuItem>
+        )}
+        {canAccessLandingPage && (
+          <DropdownMenuItem onClick={() => setActiveTab('landing-page')} className="gap-2">
+            <Image size={16} /> Landing Page
           </DropdownMenuItem>
         )}
       </>
@@ -724,6 +736,11 @@ const Admin: React.FC = () => {
             <Warehouse size={16} /> Bodega
           </TabsTrigger>
         )}
+        {canAccessLandingPage && (
+          <TabsTrigger value="landing-page" className="gap-2">
+            <Image size={16} /> Landing Page
+          </TabsTrigger>
+        )}
       </TabsList>
     );
   };
@@ -893,6 +910,12 @@ const Admin: React.FC = () => {
             {canAccessBodega && (
               <TabsContent value="bodega">
                 <AdminBodega />
+              </TabsContent>
+            )}
+
+            {canAccessLandingPage && (
+              <TabsContent value="landing-page">
+                <AdminLandingPage />
               </TabsContent>
             )}
           </Tabs>
