@@ -362,7 +362,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   };
 
   return (
-    <div ref={stickyRef} className="mb-8 space-y-4 md:space-y-6 sticky top-20 z-30 bg-background pb-2 -mx-4 px-4 md:static md:top-auto md:z-auto md:-mx-0 md:px-0 pt-2">
+    <div ref={stickyRef} className="mb-8 space-y-4 md:space-y-6 sticky top-14 md:top-20 z-30 bg-background pb-2 -mx-4 px-4 md:static md:top-auto md:z-auto md:-mx-0 md:px-0 pt-2">
       {/* ===== MOBILE LAYOUT ===== */}
       <div className="md:hidden space-y-3">
         {/* Search bar + filter icon */}
