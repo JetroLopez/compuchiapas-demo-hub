@@ -447,16 +447,16 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
     }
   };
 
-  // Export CSV
+  // Export CSV (uses filtered products)
   const handleExportCSV = () => {
     const headers = ['clave', 'descripcion', 'image_url', 'existencias', 'category_id'];
     const csvContent = [
       headers.join(','),
-      ...products.map(p => [
+      ...filteredProducts.map(p => [
         p.clave || '',
-        p.name,
+        `"${p.name.replace(/"/g, '""')}"`,
         p.image_url || '',
-        p.existencias || 0,
+        getProductTotalStock(p.id),
         p.category_id || '',
       ].join(',')),
     ].join('\n');
@@ -467,16 +467,16 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
     link.download = `productos_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     
-    toast.success('CSV exportado');
+    toast.success(`${filteredProducts.length} productos exportados (CSV)`);
   };
 
-  // Export XLSX
+  // Export XLSX (uses filtered products)
   const handleExportXLSX = () => {
-    const data = products.map(p => ({
+    const data = filteredProducts.map(p => ({
       clave: p.clave || '',
       descripcion: p.name,
       image_url: p.image_url || '',
-      existencias: p.existencias || 0,
+      existencias: getProductTotalStock(p.id),
       category_id: p.category_id || '',
     }));
 
@@ -485,7 +485,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
     
     XLSX.writeFile(workbook, `productos_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('XLSX exportado');
+    toast.success(`${filteredProducts.length} productos exportados (XLSX)`);
   };
 
   const handleAddProduct = () => {
