@@ -1,0 +1,1 @@
+ALTER TABLE public.warehouses ADD COLUMN profit_multiplier numeric NOT NULL DEFAULT 1.20;

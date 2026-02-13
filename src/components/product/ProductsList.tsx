@@ -28,6 +28,11 @@ interface ExhibitedWarehouse {
   is_exhibited: boolean;
 }
 
+interface WarehouseInfo {
+  id: string;
+  profit_multiplier: number;
+}
+
 interface ProductsListProps {
   searchTerm: string;
   activeCategory: string;
@@ -120,6 +125,22 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     },
   });
 
+  // Obtener multiplicadores de almacenes
+  const { data: warehouseInfos = [] } = useQuery({
+    queryKey: ['warehouse-multipliers'],
+    queryFn: async (): Promise<WarehouseInfo[]> => {
+      const { data, error } = await (supabase
+        .from('warehouses')
+        .select('id, profit_multiplier') as any);
+      
+      if (error) throw error;
+      return (data || []).map((w: any) => ({
+        id: w.id,
+        profit_multiplier: w.profit_multiplier ?? 1.20,
+      }));
+    },
+  });
+
   // Set de IDs de almacenes exhibidos
   const exhibitedWarehouseIds = useMemo(() => {
     return new Set(
@@ -129,14 +150,30 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     );
   }, [exhibitedWarehouses]);
 
+  // Build map: warehouseId -> profit_multiplier
+  const warehouseMultiplierMap = useMemo(() => {
+    const map = new Map<string, number>();
+    warehouseInfos.forEach(w => map.set(w.id, w.profit_multiplier));
+    return map;
+  }, [warehouseInfos]);
+
+  // Build map: productId -> best multiplier (from first exhibited warehouse with stock)
+  const productMultiplierMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const ws of warehouseStock) {
+      if (exhibitedWarehouseIds.has(ws.warehouse_id) && ws.existencias > 0 && !map.has(ws.product_id)) {
+        map.set(ws.product_id, warehouseMultiplierMap.get(ws.warehouse_id) ?? 1.20);
+      }
+    }
+    return map;
+  }, [warehouseStock, exhibitedWarehouseIds, warehouseMultiplierMap]);
+
   // Filtrar productos según almacenes exhibidos
   const productsInExhibitedWarehouses = useMemo(() => {
-    // Si no hay almacenes exhibidos configurados, no mostrar productos
     if (exhibitedWarehouseIds.size === 0) {
       return [];
     }
 
-    // Obtener IDs de productos que tienen stock en almacenes exhibidos
     const productIdsInExhibitedWarehouses = new Set(
       warehouseStock
         .filter(ws => exhibitedWarehouseIds.has(ws.warehouse_id) && ws.existencias > 0)
@@ -209,6 +246,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
           costo={product.costo}
           categoryId={product.category_id}
           showPrice={showPrices}
+          profitMultiplier={productMultiplierMap.get(product.id) ?? 1.20}
           type="product"
         />
       ))}

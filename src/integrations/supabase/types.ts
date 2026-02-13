@@ -937,16 +937,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          profit_multiplier: number
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          profit_multiplier?: number
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          profit_multiplier?: number
         }
         Relationships: []
       }
