@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Upload, Download, Trash2, Plus, Loader2, Search, Save, ChevronDown } from 'lucide-react';
+import { Upload, Download, Trash2, Plus, Loader2, Search, Save, ChevronDown, Percent } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import * as XLSX from 'xlsx';
 import ExhibitedWarehousesToggle from './ExhibitedWarehousesToggle';
@@ -36,6 +37,7 @@ interface Category {
 interface Warehouse {
   id: string;
   name: string;
+  profit_multiplier: number;
 }
 
 interface ProductWarehouseStock {
@@ -141,13 +143,17 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
   const { data: warehouses = [] } = useQuery({
     queryKey: ['warehouses'],
     queryFn: async (): Promise<Warehouse[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('warehouses')
-        .select('id, name')
-        .order('name', { ascending: true });
+        .select('id, name, profit_multiplier')
+        .order('name', { ascending: true }) as any);
       
       if (error) throw error;
-      return data || [];
+      return (data || []).map((w: any) => ({
+        id: w.id,
+        name: w.name,
+        profit_multiplier: w.profit_multiplier ?? 1.20,
+      }));
     },
   });
 
@@ -676,6 +682,62 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
               </Label>
             </div>
 
+            {/* Warehouse Multiplier Editor */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Percent size={16} className="mr-2" />
+                  Multiplicador
+                  <ChevronDown size={14} className="ml-1" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72" align="end">
+                <div className="space-y-4">
+                  <div className="font-medium text-sm">Multiplicador de ganancia por almacén</div>
+                  <p className="text-xs text-muted-foreground">
+                    Edita el multiplicador que se aplica sobre el costo + IVA para generar el precio de venta.
+                  </p>
+                  {warehouses.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2">No hay almacenes</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {warehouses.map((warehouse) => (
+                        <div key={warehouse.id} className="flex items-center justify-between gap-2">
+                          <Label className="text-sm font-normal flex-1">{warehouse.name}</Label>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">×</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="1"
+                              max="5"
+                              className="h-8 w-20 text-sm text-center"
+                              defaultValue={warehouse.profit_multiplier}
+                              onBlur={async (e) => {
+                                const val = parseFloat(e.target.value);
+                                if (isNaN(val) || val < 1) return;
+                                if (val === warehouse.profit_multiplier) return;
+                                const { error } = await (supabase
+                                  .from('warehouses' as any)
+                                  .update({ profit_multiplier: val })
+                                  .eq('id', warehouse.id) as any);
+                                if (error) {
+                                  toast.error('Error al actualizar multiplicador');
+                                } else {
+                                  toast.success(`Multiplicador de ${warehouse.name} actualizado a ×${val}`);
+                                  queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
             {/* Delete All Button - Only for admin */}
             {canDeleteAll && (
               <AlertDialog>
@@ -942,7 +1004,11 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
                         ${(product.costo ?? 0).toFixed(2)}
                       </TableCell>
                       <TableCell className="p-1 text-right font-mono text-sm font-medium">
-                        {formatPrice(calculatePrice(product.costo, product.category_id))}
+                        {(() => {
+                          const wh = selectedWarehouse !== 'all' ? warehouses.find(w => w.id === selectedWarehouse) : null;
+                          const multiplier = wh ? wh.profit_multiplier : 1.20;
+                          return formatPrice(calculatePrice(product.costo, product.category_id, multiplier));
+                        })()}
                       </TableCell>
                       <TableCell className="p-1 text-right">
                         {canDelete && (

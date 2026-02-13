@@ -12,7 +12,7 @@
  * @param categoryId - The category ID (used to check if it's SOFTW)
  * @returns The calculated price rounded to nearest 5
  */
-export const calculatePrice = (costo: number | null | undefined, categoryId: string | null | undefined): number => {
+export const calculatePrice = (costo: number | null | undefined, categoryId: string | null | undefined, profitMultiplier: number = 1.20): number => {
   if (!costo || costo <= 0) {
     return 0;
   }
@@ -22,8 +22,7 @@ export const calculatePrice = (costo: number | null | undefined, categoryId: str
   const ivaFactor = isSoftware ? 1.16 : 1.08;
 
   // Apply IVA and profit margin
-  const profitMargin = 1.20;
-  const rawPrice = costo * ivaFactor * profitMargin;
+  const rawPrice = costo * ivaFactor * profitMultiplier;
 
   // Round up to nearest 5
   return roundToNearest5(rawPrice);

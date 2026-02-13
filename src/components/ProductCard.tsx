@@ -14,6 +14,7 @@ interface ProductCardProps {
   costo: number | null;
   categoryId: string | null;
   showPrice?: boolean;
+  profitMultiplier?: number;
   type?: 'product' | 'promotion';
 }
 
@@ -26,6 +27,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   costo,
   categoryId,
   showPrice = false,
+  profitMultiplier = 1.20,
   type = 'product',
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -34,7 +36,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const isMobile = useIsMobile();
   
   const whatsappNumber = "9622148546";
-  const price = calculatePrice(costo, categoryId);
+  const price = calculatePrice(costo, categoryId, profitMultiplier);
   const formattedPrice = formatPrice(price);
   
   const quantityInCart = getItemQuantity(id, type);
