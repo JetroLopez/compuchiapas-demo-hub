@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ServiceCard from '../components/ServiceCard';
 import { Laptop, Printer, Database, Monitor, Settings, Shield, Clock, Download, Cpu, MessageCircle, Camera, Search, Loader2 } from 'lucide-react';
@@ -10,7 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 const Servicios: React.FC = () => {
-  const [folio, setFolio] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [folio, setFolio] = useState(searchParams.get('folio') || '');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<{
     found: boolean;
@@ -22,6 +24,23 @@ const Servicios: React.FC = () => {
   useEffect(() => {
     document.title = "Servicios Técnicos | Compuchiapas";
   }, []);
+
+  // Auto-search if folio comes from URL
+  useEffect(() => {
+    if (searchParams.get('folio') && folio.trim()) {
+      handleSearchFolio();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync folio to URL
+  useEffect(() => {
+    if (folio.trim()) {
+      searchParams.set('folio', folio.trim());
+    } else {
+      searchParams.delete('folio');
+    }
+    setSearchParams(searchParams, { replace: true });
+  }, [folio]); // eslint-disable-line react-hooks/exhaustive-deps
   const handleSearchFolio = async () => {
     if (!folio.trim()) return;
     setIsSearching(true);

@@ -18,6 +18,17 @@ interface Product {
   existencias: number | null;
 }
 
+interface WarehouseMultiplier {
+  id: string;
+  profit_multiplier: number;
+}
+
+interface StockEntry {
+  product_id: string;
+  warehouse_id: string;
+  existencias: number;
+}
+
 interface GlobalSearchDropdownProps {
   isScrolled: boolean;
 }
@@ -63,8 +74,45 @@ const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ isScrolled 
       
       return allProducts;
     },
-    staleTime: 5 * 60 * 1000, // cache 5 min
+    staleTime: 5 * 60 * 1000,
   });
+
+  // Fetch exhibited warehouses + multipliers + stock for correct pricing
+  const { data: warehouseData } = useQuery({
+    queryKey: ['global-search-warehouse-data'],
+    queryFn: async () => {
+      const [ewRes, whRes, stockRes] = await Promise.all([
+        supabase.from('exhibited_warehouses').select('warehouse_id').eq('is_exhibited', true),
+        supabase.from('warehouses').select('id, profit_multiplier'),
+        supabase.from('product_warehouse_stock').select('product_id, warehouse_id, existencias'),
+      ]);
+      return {
+        exhibitedIds: (ewRes.data || []).map(e => e.warehouse_id) as string[],
+        warehouses: (whRes.data || []) as WarehouseMultiplier[],
+        stock: (stockRes.data || []) as StockEntry[],
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const getProductMultiplier = (productId: string): number => {
+    if (!warehouseData) return 1.20;
+    const { exhibitedIds, warehouses, stock } = warehouseData;
+    // Find first exhibited warehouse with stock for this product
+    for (const wId of exhibitedIds) {
+      const s = stock.find(st => st.product_id === productId && st.warehouse_id === wId && st.existencias > 0);
+      if (s) {
+        const wh = warehouses.find(w => w.id === wId);
+        return wh?.profit_multiplier ?? 1.20;
+      }
+    }
+    // Fallback: first exhibited warehouse multiplier
+    if (exhibitedIds.length > 0) {
+      const wh = warehouses.find(w => w.id === exhibitedIds[0]);
+      return wh?.profit_multiplier ?? 1.20;
+    }
+    return 1.20;
+  };
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
@@ -92,8 +140,9 @@ const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ isScrolled 
   };
 
   const handleProductClick = (product: Product) => {
-    // Navigate to products with search for that specific item
-    navigate(`/productos?buscar=${encodeURIComponent(product.name)}`);
+    // Navigate to products filtering by clave for exact match
+    const searchValue = product.clave || product.name;
+    navigate(`/productos?buscar=${encodeURIComponent(searchValue)}`);
     setIsFocused(false);
     setQuery('');
   };
@@ -146,7 +195,8 @@ const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ isScrolled 
           ) : (
             <>
               {results.map((product) => {
-                const price = calculatePrice(product.costo, product.category_id);
+                const multiplier = getProductMultiplier(product.id);
+                const price = calculatePrice(product.costo, product.category_id, multiplier);
                 return (
                   <button
                     key={product.id}
