@@ -40,7 +40,6 @@ type EstatusInterno = 'En tienda' | 'En proceso' | 'Listo y avisado a cliente';
 interface Service {
   id: string;
   clave: string;
-  cliente: string;
   estatus: 'Emitida' | 'Remitida' | 'Facturada' | 'Cancelada';
   fecha_elaboracion: string;
   condicion: string;
@@ -745,7 +744,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Main Grid - Different layout for tecnico */}
       {isTecnico ? (
         // Tecnico layout: Services left (wider), Special Orders right (narrower)
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+        <div className="space-y-4">
+          {/* Servicios sync card for tecnico - single line */}
+          {(() => {
+            const lastServiceSync = services.length > 0 
+              ? services.reduce((latest, s) => {
+                  const sDate = new Date(s.created_at);
+                  return sDate > latest ? sDate : latest;
+                }, new Date(0))
+              : null;
+            const hoursAgo = lastServiceSync ? differenceInHours(currentTime, lastServiceSync) : null;
+            const isStale = hoursAgo !== null && hoursAgo > 24;
+            return (
+              <Card className={cn(isStale ? "border-yellow-500 bg-yellow-500/10" : "")}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <Wrench className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Última Sincronización de Servicios</p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock size={12} />
+                        <span>{lastServiceSync ? formatTimeAgo(lastServiceSync.toISOString()) : 'Sin datos'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
           {/* Left Column - Services (2/3 width) */}
           <div className="lg:col-span-2">
             <Card className="flex flex-col h-full">
@@ -827,9 +856,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                   ) : (
                                     getEstatusInternoBadge(service.estatus_interno)
                                   )}
-                                  {service.cliente !== 'MOSTR' && (
-                                    <span className="text-xs opacity-75">• {service.cliente}</span>
-                                  )}
+                  
                                 </div>
                                 <p className="text-xs opacity-80 mt-0.5">
                                   {service.condicion || 'Sin descripción'}
@@ -959,6 +986,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </Card>
           </div>
         </div>
+        </div>
       ) : (
         // Default layout for admin/ventas
         <div className={cn(
@@ -1047,9 +1075,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                   ) : (
                                     getEstatusInternoBadge(service.estatus_interno)
                                   )}
-                                  {service.cliente !== 'MOSTR' && (
-                                    <span className="text-xs opacity-75">• {service.cliente}</span>
-                                  )}
+                                  
                                 </div>
                                 <p className="text-xs truncate opacity-80 mt-0.5">
                                   {service.condicion || 'Sin descripción'}
@@ -1239,6 +1265,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
                         );
                       })}
+                      {/* Servicios sync entry */}
+                      {(() => {
+                        const lastServiceSync = services.length > 0 
+                          ? services.reduce((latest, s) => {
+                              const sDate = new Date(s.created_at);
+                              return sDate > latest ? sDate : latest;
+                            }, new Date(0))
+                          : null;
+                        const hoursAgo = lastServiceSync 
+                          ? differenceInHours(currentTime, lastServiceSync)
+                          : null;
+                        const isStale = hoursAgo !== null && hoursAgo > 24;
+                        return (
+                          <div
+                            className={cn(
+                              "p-3 rounded-lg border text-xs flex-1 flex flex-col justify-center",
+                              isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
+                            )}
+                          >
+                            <p className="font-medium text-sm">Servicios</p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Clock size={12} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
+                              <span className={cn(
+                                isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
+                              )}>
+                                {lastServiceSync ? formatTimeAgo(lastServiceSync.toISOString()) : 'Sin datos'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </CardContent>

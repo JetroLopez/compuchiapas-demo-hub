@@ -785,7 +785,6 @@ export type Database = {
       services: {
         Row: {
           clave: string
-          cliente: string
           comentarios: string | null
           condicion: string
           created_at: string
@@ -797,7 +796,6 @@ export type Database = {
         }
         Insert: {
           clave: string
-          cliente?: string
           comentarios?: string | null
           condicion: string
           created_at?: string
@@ -809,7 +807,6 @@ export type Database = {
         }
         Update: {
           clave?: string
-          cliente?: string
           comentarios?: string | null
           condicion?: string
           created_at?: string

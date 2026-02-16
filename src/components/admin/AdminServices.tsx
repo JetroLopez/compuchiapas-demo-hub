@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, Upload, Search, Trash2, RefreshCw, Warehouse } from 'lucide-react';
+import { Loader2, Upload, Search, Trash2, RefreshCw, Warehouse, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -43,7 +43,6 @@ type EstatusInterno = 'En tienda' | 'En proceso' | 'Listo y avisado a cliente';
 
 interface ParsedService {
   clave: string;
-  cliente: string;
   estatus: ServiceStatus;
   fecha_elaboracion: string;
   condicion: string;
@@ -52,7 +51,6 @@ interface ParsedService {
 interface Service {
   id: string;
   clave: string;
-  cliente: string;
   estatus: ServiceStatus;
   fecha_elaboracion: string;
   condicion: string;
@@ -89,6 +87,17 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
     estatus_al_almacenar: ''
   });
 
+  // Manual add dialog
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    clave: '',
+    estatus: 'Emitida' as ServiceStatus,
+    estatus_interno: 'En tienda' as EstatusInterno,
+    fecha_elaboracion: new Date().toISOString().split('T')[0],
+    condicion: '',
+    comentarios: ''
+  });
+
   // Fetch existing services
   const { data: services, isLoading: servicesLoading } = useQuery({
     queryKey: ['admin-services'],
@@ -103,28 +112,28 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
     }
   });
 
-  // Parse pasted data
+  // Parse pasted data - now without cliente
   const parseTableData = (text: string): ParsedService[] => {
     const lines = text.trim().split('\n');
     const services: ParsedService[] = [];
     
-    const lineRegex = /^\s*(0+\d+)\s+(\S+)\s+(Emitida|Remitida|Facturada|Cancelada)\s+(\d{1,2}\/\d{1,2}\/\d{4})(?:\s+(.*))?$/i;
+    // New format: Clave Estatus Fecha Condicion
+    const lineRegex = /^\s*(0+\d+)\s+(Emitida|Remitida|Facturada|Cancelada)\s+(\d{1,2}\/\d{1,2}\/\d{4})(?:\s+(.*))?$/i;
     
     for (const line of lines) {
       const trimmedLine = line.trim();
       if (!trimmedLine) continue;
       
-      if (trimmedLine.toLowerCase().includes('clave') && trimmedLine.toLowerCase().includes('cliente')) {
+      if (trimmedLine.toLowerCase().includes('clave') && trimmedLine.toLowerCase().includes('estatus')) {
         continue;
       }
       
       const match = line.match(lineRegex);
       if (!match) continue;
       
-      const [, claveRaw, clienteRaw, estatusRaw, fechaRaw, condicionRaw] = match;
+      const [, claveRaw, estatusRaw, fechaRaw, condicionRaw] = match;
       
       const clave = claveRaw.replace(/^0+/, '') || '0';
-      const cliente = clienteRaw.trim();
       
       let estatus: ServiceStatus = 'Emitida';
       const estatusLower = estatusRaw.toLowerCase();
@@ -144,7 +153,6 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
 
       services.push({
         clave,
-        cliente,
         estatus,
         fecha_elaboracion,
         condicion
@@ -159,7 +167,7 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
     try {
       const parsed = parseTableData(pastedData);
       if (parsed.length === 0) {
-        setParseError('No se encontraron servicios válidos. Asegúrate de que el formato sea: Clave, Cliente, Estatus, Fecha, Condición');
+        setParseError('No se encontraron servicios válidos. Asegúrate de que el formato sea: Clave, Estatus, Fecha, Condición');
         return;
       }
       setParsedServices(parsed);
@@ -170,17 +178,15 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
     }
   };
 
-  // Sync mutation - preserves estatus_interno and comentarios for existing claves
+  // Sync mutation
   const syncMutation = useMutation({
     mutationFn: async (newServices: ParsedService[]) => {
-      // First, get existing services with their estatus_interno and comentarios
       const { data: existingServices, error: fetchError } = await supabase
         .from('services')
         .select('clave, estatus_interno, comentarios');
       
       if (fetchError) throw fetchError;
 
-      // Create a map of existing data
       const existingDataMap = new Map<string, { estatus_interno: string; comentarios: string | null }>();
       existingServices?.forEach(s => {
         existingDataMap.set(s.clave, { 
@@ -189,16 +195,13 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
         });
       });
 
-      // Prepare services for upsert, preserving existing estatus_interno and comentarios
       const servicesToUpsert = newServices.map(s => {
         const existing = existingDataMap.get(s.clave);
         return {
           clave: s.clave,
-          cliente: s.cliente,
           estatus: s.estatus,
           fecha_elaboracion: s.fecha_elaboracion,
           condicion: s.condicion,
-          // Preserve existing values or use defaults
           estatus_interno: existing?.estatus_interno || 'En tienda',
           comentarios: existing?.comentarios || null
         };
@@ -253,114 +256,108 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
     }
   });
 
+  // Add service manually
+  const addServiceMutation = useMutation({
+    mutationFn: async (data: typeof addForm) => {
+      const { error } = await supabase
+        .from('services')
+        .insert({
+          clave: data.clave,
+          estatus: data.estatus,
+          estatus_interno: data.estatus_interno,
+          fecha_elaboracion: data.fecha_elaboracion,
+          condicion: data.condicion,
+          comentarios: data.comentarios || null
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-services'] });
+      toast.success('Servicio agregado');
+      setAddDialogOpen(false);
+      setAddForm({
+        clave: '',
+        estatus: 'Emitida',
+        estatus_interno: 'En tienda',
+        fecha_elaboracion: new Date().toISOString().split('T')[0],
+        condicion: '',
+        comentarios: ''
+      });
+    },
+    onError: (error: any) => {
+      toast.error(`Error: ${error.message}`);
+    }
+  });
+
   // Delete service mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('services')
-        .delete()
-        .eq('id', id);
-      
+      const { error } = await supabase.from('services').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-services'] });
       toast.success('Servicio eliminado');
     },
-    onError: () => {
-      toast.error('Error al eliminar servicio');
-    }
+    onError: () => { toast.error('Error al eliminar servicio'); }
   });
 
   // Delete all services mutation
   const deleteAllMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('services')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
-      
+      const { error } = await supabase.from('services').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-services'] });
       toast.success('Todos los servicios han sido eliminados');
     },
-    onError: () => {
-      toast.error('Error al eliminar servicios');
-    }
+    onError: () => { toast.error('Error al eliminar servicios'); }
   });
 
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, estatus }: { id: string; estatus: ServiceStatus }) => {
       if (estatus !== 'Emitida') {
-        const { error } = await supabase
-          .from('services')
-          .delete()
-          .eq('id', id);
-        
+        const { error } = await supabase.from('services').delete().eq('id', id);
         if (error) throw error;
         return { deleted: true };
       }
-      
-      const { error } = await supabase
-        .from('services')
-        .update({ estatus })
-        .eq('id', id);
-      
+      const { error } = await supabase.from('services').update({ estatus }).eq('id', id);
       if (error) throw error;
       return { deleted: false };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-services'] });
-      if (result.deleted) {
-        toast.success('Servicio eliminado (estatus actualizado)');
-      } else {
-        toast.success('Estatus actualizado');
-      }
+      toast.success(result.deleted ? 'Servicio eliminado (estatus actualizado)' : 'Estatus actualizado');
     },
-    onError: () => {
-      toast.error('Error al actualizar estatus');
-    }
+    onError: () => { toast.error('Error al actualizar estatus'); }
   });
 
   // Update estatus_interno mutation
   const updateEstatusInternoMutation = useMutation({
     mutationFn: async ({ id, estatus_interno }: { id: string; estatus_interno: EstatusInterno }) => {
-      const { error } = await supabase
-        .from('services')
-        .update({ estatus_interno })
-        .eq('id', id);
-      
+      const { error } = await supabase.from('services').update({ estatus_interno }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-services'] });
       toast.success('Estatus interno actualizado');
     },
-    onError: () => {
-      toast.error('Error al actualizar estatus interno');
-    }
+    onError: () => { toast.error('Error al actualizar estatus interno'); }
   });
 
   // Update comentarios mutation
   const updateComentariosMutation = useMutation({
     mutationFn: async ({ id, comentarios }: { id: string; comentarios: string }) => {
-      const { error } = await supabase
-        .from('services')
-        .update({ comentarios: comentarios || null })
-        .eq('id', id);
-      
+      const { error } = await supabase.from('services').update({ comentarios: comentarios || null }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-services'] });
       toast.success('Comentarios actualizados');
     },
-    onError: () => {
-      toast.error('Error al actualizar comentarios');
-    }
+    onError: () => { toast.error('Error al actualizar comentarios'); }
   });
 
   // Bodega mutation
@@ -401,7 +398,7 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
       modelo: '',
       color: '',
       numero_serie: '',
-      nombre_cliente: service.cliente,
+      nombre_cliente: '',
       telefono_cliente: '',
       fecha_ultimo_contacto: '',
       estatus_al_almacenar: service.estatus_interno
@@ -432,11 +429,10 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
     }
   };
 
-  // Filter and sort services - ordered by clave ascending (lower clave at top = oldest)
+  // Filter and sort services
   const filteredServices = (services?.filter(service => {
     const matchesSearch = 
       service.clave.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.condicion.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || service.estatus === statusFilter;
@@ -446,7 +442,7 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
   }) || []).sort((a, b) => {
     const claveA = parseInt(a.clave) || 0;
     const claveB = parseInt(b.clave) || 0;
-    return claveA - claveB; // Ascending order: lower clave (older) at top
+    return claveA - claveB;
   });
 
   return (
@@ -466,11 +462,11 @@ const AdminServices: React.FC<AdminServicesProps> = ({ readOnly = false }) => {
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
-              placeholder={`Pega los datos aquí (formato: Clave, Cliente, Estatus, Fecha, Condición)
+              placeholder={`Pega los datos aquí (formato: Clave, Estatus, Fecha, Condición)
 
 Ejemplo:
-0000004667	MOSTR	Emitida	13/01/2026	CANON G2110
-0000004668	MOSTR	Emitida	13/01/2026	LAPTOP DELL LATITUDE 5400`}
+0000004667	Emitida	13/01/2026	CANON G2110
+0000004668	Emitida	13/01/2026	LAPTOP DELL LATITUDE 5400`}
               value={pastedData}
               onChange={(e) => setPastedData(e.target.value)}
               rows={6}
@@ -515,7 +511,6 @@ Ejemplo:
                     <TableHeader>
                       <TableRow>
                         <TableHead>Clave</TableHead>
-                        <TableHead>Cliente</TableHead>
                         <TableHead>Estatus</TableHead>
                         <TableHead>Fecha</TableHead>
                         <TableHead>Condición</TableHead>
@@ -525,7 +520,6 @@ Ejemplo:
                       {parsedServices.slice(0, 5).map((service, idx) => (
                         <TableRow key={idx}>
                           <TableCell className="font-mono">{service.clave}</TableCell>
-                          <TableCell>{service.cliente}</TableCell>
                           <TableCell>{getStatusBadge(service.estatus)}</TableCell>
                           <TableCell>{service.fecha_elaboracion}</TableCell>
                           <TableCell className="max-w-xs truncate">{service.condicion}</TableCell>
@@ -554,37 +548,41 @@ Ejemplo:
               {filteredServices.length} servicios activos
             </CardDescription>
           </div>
-          {!readOnly && services && services.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar Todo
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Eliminar todos los servicios?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción eliminará TODOS los {services.length} servicios permanentemente. Esta acción no se puede deshacer.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteAllMutation.mutate()}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {deleteAllMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'Eliminar Todo'
-                    )}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <div className="flex gap-2">
+            {!readOnly && (
+              <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Agregar nuevo
+              </Button>
+            )}
+            {!readOnly && services && services.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar Todo
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar todos los servicios?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción eliminará TODOS los {services.length} servicios permanentemente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteAllMutation.mutate()}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleteAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Eliminar Todo'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {/* Filters */}
@@ -592,7 +590,7 @@ Ejemplo:
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por clave, cliente o condición..."
+                placeholder="Buscar por clave o condición..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -649,7 +647,6 @@ Ejemplo:
                   </div>
                   {expandedService === service.id && (
                     <div className="pt-2 border-t space-y-2 text-sm">
-                      <p><span className="text-muted-foreground">Cliente:</span> {service.cliente}</p>
                       <p><span className="text-muted-foreground">Estatus:</span> {getStatusBadge(service.estatus)}</p>
                       <p><span className="text-muted-foreground">Condición:</span> {service.condicion}</p>
                       <p><span className="text-muted-foreground">Comentarios:</span> {service.comentarios || '—'}</p>
@@ -702,7 +699,6 @@ Ejemplo:
                 <TableHeader>
                   <TableRow>
                     <TableHead>Clave</TableHead>
-                    <TableHead>Cliente</TableHead>
                     <TableHead>Estatus</TableHead>
                     <TableHead>Estatus Interno</TableHead>
                     <TableHead>Fecha</TableHead>
@@ -715,7 +711,6 @@ Ejemplo:
                   {filteredServices.map((service) => (
                     <TableRow key={service.id}>
                       <TableCell className="font-mono font-medium">{service.clave}</TableCell>
-                      <TableCell>{service.cliente}</TableCell>
                       <TableCell>
                         {readOnly ? (
                           getStatusBadge(service.estatus)
@@ -775,29 +770,17 @@ Ejemplo:
                             className="h-8 text-xs"
                             onBlur={(e) => {
                               if (e.target.value !== (service.comentarios || '')) {
-                                updateComentariosMutation.mutate({ 
-                                  id: service.id, 
-                                  comentarios: e.target.value 
-                                });
+                                updateComentariosMutation.mutate({ id: service.id, comentarios: e.target.value });
                               }
                             }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.currentTarget.blur();
-                              }
-                            }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                           />
                         )}
                       </TableCell>
                       {!readOnly && (
                         <TableCell className="text-right flex items-center justify-end gap-1">
                           {service.estatus_interno === 'Listo y avisado a cliente' && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Enviar a bodega"
-                              onClick={() => openBodegaDialog(service)}
-                            >
+                            <Button variant="ghost" size="icon" title="Enviar a bodega" onClick={() => openBodegaDialog(service)}>
                               <Warehouse className="h-4 w-4 text-amber-600" />
                             </Button>
                           )}
@@ -816,9 +799,7 @@ Ejemplo:
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(service.id)}
-                                >
+                                <AlertDialogAction onClick={() => deleteMutation.mutate(service.id)}>
                                   Eliminar
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -836,62 +817,124 @@ Ejemplo:
       </Card>
     </div>
 
-      {/* Bodega Dialog */}
-      <Dialog open={bodegaDialogOpen} onOpenChange={setBodegaDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enviar equipo a almacén</DialogTitle>
-          </DialogHeader>
-          {bodegaService && (
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-              <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
-                <p><span className="font-medium">Clave:</span> {bodegaService.clave}</p>
-                <p><span className="font-medium">Fecha ingreso:</span> {bodegaService.fecha_elaboracion}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Marca *</Label>
-                <Input value={bodegaForm.marca} onChange={e => setBodegaForm(p => ({ ...p, marca: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Modelo *</Label>
-                <Input value={bodegaForm.modelo} onChange={e => setBodegaForm(p => ({ ...p, modelo: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Color</Label>
-                <Input value={bodegaForm.color} onChange={e => setBodegaForm(p => ({ ...p, color: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Número de serie</Label>
-                <Input value={bodegaForm.numero_serie} onChange={e => setBodegaForm(p => ({ ...p, numero_serie: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Nombre del cliente *</Label>
-                <Input value={bodegaForm.nombre_cliente} onChange={e => setBodegaForm(p => ({ ...p, nombre_cliente: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Teléfono del cliente</Label>
-                <Input value={bodegaForm.telefono_cliente} onChange={e => setBodegaForm(p => ({ ...p, telefono_cliente: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Fecha último intento de contacto</Label>
-                <Input type="date" value={bodegaForm.fecha_ultimo_contacto} onChange={e => setBodegaForm(p => ({ ...p, fecha_ultimo_contacto: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Estatus al almacenar</Label>
-                <Input value={bodegaForm.estatus_al_almacenar} onChange={e => setBodegaForm(p => ({ ...p, estatus_al_almacenar: e.target.value }))} />
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => sendToBodegaMutation.mutate()}
-                disabled={!bodegaForm.marca || !bodegaForm.modelo || !bodegaForm.nombre_cliente || sendToBodegaMutation.isPending}
-              >
-                {sendToBodegaMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Warehouse className="h-4 w-4 mr-2" />}
-                Enviar a almacén
-              </Button>
+    {/* Bodega Dialog */}
+    <Dialog open={bodegaDialogOpen} onOpenChange={setBodegaDialogOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Enviar equipo a almacén</DialogTitle>
+        </DialogHeader>
+        {bodegaService && (
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
+              <p><span className="font-medium">Clave:</span> {bodegaService.clave}</p>
+              <p><span className="font-medium">Fecha ingreso:</span> {bodegaService.fecha_elaboracion}</p>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            <div className="space-y-2">
+              <Label>Marca *</Label>
+              <Input value={bodegaForm.marca} onChange={e => setBodegaForm(p => ({ ...p, marca: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Modelo *</Label>
+              <Input value={bodegaForm.modelo} onChange={e => setBodegaForm(p => ({ ...p, modelo: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <Input value={bodegaForm.color} onChange={e => setBodegaForm(p => ({ ...p, color: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Número de serie</Label>
+              <Input value={bodegaForm.numero_serie} onChange={e => setBodegaForm(p => ({ ...p, numero_serie: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Nombre del cliente *</Label>
+              <Input value={bodegaForm.nombre_cliente} onChange={e => setBodegaForm(p => ({ ...p, nombre_cliente: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Teléfono del cliente</Label>
+              <Input value={bodegaForm.telefono_cliente} onChange={e => setBodegaForm(p => ({ ...p, telefono_cliente: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Fecha último intento de contacto</Label>
+              <Input type="date" value={bodegaForm.fecha_ultimo_contacto} onChange={e => setBodegaForm(p => ({ ...p, fecha_ultimo_contacto: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Estatus al almacenar</Label>
+              <Input value={bodegaForm.estatus_al_almacenar} onChange={e => setBodegaForm(p => ({ ...p, estatus_al_almacenar: e.target.value }))} />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => sendToBodegaMutation.mutate()}
+              disabled={!bodegaForm.marca || !bodegaForm.modelo || !bodegaForm.nombre_cliente || sendToBodegaMutation.isPending}
+            >
+              {sendToBodegaMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Warehouse className="h-4 w-4 mr-2" />}
+              Enviar a almacén
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    {/* Add Service Dialog */}
+    <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Agregar servicio manualmente</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Clave *</Label>
+            <Input value={addForm.clave} onChange={e => setAddForm(p => ({ ...p, clave: e.target.value }))} placeholder="4670" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Estatus</Label>
+              <Select value={addForm.estatus} onValueChange={(v: ServiceStatus) => setAddForm(p => ({ ...p, estatus: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Emitida">Emitida</SelectItem>
+                  <SelectItem value="Remitida">Remitida</SelectItem>
+                  <SelectItem value="Facturada">Facturada</SelectItem>
+                  <SelectItem value="Cancelada">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Estatus interno</Label>
+              <Select value={addForm.estatus_interno} onValueChange={(v: EstatusInterno) => setAddForm(p => ({ ...p, estatus_interno: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="En tienda">En tienda</SelectItem>
+                  <SelectItem value="En proceso">En proceso</SelectItem>
+                  <SelectItem value="Listo y avisado a cliente">Listo y avisado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label>Fecha de elaboración</Label>
+            <Input type="date" value={addForm.fecha_elaboracion} onChange={e => setAddForm(p => ({ ...p, fecha_elaboracion: e.target.value }))} />
+          </div>
+          <div>
+            <Label>Condición *</Label>
+            <Input value={addForm.condicion} onChange={e => setAddForm(p => ({ ...p, condicion: e.target.value }))} placeholder="LAPTOP DELL LATITUDE 5400" />
+          </div>
+          <div>
+            <Label>Comentarios</Label>
+            <Textarea value={addForm.comentarios} onChange={e => setAddForm(p => ({ ...p, comentarios: e.target.value }))} rows={2} placeholder="Notas adicionales..." />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => addServiceMutation.mutate(addForm)}
+              disabled={!addForm.clave.trim() || !addForm.condicion.trim() || addServiceMutation.isPending}
+            >
+              {addServiceMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Agregar
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
     </>
   );
 };
