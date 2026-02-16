@@ -406,20 +406,20 @@ const PCBuilder: React.FC = () => {
   const generateWhatsAppMessage = () => {
     let message = "¡Hola! Me interesa cotizar esta PC:\n\n";
     
-    if (selectedCpu) message += `• Procesador: ${selectedCpu.name}\n`;
-    if (selectedMotherboard) message += `• Motherboard: ${selectedMotherboard.name}\n`;
-    if (selectedRam) message += `• RAM: ${selectedRam.name}${ramQuantity > 1 ? ` (x${ramQuantity})` : ''}\n`;
+    if (selectedCpu) message += `• Procesador: ${selectedCpu.name} (${selectedCpu.clave || 'S/C'})\n`;
+    if (selectedMotherboard) message += `• Motherboard: ${selectedMotherboard.name} (${selectedMotherboard.clave || 'S/C'})\n`;
+    if (selectedRam) message += `• RAM: ${selectedRam.name} (${selectedRam.clave || 'S/C'})${ramQuantity > 1 ? ` x${ramQuantity}` : ''}\n`;
     storageSelections.forEach(s => {
-      message += `• Almacenamiento: ${s.product.name}${s.quantity > 1 ? ` (x${s.quantity})` : ''}\n`;
+      message += `• Almacenamiento: ${s.product.name} (${s.product.clave || 'S/C'})${s.quantity > 1 ? ` x${s.quantity}` : ''}\n`;
     });
-    if (selectedCase) message += `• Gabinete: ${selectedCase.name}\n`;
-    if (selectedGpu) message += `• Tarjeta de Video: ${selectedGpu.name}\n`;
+    if (selectedCase) message += `• Gabinete: ${selectedCase.name} (${selectedCase.clave || 'S/C'})\n`;
+    if (selectedGpu) message += `• Tarjeta de Video: ${selectedGpu.name} (${selectedGpu.clave || 'S/C'})\n`;
     if (caseIncludesPsu) {
       message += `• Fuente: Incluida en gabinete (500W)\n`;
     } else if (selectedPsu) {
-      message += `• Fuente: ${selectedPsu.name}\n`;
+      message += `• Fuente: ${selectedPsu.name} (${selectedPsu.clave || 'S/C'})\n`;
     }
-    if (selectedCooling) message += `• Enfriamiento: ${selectedCooling.name}\n`;
+    if (selectedCooling) message += `• Enfriamiento: ${selectedCooling.name} (${selectedCooling.clave || 'S/C'})\n`;
 
     message += `\n💰 Total estimado: $${totalPrice.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
     message += "\n\n¿Me pueden dar más información?";
@@ -472,23 +472,24 @@ const PCBuilder: React.FC = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="flex flex-col items-center justify-center min-h-[400px] p-8"
+      className="flex flex-col items-center justify-center min-h-[200px] md:min-h-[400px] p-4 md:p-8"
     >
+      {/* Hide icon on mobile */}
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.1, type: 'spring' }}
-        className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center"
+        className="hidden md:flex w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 items-center justify-center"
       >
         <Sparkles className="w-8 h-8 text-primary" />
       </motion.div>
       
-      <h3 className="text-2xl font-bold mb-2 text-center">{title}</h3>
-      <p className="text-muted-foreground mb-8 text-center">{subtitle}</p>
+      <h3 className="text-lg md:text-2xl font-bold mb-1 md:mb-2 text-center">{title}</h3>
+      <p className="text-muted-foreground mb-4 md:mb-8 text-center text-sm">{subtitle}</p>
       
       <div className={cn(
-        "grid gap-4 w-full max-w-2xl",
-        options.length === 2 ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-3"
+        "grid gap-3 md:gap-4 w-full max-w-2xl",
+        options.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"
       )}>
         {options.map((option, index) => (
           <motion.button
@@ -497,13 +498,13 @@ const PCBuilder: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + index * 0.1 }}
             onClick={() => onSelect(option.value)}
-            className="group p-6 rounded-2xl border-2 border-border hover:border-primary bg-card hover:bg-primary/5 transition-all text-center"
+            className="group p-3 md:p-6 rounded-2xl border-2 border-border hover:border-primary bg-card hover:bg-primary/5 transition-all text-center"
           >
-            <div className="mb-4 mx-auto w-16 h-16 rounded-xl bg-muted group-hover:bg-primary/10 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+            <div className="mb-2 md:mb-4 mx-auto w-10 h-10 md:w-16 md:h-16 rounded-xl bg-muted group-hover:bg-primary/10 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
               {option.icon}
             </div>
-            <p className="font-semibold mb-1">{option.label}</p>
-            <p className="text-xs text-muted-foreground">{option.description}</p>
+            <p className="font-semibold text-sm md:text-base mb-0.5 md:mb-1">{option.label}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">{option.description}</p>
           </motion.button>
         ))}
       </div>
@@ -523,17 +524,17 @@ const PCBuilder: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="bg-card rounded-2xl border shadow-lg overflow-hidden"
+      className="bg-card rounded-xl md:rounded-2xl border shadow-lg overflow-hidden"
     >
-      <div className="p-6 border-b bg-muted/30">
+      <div className="p-3 md:p-6 border-b bg-muted/30">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-primary/10 text-primary">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="p-2 md:p-3 rounded-xl bg-primary/10 text-primary">
               {icon}
             </div>
             <div>
-              <h2 className="text-2xl font-bold">{title}</h2>
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+              <h2 className="text-lg md:text-2xl font-bold">{title}</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">{subtitle}</p>
             </div>
           </div>
           
@@ -545,7 +546,7 @@ const PCBuilder: React.FC = () => {
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-380px)] min-h-[200px] max-h-[450px]">
+      <ScrollArea className="h-[calc(100vh-380px)] min-h-[200px] max-h-[350px] md:max-h-[450px]">
         <div className="p-4">
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -559,7 +560,7 @@ const PCBuilder: React.FC = () => {
               <p>No hay productos disponibles con los filtros seleccionados</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               {products.map((product, index) => {
                 const isSelected = selectedProduct?.id === product.id;
                 const price = product.costo ? calculateSuggestedPrice(product.costo, product.clave || '') : 0;
@@ -590,7 +591,7 @@ const PCBuilder: React.FC = () => {
                     transition={{ delay: index * 0.02 }}
                     onClick={() => onSelect(product)}
                     className={cn(
-                      "relative text-left p-4 rounded-xl border-2 transition-all hover:shadow-md",
+                      "relative text-left p-3 md:p-4 rounded-xl border-2 transition-all hover:shadow-md",
                       isSelected 
                         ? "border-primary bg-primary/5 ring-2 ring-primary/20" 
                         : "border-border hover:border-primary/50"
@@ -612,30 +613,27 @@ const PCBuilder: React.FC = () => {
                       </div>
                     )}
                     
-                    <div className="flex gap-3 mt-4">
+                    <div className="flex gap-3 mt-3 md:mt-4">
                       {product.image_url ? (
                         <img 
                           src={product.image_url} 
                           alt={product.name}
-                          className="w-16 h-16 object-contain rounded-lg bg-white"
+                          className="w-12 h-12 md:w-16 md:h-16 object-contain rounded-lg bg-white flex-shrink-0"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                          <Package size={24} className="text-muted-foreground" />
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Package size={20} className="text-muted-foreground" />
                         </div>
                       )}
                       
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm line-clamp-2 mb-1">{product.name}</p>
+                        <p className="font-medium text-xs md:text-sm line-clamp-2 mb-1">{product.name}</p>
                         {specsDisplay.length > 0 && (
-                          <p className="text-xs text-muted-foreground mb-1 line-clamp-1">
+                          <p className="text-[10px] md:text-xs text-muted-foreground mb-0.5 md:mb-1 line-clamp-1">
                             {specsDisplay.slice(0, 4).join(' • ')}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground/70 mb-2">
-                          Stock: {product.existencias || 0}
-                        </p>
-                        <p className="text-primary font-bold">
+                        <p className="text-primary font-bold text-sm">
                           ${price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                         </p>
                       </div>
@@ -718,64 +716,99 @@ const PCBuilder: React.FC = () => {
                 <p>No hay productos de almacenamiento disponibles</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredStorage.map((product, index) => {
-                  const selected = storageSelections.find(s => s.product.id === product.id);
-                  const price = product.costo ? calculateSuggestedPrice(product.costo, product.clave || '') : 0;
-                  const spec = product.spec;
+              <div className="space-y-2">
+                {/* Group: Discos duros sólidos (SSD / NVMe) */}
+                {(() => {
+                  const ssdProducts = filteredStorage.filter(p => p.spec?.storage_type === 'SSD');
+                  const hddProducts = filteredStorage.filter(p => p.spec?.storage_type !== 'SSD');
                   
-                  const isNvme = spec?.storage_interface === 'M2' && spec?.storage_subtype === 'NVMe';
-                  const isSata = spec?.storage_interface === 'SATA';
-                  const canAdd = isNvme ? limits.m2Available > 0 : isSata ? limits.sataAvailable > 0 : true;
+                  const renderStorageCard = (product: ProductWithSpec, index: number) => {
+                    const selected = storageSelections.find(s => s.product.id === product.id);
+                    const price = product.costo ? calculateSuggestedPrice(product.costo, product.clave || '') : 0;
+                    const spec = product.spec;
+                    const isNvme = spec?.storage_interface === 'M2' && spec?.storage_subtype === 'NVMe';
+                    const isSata = spec?.storage_interface === 'SATA';
+                    const canAdd = isNvme ? limits.m2Available > 0 : isSata ? limits.sataAvailable > 0 : true;
+                    
+                    return (
+                      <motion.div
+                        key={product.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.02 }}
+                        className={cn(
+                          "relative p-3 md:p-4 rounded-xl border-2 transition-all",
+                          selected 
+                            ? "border-primary bg-primary/5" 
+                            : "border-border"
+                        )}
+                      >
+                        <div className="flex gap-3">
+                          {product.image_url ? (
+                            <img 
+                              src={product.image_url} 
+                              alt={product.name}
+                              className="w-12 h-12 md:w-16 md:h-16 object-contain rounded-lg bg-white flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 md:w-16 md:h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                              <HardDrive size={20} className="text-muted-foreground" />
+                            </div>
+                          )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm line-clamp-2 mb-1">{product.name}</p>
+                            <p className="text-xs text-muted-foreground mb-1">
+                              {spec?.storage_interface} {spec?.storage_subtype} {spec?.storage_capacity}GB
+                            </p>
+                            <p className="text-primary font-bold text-sm">
+                              ${price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          
+                          <Button
+                            variant={selected ? "secondary" : "outline"}
+                            size="icon"
+                            className="flex-shrink-0 h-8 w-8 md:h-10 md:w-10"
+                            onClick={() => selected ? removeStorage(product.id) : addStorage(product)}
+                            disabled={!selected && !canAdd}
+                          >
+                            {selected ? <Minus size={16} /> : <Plus size={16} />}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  };
                   
                   return (
-                    <motion.div
-                      key={product.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.02 }}
-                      className={cn(
-                        "relative p-4 rounded-xl border-2 transition-all",
-                        selected 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border"
-                      )}
-                    >
-                      <div className="flex gap-3">
-                        {product.image_url ? (
-                          <img 
-                            src={product.image_url} 
-                            alt={product.name}
-                            className="w-16 h-16 object-contain rounded-lg bg-white"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                            <HardDrive size={24} className="text-muted-foreground" />
+                    <>
+                      {ssdProducts.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-2 px-2 py-1.5">
+                            <HardDrive size={16} className="text-primary" />
+                            <span className="text-sm font-semibold text-foreground">Discos duros sólidos</span>
+                            <div className="flex-1 h-px bg-border" />
                           </div>
-                        )}
-                        
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm line-clamp-2 mb-1">{product.name}</p>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            {spec?.storage_interface} {spec?.storage_subtype} {spec?.storage_capacity}GB
-                          </p>
-                          <p className="text-primary font-bold">
-                            ${price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                        
-                        <Button
-                          variant={selected ? "secondary" : "outline"}
-                          size="icon"
-                          onClick={() => selected ? removeStorage(product.id) : addStorage(product)}
-                          disabled={!selected && !canAdd}
-                        >
-                          {selected ? <Minus size={16} /> : <Plus size={16} />}
-                        </Button>
-                      </div>
-                    </motion.div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {ssdProducts.map((p, i) => renderStorageCard(p, i))}
+                          </div>
+                        </>
+                      )}
+                      {hddProducts.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-2 px-2 py-1.5 mt-3">
+                            <HardDrive size={16} className="text-muted-foreground" />
+                            <span className="text-sm font-semibold text-foreground">Discos duros mecánicos</span>
+                            <div className="flex-1 h-px bg-border" />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {hddProducts.map((p, i) => renderStorageCard(p, ssdProducts.length + i))}
+                          </div>
+                        </>
+                      )}
+                    </>
                   );
-                })}
+                })()}
               </div>
             )}
           </div>
@@ -894,13 +927,13 @@ const PCBuilder: React.FC = () => {
             { 
               value: 'AMD', 
               label: 'AMD', 
-              description: 'Ryzen - Excelente rendimiento', 
+              description: 'Ryzen - Multitarea, eficiencia', 
               icon: <img src="https://upload.wikimedia.org/wikipedia/commons/7/7c/AMD_Logo.svg" alt="AMD" className="w-12 h-12 object-contain" />
             },
             { 
               value: 'Intel', 
               label: 'Intel', 
-              description: 'Core - Gran rendimiento', 
+              description: 'Intel - Rendimiento y estabilidad', 
               icon: <img src={logoIntel} alt="Intel" className="w-12 h-12 object-contain" />
             },
           ],
@@ -1173,14 +1206,14 @@ const PCBuilder: React.FC = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pt-20">
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pt-14 md:pt-20">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="sticky top-16 z-30 bg-background/80 backdrop-blur-xl border-b"
+          className="sticky top-14 md:top-16 z-30 bg-background/80 backdrop-blur-xl border-b"
         >
-          <div className="container-padding max-w-7xl mx-auto py-4">
+          <div className="container-padding max-w-7xl mx-auto py-2 md:py-4">
             <div className="flex items-center justify-between">
               <Button 
                 variant="ghost" 
@@ -1211,10 +1244,10 @@ const PCBuilder: React.FC = () => {
           </div>
         </motion.div>
 
-        <div className="container-padding max-w-7xl mx-auto py-6">
+        <div className="container-padding max-w-7xl mx-auto py-3 md:py-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Main Content */}
-            <div className="lg:col-span-3 space-y-4">
+            <div className="lg:col-span-3 space-y-2 md:space-y-4">
               {/* Step indicator - mobile */}
               {currentStep !== 'summary' && (
                 <div className="lg:hidden overflow-x-auto pb-2 mt-2">
@@ -1246,14 +1279,14 @@ const PCBuilder: React.FC = () => {
 
               {/* Navigation */}
               {!isQuestionStep && currentStep !== 'summary' && (
-                <div className="flex items-center justify-between mt-4 sticky bottom-20 lg:bottom-0 z-20 bg-background/90 backdrop-blur-sm p-3 -mx-3 rounded-xl">
-                  <Button variant="outline" onClick={handlePrev} className="gap-2">
-                    <ArrowLeft size={16} />
-                    Anterior
-                  </Button>
+                <div className="flex items-center justify-between mt-2 md:mt-4 sticky bottom-4 lg:bottom-0 z-20 bg-background/90 backdrop-blur-sm p-3 -mx-3 rounded-xl">
                   <Button onClick={handleNext} className="gap-2">
                     Siguiente
                     <ArrowRight size={16} />
+                  </Button>
+                  <Button variant="outline" onClick={handlePrev} className="gap-2">
+                    <ArrowLeft size={16} />
+                    Anterior
                   </Button>
                 </div>
               )}
@@ -1324,30 +1357,8 @@ const PCBuilder: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile bottom bar */}
-        <motion.div
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t shadow-2xl p-4 safe-area-pb"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">{selectedCount} componentes</p>
-              <p className="text-xl font-bold text-primary">
-                ${totalPrice.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            
-            {selectedCount >= 5 && currentStep !== 'summary' && (
-              <Button onClick={() => setCurrentStep('summary')} className="gap-2">
-                <ShoppingCart size={18} />
-                Ver Resumen
-              </Button>
-            )}
-          </div>
-        </motion.div>
-
-        <div className="lg:hidden h-24" />
+        {/* Mobile bottom bar - hidden since total is in subheader */}
+        <div className="lg:hidden h-4" />
       </div>
     </Layout>
   );

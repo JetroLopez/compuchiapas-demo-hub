@@ -24,8 +24,8 @@ const ScrollToTopButton: React.FC = () => {
       className={cn(
         "fixed z-50 p-3 rounded-full shadow-lg transition-all duration-300",
         "bg-primary text-primary-foreground hover:scale-110 active:scale-95",
-        // Desktop: bottom-right corner offset from WhatsApp
-        "md:bottom-8 md:right-20",
+        // Desktop: bottom center
+        "md:bottom-8 md:left-1/2 md:-translate-x-1/2",
         // Mobile: bubble style, positioned left of WhatsApp button area
         "bottom-8 right-[4.5rem]",
         visible

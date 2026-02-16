@@ -197,7 +197,18 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     }
 
     // Then apply token-based search with relevance ranking
-    return searchProducts(categoryFiltered, searchTerm) as Product[];
+    const searched = searchProducts(categoryFiltered, searchTerm) as Product[];
+    
+    // If no search term, sort: products with image first
+    if (!searchTerm.trim()) {
+      return searched.sort((a, b) => {
+        const aHasImg = a.image_url ? 1 : 0;
+        const bHasImg = b.image_url ? 1 : 0;
+        return bHasImg - aHasImg;
+      });
+    }
+    
+    return searched;
   }, [productsInExhibitedWarehouses, activeCategory, searchTerm]);
 
   const isLoading = isLoadingProducts;
