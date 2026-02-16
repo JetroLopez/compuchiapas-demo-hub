@@ -707,6 +707,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
                           <div className="flex items-center gap-1">
                             <span className="text-xs text-muted-foreground">×</span>
                             <Input
+                              key={`${warehouse.id}-${warehouse.profit_multiplier}`}
                               type="number"
                               step="0.01"
                               min="1"
