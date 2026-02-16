@@ -409,8 +409,8 @@ const AdminProjects = () => {
       if (!p.completed_at) return false;
       const completedDate = new Date(p.completed_at);
       const matchesMonth = completedDate.getMonth() === currentMonth && completedDate.getFullYear() === currentYear;
-      // For non-admin, only count own projects
-      if (!isAdmin && user?.id) return matchesMonth && p.assigned_user_id === user.id;
+      // Always filter by current user's assigned projects
+      if (user?.id) return matchesMonth && p.assigned_user_id === user.id;
       return matchesMonth;
     })
     .reduce((sum, p) => sum + (p.monto_total || 0), 0);
