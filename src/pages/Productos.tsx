@@ -19,26 +19,34 @@ interface Category {
 
 const Productos: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialCategory = searchParams.get('categoria') || 'all';
-  const initialSearch = searchParams.get('buscar') || '';
-  const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [activeCategory, setActiveCategory] = useState(() => searchParams.get('categoria') || 'all');
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('buscar') || '');
   const [showOrderSearch, setShowOrderSearch] = useState(searchParams.get('pedido') === 'true');
+  const isUrlSync = React.useRef(false);
 
-  // Sync from URL changes (e.g. when navigating from header search while on this page)
+  // URL → State: only source of truth when URL changes externally (e.g. header search)
   useEffect(() => {
-    const newSearch = searchParams.get('buscar') || '';
-    const newCategory = searchParams.get('categoria') || 'all';
-    if (newSearch !== searchTerm) {
-      setSearchTerm(newSearch);
-    }
-    if (newCategory !== activeCategory) {
-      setActiveCategory(newCategory);
-    }
-    // Also reset category when coming from header search to show the product
-    if (newSearch && activeCategory !== 'all' && searchParams.get('t')) {
+    const urlSearch = searchParams.get('buscar') || '';
+    const urlCategory = searchParams.get('categoria') || 'all';
+    const hasTimestamp = searchParams.has('t');
+
+    isUrlSync.current = true;
+
+    // When coming from header search (has 't' param), force reset category
+    if (hasTimestamp) {
+      setSearchTerm(urlSearch);
       setActiveCategory('all');
+      // Strip the 't' param immediately
+      const clean = new URLSearchParams();
+      if (urlSearch) clean.set('buscar', urlSearch);
+      setSearchParams(clean, { replace: true });
+    } else {
+      if (urlSearch !== searchTerm) setSearchTerm(urlSearch);
+      if (urlCategory !== activeCategory) setActiveCategory(urlCategory);
     }
+
+    // Allow state→URL sync again after this tick
+    requestAnimationFrame(() => { isUrlSync.current = false; });
   }, [searchParams]);
 
   // Obtener categorías de la base de datos
@@ -63,8 +71,9 @@ const Productos: React.FC = () => {
     document.title = "Productos | Compuchiapas";
   }, []);
 
-  // Update URL when category changes
+  // State → URL: update URL when user changes filters locally
   useEffect(() => {
+    if (isUrlSync.current) return;
     const newParams = new URLSearchParams();
     if (activeCategory !== 'all') {
       newParams.set('categoria', activeCategory);
@@ -72,7 +81,6 @@ const Productos: React.FC = () => {
     if (searchTerm.trim()) {
       newParams.set('buscar', searchTerm.trim());
     }
-    // Don't carry the 't' timestamp param
     setSearchParams(newParams, { replace: true });
   }, [activeCategory, searchTerm, setSearchParams]);
 
