@@ -474,6 +474,10 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
           </div>
           <button
             onClick={() => {
+              if (activeCategory === 'all') {
+                // Already showing all categories, clear search too
+                setSearchTerm('');
+              }
               setActiveCategory('all');
               setExpandedCategory(null);
             }}
