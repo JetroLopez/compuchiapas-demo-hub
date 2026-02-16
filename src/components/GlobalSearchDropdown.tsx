@@ -134,15 +134,17 @@ const GlobalSearchDropdown: React.FC<GlobalSearchDropdownProps> = ({ isScrolled 
   }, []);
 
   const handleNavigateToProducts = () => {
-    navigate(`/productos?buscar=${encodeURIComponent(query)}`);
+    const searchValue = query.trim();
+    // Force navigation even if already on /productos by using a unique key
+    navigate(`/productos?buscar=${encodeURIComponent(searchValue)}&t=${Date.now()}`);
     setIsFocused(false);
     setQuery('');
   };
 
   const handleProductClick = (product: Product) => {
-    // Navigate to products filtering by clave for exact match
     const searchValue = product.clave || product.name;
-    navigate(`/productos?buscar=${encodeURIComponent(searchValue)}`);
+    // Force navigation even if already on /productos
+    navigate(`/productos?buscar=${encodeURIComponent(searchValue)}&t=${Date.now()}`);
     setIsFocused(false);
     setQuery('');
   };

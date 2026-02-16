@@ -25,6 +25,22 @@ const Productos: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [showOrderSearch, setShowOrderSearch] = useState(searchParams.get('pedido') === 'true');
 
+  // Sync from URL changes (e.g. when navigating from header search while on this page)
+  useEffect(() => {
+    const newSearch = searchParams.get('buscar') || '';
+    const newCategory = searchParams.get('categoria') || 'all';
+    if (newSearch !== searchTerm) {
+      setSearchTerm(newSearch);
+    }
+    if (newCategory !== activeCategory) {
+      setActiveCategory(newCategory);
+    }
+    // Also reset category when coming from header search to show the product
+    if (newSearch && activeCategory !== 'all' && searchParams.get('t')) {
+      setActiveCategory('all');
+    }
+  }, [searchParams]);
+
   // Obtener categorías de la base de datos
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -49,18 +65,16 @@ const Productos: React.FC = () => {
 
   // Update URL when category changes
   useEffect(() => {
-    if (activeCategory === 'all') {
-      searchParams.delete('categoria');
-    } else {
-      searchParams.set('categoria', activeCategory);
+    const newParams = new URLSearchParams();
+    if (activeCategory !== 'all') {
+      newParams.set('categoria', activeCategory);
     }
     if (searchTerm.trim()) {
-      searchParams.set('buscar', searchTerm.trim());
-    } else {
-      searchParams.delete('buscar');
+      newParams.set('buscar', searchTerm.trim());
     }
-    setSearchParams(searchParams, { replace: true });
-  }, [activeCategory, searchTerm, searchParams, setSearchParams]);
+    // Don't carry the 't' timestamp param
+    setSearchParams(newParams, { replace: true });
+  }, [activeCategory, searchTerm, setSearchParams]);
 
   const resetFilters = () => {
     setSearchTerm('');
