@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import ProductHero from '../components/product/ProductHero';
 import ProductFilters from '../components/product/ProductFilters';
 import ProductsList from '../components/product/ProductsList';
-
+import ScrollToTopButton from '../components/ScrollToTopButton';
 import OrderStatusSearch from '../components/product/OrderStatusSearch';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -153,6 +153,9 @@ const Productos: React.FC = () => {
         </div>
       </section>
       
+
+      {/* Scroll to top button */}
+      <ScrollToTopButton />
 
       {/* Order Search Dialog for mobile and desktop */}
       <Dialog open={showOrderSearch} onOpenChange={setShowOrderSearch}>
