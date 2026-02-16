@@ -318,6 +318,15 @@ const AdminPromotions: React.FC = () => {
 
     const reordered = arrayMove(filteredPromotions, oldIndex, newIndex);
     const updates = reordered.map((p, i) => ({ id: p.id, display_order: i }));
+
+    // Optimistic update: immediately reflect the new order in the cache
+    queryClient.setQueryData(['admin-promotions'], (old: Promotion[] | undefined) => {
+      if (!old) return old;
+      const orderMap = new Map(updates.map(u => [u.id, u.display_order]));
+      return [...old].map(p => orderMap.has(p.id) ? { ...p, display_order: orderMap.get(p.id)! } : p)
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+    });
+
     reorderMutation.mutate(updates);
   };
 
