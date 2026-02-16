@@ -60,6 +60,28 @@ interface AdminProductsProps {
   userRole?: AppRole | null;
 }
 
+// Controlled multiplier input that always shows the current value
+const MultiplierInput: React.FC<{ warehouse: Warehouse; onSave: (val: number) => void }> = ({ warehouse, onSave }) => {
+  const [value, setValue] = useState(String(warehouse.profit_multiplier));
+  useEffect(() => { setValue(String(warehouse.profit_multiplier)); }, [warehouse.profit_multiplier]);
+  return (
+    <Input
+      type="number"
+      step="0.01"
+      min="1"
+      max="5"
+      className="h-8 w-20 text-sm text-center"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => {
+        const val = parseFloat(value);
+        if (isNaN(val) || val < 1) { setValue(String(warehouse.profit_multiplier)); return; }
+        if (val !== warehouse.profit_multiplier) onSave(val);
+      }}
+    />
+  );
+};
+
 const INITIAL_ITEMS = 10;
 
 const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
@@ -706,18 +728,9 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
                           <Label className="text-sm font-normal flex-1">{warehouse.name}</Label>
                           <div className="flex items-center gap-1">
                             <span className="text-xs text-muted-foreground">×</span>
-                            <Input
-                              key={`${warehouse.id}-${warehouse.profit_multiplier}`}
-                              type="number"
-                              step="0.01"
-                              min="1"
-                              max="5"
-                              className="h-8 w-20 text-sm text-center"
-                              defaultValue={warehouse.profit_multiplier}
-                              onBlur={async (e) => {
-                                const val = parseFloat(e.target.value);
-                                if (isNaN(val) || val < 1) return;
-                                if (val === warehouse.profit_multiplier) return;
+                            <MultiplierInput
+                              warehouse={warehouse}
+                              onSave={async (val) => {
                                 const { error } = await (supabase
                                   .from('warehouses' as any)
                                   .update({ profit_multiplier: val })
