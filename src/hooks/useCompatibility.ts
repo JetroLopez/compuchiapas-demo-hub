@@ -26,12 +26,21 @@ export function useComponentProducts(componentType: keyof typeof COMPONENT_CATEG
   return useQuery({
     queryKey: ['component-products', componentType],
     queryFn: async () => {
+      // Get product IDs with stock > 0 in any warehouse
+      const { data: stockData, error: stockError } = await supabase
+        .from('product_warehouse_stock')
+        .select('product_id')
+        .gt('existencias', 0);
+      if (stockError) throw stockError;
+      const idsWithStock = [...new Set((stockData || []).map(s => s.product_id))];
+      if (idsWithStock.length === 0) return [] as ProductWithSpec[];
+
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('id, name, clave, category_id, existencias, image_url, costo')
         .in('category_id', categoryIds)
+        .in('id', idsWithStock)
         .eq('is_active', true)
-        .gt('existencias', 0)
         .order('name');
 
       if (productsError) throw productsError;

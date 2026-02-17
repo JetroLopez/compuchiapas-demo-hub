@@ -550,6 +550,7 @@ export type Database = {
           product_id: string | null
           status: string
           updated_at: string
+          warehouse_id: string | null
         }
         Insert: {
           clave: string
@@ -559,6 +560,7 @@ export type Database = {
           product_id?: string | null
           status?: string
           updated_at?: string
+          warehouse_id?: string | null
         }
         Update: {
           clave?: string
@@ -568,6 +570,7 @@ export type Database = {
           product_id?: string | null
           status?: string
           updated_at?: string
+          warehouse_id?: string | null
         }
         Relationships: [
           {
@@ -575,6 +578,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_por_surtir_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -1068,6 +1078,7 @@ export type Database = {
         }
         Returns: number
       }
+      get_product_total_stock: { Args: { p_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
