@@ -60,15 +60,34 @@ function useAllPCComponents() {
     queryFn: async () => {
       const allCategoryIds = Object.values(COMPONENT_CATEGORIES).flat();
       
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('id, name, clave, category_id, existencias, image_url, costo')
-        .in('category_id', allCategoryIds)
-        .eq('is_active', true)
-        .gt('existencias', 0)
-        .order('name');
+      // First get products with stock > 0 in any warehouse
+      const { data: stockData, error: stockError } = await supabase
+        .from('product_warehouse_stock')
+        .select('product_id')
+        .gt('existencias', 0);
+      
+      if (stockError) throw stockError;
+      const productIdsWithStock = [...new Set((stockData || []).map(s => s.product_id))];
+      if (productIdsWithStock.length === 0) return { products: [], specsMap: new Map() };
 
-      if (productsError) throw productsError;
+      // Fetch products that are in stock
+      const allProducts: any[] = [];
+      const chunkSize = 500;
+      for (let i = 0; i < productIdsWithStock.length; i += chunkSize) {
+        const chunk = productIdsWithStock.slice(i, i + chunkSize);
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, name, clave, category_id, existencias, image_url, costo')
+          .in('id', chunk)
+          .in('category_id', allCategoryIds)
+          .eq('is_active', true)
+          .order('name');
+        if (error) throw error;
+        allProducts.push(...(data || []));
+      }
+      const products = allProducts;
+
+      if (!products || products.length === 0) return { products: [], specsMap: new Map() };
       if (!products || products.length === 0) return { products: [], specsMap: new Map() };
 
       const productIds = products.map(p => p.id);

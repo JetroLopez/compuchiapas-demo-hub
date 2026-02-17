@@ -253,7 +253,9 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
           clave={product.clave}
           name={product.name}
           image={product.image_url || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1000&q=80'}
-          existencias={product.existencias ?? 0}
+          existencias={warehouseStock
+            .filter(ws => exhibitedWarehouseIds.has(ws.warehouse_id) && ws.product_id === product.id)
+            .reduce((sum, ws) => sum + ws.existencias, 0)}
           costo={product.costo}
           categoryId={product.category_id}
           showPrice={showPrices}

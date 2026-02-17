@@ -32,6 +32,7 @@ interface PorSurtirProduct {
   nombre: string;
   status: string;
   created_at: string;
+  warehouse_id: string | null;
 }
 
 interface Warehouse {
@@ -276,11 +277,13 @@ const AdminPorSurtir: React.FC = () => {
     addProductMutation.mutate({ clave: newClave.trim(), nombre: newNombre.trim() });
   };
 
-  // Filter by warehouse
+  // Filter by warehouse - now uses warehouse_id directly from the record
   const filterByWarehouse = (product: PorSurtirProduct) => {
     if (selectedWarehouse === 'all') return true;
+    // If the record has a warehouse_id, filter directly
+    if (product.warehouse_id) return product.warehouse_id === selectedWarehouse;
+    // Legacy records without warehouse_id: fallback to stock-based check
     if (!product.product_id) return true;
-    
     const stocks = warehouseStockMap.get(product.clave) || [];
     const warehouseEntry = stocks.find(s => s.warehouse_id === selectedWarehouse);
     if (!warehouseEntry) return false;
@@ -425,6 +428,11 @@ const AdminPorSurtir: React.FC = () => {
                           <div className="font-medium">{product.clave}</div>
                           <div className="text-sm text-muted-foreground">
                             {product.nombre}
+                            {product.warehouse_id && (
+                              <span className="text-xs ml-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                                {warehouses.find(w => w.id === product.warehouse_id)?.name || 'Almacén'}
+                              </span>
+                            )}
                             {getOtherWarehouseStock(product) && (
                               <span className="text-blue-600 dark:text-blue-400 ml-1">
                                 , {getOtherWarehouseStock(product)}
@@ -506,6 +514,11 @@ const AdminPorSurtir: React.FC = () => {
                           <div className="font-medium text-green-700 dark:text-green-400">{product.clave}</div>
                           <div className="text-sm text-green-600 dark:text-green-500">
                             {product.nombre}
+                            {product.warehouse_id && (
+                              <span className="text-xs ml-1 px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                                {warehouses.find(w => w.id === product.warehouse_id)?.name || 'Almacén'}
+                              </span>
+                            )}
                             {getOtherWarehouseStock(product) && (
                               <span className="text-blue-600 dark:text-blue-400 ml-1">
                                 , {getOtherWarehouseStock(product)}
