@@ -236,9 +236,9 @@ const AdminPorSurtir: React.FC = () => {
     },
   });
 
-  // Delete product - supports single entry or all entries for same clave
+  // Delete product - supports single warehouse removal or full product deletion
   const deleteProductMutation = useMutation({
-    mutationFn: async ({ id, productId, scope, clave }: { id: string; productId: string | null; scope: DeleteScope; clave: string }) => {
+    mutationFn: async ({ id, productId, scope, clave, warehouseId }: { id: string; productId: string | null; scope: DeleteScope; clave: string; warehouseId?: string | null }) => {
       if (scope === 'all') {
         // Delete all por_surtir entries with the same clave
         const { error: porSurtirError } = await supabase
@@ -246,21 +246,33 @@ const AdminPorSurtir: React.FC = () => {
           .delete()
           .eq('clave', clave);
         if (porSurtirError) throw porSurtirError;
+
+        // Delete all warehouse stock entries and the product itself
+        if (productId) {
+          await supabase.from('product_warehouse_stock').delete().eq('product_id', productId);
+          const { error: productError } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', productId);
+          if (productError) throw productError;
+        }
       } else {
+        // Delete only this por_surtir entry
         const { error: porSurtirError } = await supabase
           .from('products_por_surtir')
           .delete()
           .eq('id', id);
         if (porSurtirError) throw porSurtirError;
-      }
 
-      // Only delete the product itself if deleting from all warehouses
-      if (productId && scope === 'all') {
-        const { error: productError } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', productId);
-        if (productError) throw productError;
+        // Also remove the warehouse stock entry so it doesn't reappear on next sync
+        const targetWarehouse = warehouseId;
+        if (productId && targetWarehouse) {
+          await supabase
+            .from('product_warehouse_stock')
+            .delete()
+            .eq('product_id', productId)
+            .eq('warehouse_id', targetWarehouse);
+        }
       }
     },
     onMutate: ({ id, scope, clave }) => {
@@ -390,7 +402,7 @@ const AdminPorSurtir: React.FC = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esto eliminará el producto "{product.nombre}" completamente de la base de datos. Esta acción no se puede deshacer.
+                Esto eliminará el producto "{product.nombre}" del almacén{selectedWarehouse !== 'all' ? ` ${getWarehouseName()}` : ''}, incluyendo su registro de existencias. No reaparecerá en la siguiente sincronización.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -401,6 +413,7 @@ const AdminPorSurtir: React.FC = () => {
                   productId: product.product_id,
                   scope: 'single',
                   clave: product.clave,
+                  warehouseId: product.warehouse_id || (selectedWarehouse !== 'all' ? selectedWarehouse : null),
                 })}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
@@ -444,6 +457,7 @@ const AdminPorSurtir: React.FC = () => {
                     productId: product.product_id,
                     scope: 'single',
                     clave: product.clave,
+                    warehouseId: product.warehouse_id,
                   })}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -465,6 +479,7 @@ const AdminPorSurtir: React.FC = () => {
                       productId: sibling.product_id,
                       scope: 'single',
                       clave: sibling.clave,
+                      warehouseId: sibling.warehouse_id,
                     })}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
