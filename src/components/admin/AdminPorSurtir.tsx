@@ -399,7 +399,7 @@ const AdminPorSurtir: React.FC = () => {
                 onClick={() => deleteProductMutation.mutate({
                   id: product.id,
                   productId: product.product_id,
-                  scope: 'all',
+                  scope: 'single',
                   clave: product.clave,
                 })}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
