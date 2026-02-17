@@ -18,6 +18,16 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -34,6 +44,8 @@ interface PorSurtirProduct {
   created_at: string;
   warehouse_id: string | null;
 }
+
+type DeleteScope = 'single' | 'all';
 
 interface Warehouse {
   id: string;
@@ -224,39 +236,65 @@ const AdminPorSurtir: React.FC = () => {
     },
   });
 
-  // Delete product completely - optimistic
+  // Delete product - supports single entry or all entries for same clave
   const deleteProductMutation = useMutation({
-    mutationFn: async ({ id, productId }: { id: string; productId: string | null }) => {
-      const { error: porSurtirError } = await supabase
-        .from('products_por_surtir')
-        .delete()
-        .eq('id', id);
-      
-      if (porSurtirError) throw porSurtirError;
+    mutationFn: async ({ id, productId, scope, clave }: { id: string; productId: string | null; scope: DeleteScope; clave: string }) => {
+      if (scope === 'all') {
+        // Delete all por_surtir entries with the same clave
+        const { error: porSurtirError } = await supabase
+          .from('products_por_surtir')
+          .delete()
+          .eq('clave', clave);
+        if (porSurtirError) throw porSurtirError;
+      } else {
+        const { error: porSurtirError } = await supabase
+          .from('products_por_surtir')
+          .delete()
+          .eq('id', id);
+        if (porSurtirError) throw porSurtirError;
+      }
 
-      if (productId) {
+      // Only delete the product itself if deleting from all warehouses
+      if (productId && scope === 'all') {
         const { error: productError } = await supabase
           .from('products')
           .delete()
           .eq('id', productId);
-        
         if (productError) throw productError;
       }
     },
-    onMutate: ({ id }) => {
-      setOptimisticDeleted(prev => new Set(prev).add(id));
+    onMutate: ({ id, scope, clave }) => {
+      if (scope === 'all') {
+        // Optimistically hide all entries with same clave
+        const idsToHide = productsPorSurtir.filter(p => p.clave === clave).map(p => p.id);
+        setOptimisticDeleted(prev => {
+          const next = new Set(prev);
+          idsToHide.forEach(i => next.add(i));
+          return next;
+        });
+      } else {
+        setOptimisticDeleted(prev => new Set(prev).add(id));
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products-por-surtir'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
-    onError: (error: Error, { id }: { id: string; productId: string | null }) => {
-      // Revert optimistic delete
-      setOptimisticDeleted(prev => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
+    onError: (error: Error, { id, scope, clave }) => {
+      if (scope === 'all') {
+        const idsToRevert = productsPorSurtir.filter(p => p.clave === clave).map(p => p.id);
+        setOptimisticDeleted(prev => {
+          const next = new Set(prev);
+          idsToRevert.forEach(i => next.delete(i));
+          return next;
+        });
+      } else {
+        setOptimisticDeleted(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
       toast({
         title: 'Error',
         description: error.message,
@@ -321,6 +359,144 @@ const AdminPorSurtir: React.FC = () => {
     if (selectedWarehouse === 'all') return 'Todos los almacenes';
     const warehouse = warehouses.find(w => w.id === selectedWarehouse);
     return warehouse?.name || 'Almacén';
+  };
+
+  // Find sibling por_surtir entries for same clave in other warehouses
+  const getSiblingEntries = (product: PorSurtirProduct) => {
+    return productsPorSurtir.filter(
+      p => p.clave === product.clave && p.id !== product.id && !optimisticDeleted.has(p.id)
+    );
+  };
+
+  // Render the delete dialog content based on context
+  const renderDeleteDialog = (product: PorSurtirProduct) => {
+    const siblings = getSiblingEntries(product);
+    const hasSiblings = siblings.length > 0 && selectedWarehouse === 'all';
+    const thisWarehouseName = product.warehouse_id
+      ? warehouses.find(w => w.id === product.warehouse_id)?.name || 'Almacén'
+      : null;
+
+    if (!hasSiblings) {
+      // Simple case: only one entry or filtered by warehouse
+      return (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="destructive">
+              <Trash2 className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">Borrar producto</span>
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esto eliminará el producto "{product.nombre}" completamente de la base de datos. Esta acción no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteProductMutation.mutate({
+                  id: product.id,
+                  productId: product.product_id,
+                  scope: 'all',
+                  clave: product.clave,
+                })}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      );
+    }
+
+    // Multiple warehouses: show options
+    const allWarehouseNames = [
+      thisWarehouseName,
+      ...siblings.map(s => s.warehouse_id ? warehouses.find(w => w.id === s.warehouse_id)?.name : null),
+    ].filter(Boolean);
+
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button size="sm" variant="destructive">
+            <Trash2 className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Borrar producto</span>
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿De qué almacén deseas eliminar?</DialogTitle>
+            <DialogDescription>
+              El producto "{product.nombre}" ({product.clave}) aparece en {allWarehouseNames.join(' y ')}. Selecciona de dónde deseas eliminarlo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 py-2">
+            {thisWarehouseName && (
+              <DialogClose asChild>
+                <Button
+                  variant="outline"
+                  className="justify-start border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={() => deleteProductMutation.mutate({
+                    id: product.id,
+                    productId: product.product_id,
+                    scope: 'single',
+                    clave: product.clave,
+                  })}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Solo de {thisWarehouseName}
+                </Button>
+              </DialogClose>
+            )}
+            {siblings.map(sibling => {
+              const siblingName = sibling.warehouse_id
+                ? warehouses.find(w => w.id === sibling.warehouse_id)?.name
+                : 'Almacén desconocido';
+              return (
+                <DialogClose asChild key={sibling.id}>
+                  <Button
+                    variant="outline"
+                    className="justify-start border-destructive/50 text-destructive hover:bg-destructive/10"
+                    onClick={() => deleteProductMutation.mutate({
+                      id: sibling.id,
+                      productId: sibling.product_id,
+                      scope: 'single',
+                      clave: sibling.clave,
+                    })}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Solo de {siblingName}
+                  </Button>
+                </DialogClose>
+              );
+            })}
+            <DialogClose asChild>
+              <Button
+                variant="destructive"
+                className="justify-start"
+                onClick={() => deleteProductMutation.mutate({
+                  id: product.id,
+                  productId: product.product_id,
+                  scope: 'all',
+                  clave: product.clave,
+                })}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                De todos los almacenes (eliminar producto)
+              </Button>
+            </DialogClose>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancelar</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   const handleCopyPending = () => {
@@ -450,37 +626,7 @@ const AdminPorSurtir: React.FC = () => {
                             <Truck className="h-4 w-4 md:mr-1" />
                             <span className="hidden md:inline">Pedido y en camino</span>
                           </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                              >
-                                <Trash2 className="h-4 w-4 md:mr-1" />
-                                <span className="hidden md:inline">Borrar producto</span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esto eliminará el producto "{product.nombre}" completamente de la base de datos. Esta acción no se puede deshacer.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteProductMutation.mutate({ 
-                                    id: product.id, 
-                                    productId: product.product_id 
-                                  })}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Eliminar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          {renderDeleteDialog(product)}
                         </div>
                       </div>
                     ))}
@@ -535,36 +681,7 @@ const AdminPorSurtir: React.FC = () => {
                             <Truck className="h-3 w-3" />
                             <span className="hidden md:inline">En camino</span>
                           </button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esto eliminará el producto "{product.nombre}" completamente de la base de datos. Esta acción no se puede deshacer.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteProductMutation.mutate({ 
-                                    id: product.id, 
-                                    productId: product.product_id 
-                                  })}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Eliminar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          {renderDeleteDialog(product)}
                         </div>
                       </div>
                     ))}
