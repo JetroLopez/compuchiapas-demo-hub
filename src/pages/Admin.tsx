@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban, Store, MoreHorizontal, Eye, ShieldCheck, Warehouse, Image } from 'lucide-react';
+import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban, Store, MoreHorizontal, Eye, ShieldCheck, Warehouse, Image, Download } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +29,7 @@ import AdminProjects from '@/components/admin/AdminProjects';
 import AdminWarranties from '@/components/admin/AdminWarranties';
 import AdminBodega from '@/components/admin/AdminBodega';
 import AdminLandingPage from '@/components/admin/AdminLandingPage';
+import AdminSoftwareESD from '@/components/admin/AdminSoftwareESD';
 import { Badge } from '@/components/ui/badge';
 
 // Tab label mapping
@@ -38,6 +39,7 @@ const TAB_LABELS: Record<string, string> = {
   'products': 'Productos',
   'por-surtir': 'Por Surtir',
   'promotions': 'Promociones',
+  'software-esd': 'Software ESD',
   'users': 'Usuarios',
   'contacts': 'Contacto',
   'services': 'Servicios',
@@ -76,6 +78,7 @@ const Admin: React.FC = () => {
   const canAccessSync = hasAccess(['admin', 'ventas', 'supervisor']);
   const canAccessProducts = hasAccess(['admin', 'ventas', 'supervisor']);
   const canAccessPromotions = hasAccess(['admin', 'ventas', 'supervisor']);
+  const canAccessSoftwareESD = hasAccess(['admin', 'ventas', 'supervisor']);
   const canAccessUsers = hasAccess(['admin']);
   const canAccessContacts = hasAccess(['admin', 'ventas', 'supervisor']);
   const canAccessServices = hasAccess(['admin', 'tecnico', 'supervisor', 'ventas']);
@@ -177,6 +180,7 @@ const Admin: React.FC = () => {
       if (activeTab === 'sync' && !canAccessSync) setActiveTab('dashboard');
       if (activeTab === 'products' && !canAccessProducts) setActiveTab('dashboard');
       if (activeTab === 'promotions' && !canAccessPromotions) setActiveTab('dashboard');
+      if (activeTab === 'software-esd' && !canAccessSoftwareESD) setActiveTab('dashboard');
       if (activeTab === 'users' && !canAccessUsers) setActiveTab('dashboard');
       if (activeTab === 'contacts' && !canAccessContacts) setActiveTab('dashboard');
       if (activeTab === 'services' && !canAccessServices) setActiveTab('dashboard');
@@ -191,7 +195,7 @@ const Admin: React.FC = () => {
       if (activeTab === 'bodega' && !canAccessBodega) setActiveTab('dashboard');
       if (activeTab === 'landing-page' && !canAccessLandingPage) setActiveTab('dashboard');
     }
-  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs, canAccessWebOrders, canAccessProjects, canAccessWarranties, canAccessBodega, canAccessLandingPage]);
+  }, [isLoading, userRole, activeTab, canAccessSync, canAccessProducts, canAccessPromotions, canAccessSoftwareESD, canAccessUsers, canAccessContacts, canAccessServices, canAccessBlog, canAccessSpecialOrders, canAccessPorSurtir, canAccessQuotations, canAccessComponentSpecs, canAccessWebOrders, canAccessProjects, canAccessWarranties, canAccessBodega, canAccessLandingPage]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -245,6 +249,7 @@ const Admin: React.FC = () => {
   const getSupervisorSecondaryTabs = () => [
     { value: 'sync', icon: RefreshCw, label: 'Sincronizar' },
     { value: 'promotions', icon: Tag, label: 'Promociones' },
+    { value: 'software-esd', icon: Download, label: 'Software ESD' },
     { value: 'products', icon: Package, label: 'Productos' },
     { value: 'contacts', icon: MessageCircle, label: 'Contacto', badge: pendingContactsCount },
     { value: 'blog', icon: FileText, label: 'Blog' },
@@ -255,6 +260,7 @@ const Admin: React.FC = () => {
     { value: 'sync', icon: RefreshCw, label: 'Sincronizar' },
     { value: 'services', icon: Wrench, label: 'Servicios' },
     { value: 'products', icon: Package, label: 'Productos' },
+    { value: 'software-esd', icon: Download, label: 'Software ESD' },
     { value: 'blog', icon: FileText, label: 'Blog' },
   ];
 
@@ -351,6 +357,11 @@ const Admin: React.FC = () => {
           <DropdownMenuItem onClick={() => setActiveTab('promotions')} className="gap-2">
             <Tag size={16} /> Promociones
           </DropdownMenuItem>
+          {canAccessSoftwareESD && (
+            <DropdownMenuItem onClick={() => setActiveTab('software-esd')} className="gap-2">
+              <Download size={16} /> Software ESD
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => setActiveTab('warranties')} className="gap-2">
             <ShieldCheck size={16} /> Garantías
           </DropdownMenuItem>
@@ -423,6 +434,11 @@ const Admin: React.FC = () => {
         {canAccessPromotions && (
           <DropdownMenuItem onClick={() => setActiveTab('promotions')} className="gap-2">
             <Tag size={16} /> Promociones
+          </DropdownMenuItem>
+        )}
+        {canAccessSoftwareESD && (
+          <DropdownMenuItem onClick={() => setActiveTab('software-esd')} className="gap-2">
+            <Download size={16} /> Software ESD
           </DropdownMenuItem>
         )}
         {canAccessUsers && (
@@ -589,6 +605,11 @@ const Admin: React.FC = () => {
           <TabsTrigger value="promotions" className="gap-2">
             <Tag size={16} /> Promociones
           </TabsTrigger>
+          {canAccessSoftwareESD && (
+            <TabsTrigger value="software-esd" className="gap-2">
+              <Download size={16} /> Software ESD
+            </TabsTrigger>
+          )}
 
           {/* Otras opciones dropdown */}
           <DropdownMenu>
@@ -669,6 +690,11 @@ const Admin: React.FC = () => {
         {canAccessPromotions && (
           <TabsTrigger value="promotions" className="gap-2">
             <Tag size={16} /> Promociones
+          </TabsTrigger>
+        )}
+        {canAccessSoftwareESD && (
+          <TabsTrigger value="software-esd" className="gap-2">
+            <Download size={16} /> Software ESD
           </TabsTrigger>
         )}
         {canAccessUsers && (
@@ -838,6 +864,12 @@ const Admin: React.FC = () => {
             {canAccessPromotions && (
               <TabsContent value="promotions">
                 <AdminPromotions />
+              </TabsContent>
+            )}
+            
+            {canAccessSoftwareESD && (
+              <TabsContent value="software-esd">
+                <AdminSoftwareESD />
               </TabsContent>
             )}
             

@@ -119,6 +119,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
       const orderItems = items.map(item => ({
         product_id: item.type === 'product' ? item.id : null,
         promotion_id: item.type === 'promotion' ? item.id : null,
+        software_id: item.type === 'software' ? item.id : null,
         name: item.name,
         quantity: item.quantity,
         price: item.price,

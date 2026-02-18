@@ -51,6 +51,7 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
     { name: 'Inicio', path: '/' },
     { name: 'Servicios', path: '/servicios' },
     { name: 'Productos', path: '/productos' },
+    { name: 'Software ESD', path: '/software-esd' },
     { name: 'Blog', path: '/blog' },
   ];
 

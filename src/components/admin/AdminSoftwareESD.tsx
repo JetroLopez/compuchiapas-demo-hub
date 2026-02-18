@@ -1,0 +1,484 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { toast } from 'sonner';
+import { Trash2, Plus, Loader2, Search, Edit, Download, GripVertical } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SoftwareESD {
+  id: string;
+  marca: string;
+  clave: string;
+  descripcion: string;
+  detalles: string | null;
+  precio: number;
+  img_url: string | null;
+  is_active: boolean;
+  display_order: number | null;
+}
+
+type FilterType = 'all' | 'active' | 'inactive';
+
+// Sortable table row component
+const SortableRow: React.FC<{
+  software: SoftwareESD;
+  formatPrice: (price: number) => string;
+  handleEdit: (software: SoftwareESD) => void;
+  deleteMutation: any;
+  toggleActiveMutation: any;
+}> = ({ software, formatPrice, handleEdit, deleteMutation, toggleActiveMutation }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: software.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className={cn(!software.is_active && 'opacity-50')}>
+      <TableCell className="w-8 cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+        <GripVertical size={16} className="text-muted-foreground" />
+      </TableCell>
+      <TableCell>
+        {software.img_url ? (
+          <img src={software.img_url} alt={software.descripcion} className="w-12 h-12 object-cover rounded" />
+        ) : (
+          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+            <Download size={20} className="text-muted-foreground" />
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="font-mono text-xs">{software.clave}</TableCell>
+      <TableCell className="max-w-[150px]">
+        <p className="font-semibold text-sm">{software.marca}</p>
+        <p className="truncate font-medium">{software.descripcion}</p>
+        {software.detalles && <p className="text-xs text-muted-foreground truncate">{software.detalles}</p>}
+      </TableCell>
+      <TableCell className="text-right font-semibold text-tech-blue">{formatPrice(software.precio)}</TableCell>
+      <TableCell className="text-center">
+        <Badge variant={software.is_active ? 'default' : 'secondary'}>
+          {software.is_active ? 'Activo' : 'Inactivo'}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => handleEdit(software)}>
+            <Edit size={16} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => toggleActiveMutation.mutate({ id: software.id, is_active: !software.is_active })}
+            title={software.is_active ? 'Desactivar' : 'Activar'}
+          >
+            {software.is_active ? '✓' : '✗'}
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                <Trash2 size={16} />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar software?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción no se puede deshacer. El software "{software.descripcion}" será eliminado permanentemente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteMutation.mutate(software.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
+
+const AdminSoftwareESD: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingSoftware, setEditingSoftware] = useState<SoftwareESD | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [formData, setFormData] = useState({
+    marca: '',
+    clave: '',
+    descripcion: '',
+    detalles: '',
+    precio: '',
+    img_url: '',
+    is_active: true,
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  // Fetch software ESD
+  const { data: softwareList = [], isLoading } = useQuery({
+    queryKey: ['admin-software-esd'],
+    queryFn: async (): Promise<SoftwareESD[]> => {
+      const { data, error } = await supabase
+        .from('software_esd')
+        .select('*')
+        .order('marca', { ascending: true })
+        .order('display_order', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async (data: { marca: string; clave: string; descripcion: string; detalles: string | null; precio: number; img_url: string | null; is_active: boolean; display_order: number }) => {
+      if (editingSoftware) {
+        const { error } = await supabase.from('software_esd').update(data).eq('id', editingSoftware.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('software_esd').insert([data]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-software-esd'] });
+      queryClient.invalidateQueries({ queryKey: ['software-esd'] });
+      toast.success(editingSoftware ? 'Software actualizado' : 'Software agregado');
+      resetForm();
+    },
+    onError: (error: any) => toast.error(`Error: ${error.message}`),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('software_esd').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-software-esd'] });
+      queryClient.invalidateQueries({ queryKey: ['software-esd'] });
+      toast.success('Software eliminado');
+    },
+    onError: () => toast.error('Error al eliminar software'),
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from('software_esd').update({ is_active }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-software-esd'] });
+      queryClient.invalidateQueries({ queryKey: ['software-esd'] });
+      toast.success('Estado actualizado');
+    },
+    onError: () => toast.error('Error al actualizar estado'),
+  });
+
+  // Reorder mutation
+  const reorderMutation = useMutation({
+    mutationFn: async (orderedIds: { id: string; display_order: number }[]) => {
+      for (const item of orderedIds) {
+        const { error } = await supabase.from('software_esd').update({ display_order: item.display_order }).eq('id', item.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-software-esd'] });
+      queryClient.invalidateQueries({ queryKey: ['software-esd'] });
+      toast.success('Orden actualizado');
+    },
+    onError: () => toast.error('Error al reordenar'),
+  });
+
+  const resetForm = () => {
+    setFormData({ marca: '', clave: '', descripcion: '', detalles: '', precio: '', img_url: '', is_active: true });
+    setEditingSoftware(null);
+    setIsAddDialogOpen(false);
+  };
+
+  const handleEdit = (software: SoftwareESD) => {
+    setEditingSoftware(software);
+    setFormData({
+      marca: software.marca,
+      clave: software.clave,
+      descripcion: software.descripcion,
+      detalles: software.detalles || '',
+      precio: software.precio.toString(),
+      img_url: software.img_url || '',
+      is_active: software.is_active,
+    });
+    setIsAddDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!formData.marca.trim() || !formData.clave.trim() || !formData.descripcion.trim() || !formData.precio) {
+      toast.error('Marca, clave, descripción y precio son requeridos');
+      return;
+    }
+    // Use current max display_order + 1 for new items
+    const maxOrder = softwareList.reduce((max, s) => Math.max(max, s.display_order || 0), 0);
+    saveMutation.mutate({
+      marca: formData.marca.trim(),
+      clave: formData.clave.trim(),
+      descripcion: formData.descripcion.trim(),
+      detalles: formData.detalles.trim() || null,
+      precio: parseFloat(formData.precio),
+      img_url: formData.img_url.trim() || null,
+      is_active: formData.is_active,
+      display_order: editingSoftware ? (editingSoftware.display_order || 0) : maxOrder + 1,
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = filteredSoftware.findIndex(s => s.id === active.id);
+    const newIndex = filteredSoftware.findIndex(s => s.id === over.id);
+    
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(filteredSoftware, oldIndex, newIndex);
+    const updates = reordered.map((s, i) => ({ id: s.id, display_order: i }));
+
+    // Optimistic update
+    queryClient.setQueryData(['admin-software-esd'], (old: SoftwareESD[] | undefined) => {
+      if (!old) return old;
+      const orderMap = new Map(updates.map(u => [u.id, u.display_order]));
+      return [...old].map(s => orderMap.has(s.id) ? { ...s, display_order: orderMap.get(s.id)! } : s)
+        .sort((a, b) => {
+          const marcaCompare = a.marca.localeCompare(b.marca);
+          if (marcaCompare !== 0) return marcaCompare;
+          return (a.display_order ?? 0) - (b.display_order ?? 0);
+        });
+    });
+
+    reorderMutation.mutate(updates);
+  };
+
+  // Filter software
+  const filteredSoftware = softwareList
+    .filter(s => {
+      const matchesSearch = 
+        s.marca.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        s.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        s.clave.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = activeFilter === 'all' || (activeFilter === 'active' ? s.is_active : !s.is_active);
+      return matchesSearch && matchesFilter;
+    });
+
+  const formatPrice = (price: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(price);
+
+  const totalCount = softwareList.length;
+  const activeCount = softwareList.filter(s => s.is_active).length;
+  const inactiveCount = softwareList.filter(s => !s.is_active).length;
+
+  // Get unique brands for dropdown
+  const brands = Array.from(new Set(softwareList.map(s => s.marca))).sort();
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="flex items-center gap-2">
+            <Download size={20} />
+            Software ESD
+          </CardTitle>
+          <div className="flex flex-wrap gap-2">
+            <Dialog open={isAddDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setIsAddDialogOpen(open); }}>
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus size={16} className="mr-2" />Agregar Software</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{editingSoftware ? 'Editar software' : 'Agregar software'}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="marca">Marca *</Label>
+                    <Input 
+                      id="marca" 
+                      value={formData.marca} 
+                      onChange={(e) => setFormData({ ...formData, marca: e.target.value })} 
+                      placeholder="Ej: Microsoft, Bitdefender, ESET..." 
+                      list="brands-list"
+                    />
+                    <datalist id="brands-list">
+                      {brands.map(brand => (
+                        <option key={brand} value={brand} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="clave">Clave *</Label>
+                      <Input id="clave" value={formData.clave} onChange={(e) => setFormData({ ...formData, clave: e.target.value })} placeholder="Ej: MS-365-BS" />
+                    </div>
+                    <div>
+                      <Label htmlFor="precio">Precio *</Label>
+                      <Input id="precio" type="number" step="0.01" value={formData.precio} onChange={(e) => setFormData({ ...formData, precio: e.target.value })} placeholder="0.00" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="descripcion">Descripción *</Label>
+                    <Input id="descripcion" value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} placeholder="Ej: Microsoft 365 Business Standard" />
+                  </div>
+                  <div>
+                    <Label htmlFor="detalles">Detalles</Label>
+                    <Textarea 
+                      id="detalles" 
+                      value={formData.detalles} 
+                      onChange={(e) => setFormData({ ...formData, detalles: e.target.value })} 
+                      placeholder="Características del producto..." 
+                      rows={3} 
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="img_url">URL de imagen (opcional)</Label>
+                    <Input id="img_url" value={formData.img_url} onChange={(e) => setFormData({ ...formData, img_url: e.target.value })} placeholder="https://..." />
+                    {formData.img_url && (
+                      <div className="mt-2 aspect-[4/3] max-w-[200px] overflow-hidden rounded border">
+                        <img src={formData.img_url} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="is_active">Activo (visible en página)</Label>
+                    <Switch id="is_active" checked={formData.is_active} onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })} />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={resetForm}>Cancelar</Button>
+                    <Button onClick={handleSave} disabled={saveMutation.isPending}>
+                      {saveMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+                      {editingSoftware ? 'Guardar cambios' : 'Agregar'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {/* Search */}
+        <div className="mb-4 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <Input placeholder="Buscar por marca, descripción o clave..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 max-w-md" />
+        </div>
+
+        {/* Stats - clickable filters */}
+        <div className="flex gap-4 mb-4">
+          <Badge
+            variant={activeFilter === 'all' ? 'default' : 'outline'}
+            className={cn("text-sm cursor-pointer", activeFilter === 'all' && 'bg-primary')}
+            onClick={() => setActiveFilter('all')}
+          >
+            Total: {totalCount}
+          </Badge>
+          <Badge
+            variant={activeFilter === 'active' ? 'default' : 'outline'}
+            className={cn("text-sm cursor-pointer", activeFilter === 'active' ? 'bg-green-500' : 'bg-green-500/10 text-green-600 border-green-500')}
+            onClick={() => setActiveFilter('active')}
+          >
+            Activos: {activeCount}
+          </Badge>
+          <Badge
+            variant={activeFilter === 'inactive' ? 'default' : 'outline'}
+            className={cn("text-sm cursor-pointer", activeFilter === 'inactive' ? 'bg-muted-foreground' : '')}
+            onClick={() => setActiveFilter('inactive')}
+          >
+            Inactivos: {inactiveCount}
+          </Badge>
+        </div>
+
+        {/* Table with drag-and-drop */}
+        {isLoading ? (
+          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+        ) : filteredSoftware.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {softwareList.length === 0 ? 'No hay software ESD. Agrega uno para comenzar.' : 'No se encontraron resultados.'}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-8"></TableHead>
+                    <TableHead className="w-16">Imagen</TableHead>
+                    <TableHead>Clave</TableHead>
+                    <TableHead>Marca / Descripción</TableHead>
+                    <TableHead className="text-right">Precio</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <SortableContext items={filteredSoftware.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                  <TableBody>
+                    {filteredSoftware.map((software) => (
+                      <SortableRow
+                        key={software.id}
+                        software={software}
+                        formatPrice={formatPrice}
+                        handleEdit={handleEdit}
+                        deleteMutation={deleteMutation}
+                        toggleActiveMutation={toggleActiveMutation}
+                      />
+                    ))}
+                  </TableBody>
+                </SortableContext>
+              </Table>
+            </DndContext>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default AdminSoftwareESD;

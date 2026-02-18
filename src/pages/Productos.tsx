@@ -171,6 +171,7 @@ const Productos: React.FC = () => {
             searchTerm={searchTerm}
             activeCategory={activeCategory}
             resetFilters={resetFilters}
+            categories={categories}
           />
         </div>
       </section>

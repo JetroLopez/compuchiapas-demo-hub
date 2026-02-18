@@ -37,9 +37,10 @@ interface ProductsListProps {
   searchTerm: string;
   activeCategory: string;
   resetFilters: () => void;
+  categories?: Array<{ id: string; name: string; display_order: number }>;
 }
 
-const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory, resetFilters }) => {
+const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory, resetFilters, categories = [] }) => {
   const { showPrices } = useStoreSettings();
 
   // Obtener productos de la base de datos con paginación para superar límite de 1000
@@ -168,6 +169,20 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     return map;
   }, [warehouseStock, exhibitedWarehouseIds, warehouseMultiplierMap]);
 
+  // Obtener software ESD
+  const { data: softwareESD = [] } = useQuery({
+    queryKey: ['software-esd'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('software_esd')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Filtrar productos según almacenes exhibidos
   const productsInExhibitedWarehouses = useMemo(() => {
     if (exhibitedWarehouseIds.size === 0) {
@@ -182,6 +197,20 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
 
     return products.filter(product => productIdsInExhibitedWarehouses.has(product.id));
   }, [products, warehouseStock, exhibitedWarehouseIds]);
+
+  // Determinar si estamos filtrando por categoría "Software"
+  const isSoftwareCategory = useMemo(() => {
+    if (activeCategory === 'all') return false;
+    const categoryIds = activeCategory.includes(',') 
+      ? activeCategory.split(',') 
+      : [activeCategory];
+    
+    return categoryIds.some(catId => {
+      const cat = categories.find(c => c.id === catId);
+      return cat?.name.toUpperCase().includes('SOFTWARE') || 
+             cat?.name.toUpperCase().includes('SOFT');
+    });
+  }, [activeCategory, categories]);
   
   // Aplicar filtros adicionales (categoría y búsqueda con ranking por tokens)
   const filteredProducts = useMemo(() => {
@@ -210,6 +239,39 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     
     return searched;
   }, [productsInExhibitedWarehouses, activeCategory, searchTerm]);
+
+  // Combinar productos físicos con software ESD si es categoría Software
+  const allFilteredItems = useMemo(() => {
+    const productItems = filteredProducts.map(p => ({
+      ...p,
+      type: 'product' as const
+    }));
+
+    if (!isSoftwareCategory) {
+      return productItems;
+    }
+
+    // Convertir software ESD a formato compatible
+    const softwareItems = softwareESD.map(s => ({
+      id: s.id,
+      clave: s.clave,
+      name: `${s.marca} - ${s.descripcion}`,
+      category_id: activeCategory,
+      image_url: s.img_url,
+      existencias: 9999, // Sin límite
+      costo: s.precio,
+      type: 'software' as const
+    }));
+
+    // Combinar y filtrar por búsqueda si hay término
+    const combined = [...productItems, ...softwareItems];
+
+    if (searchTerm.trim()) {
+      return searchProducts(combined, searchTerm);
+    }
+
+    return combined;
+  }, [filteredProducts, softwareESD, isSoftwareCategory, searchTerm, activeCategory]);
 
   const isLoading = isLoadingProducts;
   const error = productsError;
@@ -240,27 +302,29 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     );
   }
 
-  if (filteredProducts.length === 0) {
+  if (allFilteredItems.length === 0) {
     return <NoProductsFound resetFilters={resetFilters} />;
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-8">
-      {filteredProducts.map((product) => (
+      {allFilteredItems.map((item) => (
         <ProductCard
-          key={product.id}
-          id={product.id}
-          clave={product.clave}
-          name={product.name}
-          image={product.image_url || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1000&q=80'}
-          existencias={warehouseStock
-            .filter(ws => exhibitedWarehouseIds.has(ws.warehouse_id) && ws.product_id === product.id)
-            .reduce((sum, ws) => sum + ws.existencias, 0)}
-          costo={product.costo}
-          categoryId={product.category_id}
+          key={item.id}
+          id={item.id}
+          clave={item.clave}
+          name={item.name}
+          image={item.image_url || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1000&q=80'}
+          existencias={item.type === 'software' 
+            ? item.existencias || 9999
+            : warehouseStock
+                .filter(ws => exhibitedWarehouseIds.has(ws.warehouse_id) && ws.product_id === item.id)
+                .reduce((sum, ws) => sum + ws.existencias, 0)}
+          costo={item.costo}
+          categoryId={item.category_id}
           showPrice={showPrices}
-          profitMultiplier={productMultiplierMap.get(product.id) ?? 1.20}
-          type="product"
+          profitMultiplier={item.type === 'software' ? 1.20 : (productMultiplierMap.get(item.id) ?? 1.20)}
+          type={item.type}
         />
       ))}
     </div>

@@ -15,7 +15,7 @@ interface ProductCardProps {
   categoryId: string | null;
   showPrice?: boolean;
   profitMultiplier?: number;
-  type?: 'product' | 'promotion';
+  type?: 'product' | 'promotion' | 'software';
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -36,7 +36,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const isMobile = useIsMobile();
   
   const whatsappNumber = "9622148546";
-  const price = calculatePrice(costo, categoryId, profitMultiplier);
+  // For software type, use costo directly as final price (no markup applied)
+  // For other types, calculate price with markup
+  const price = type === 'software' && costo !== null && costo > 0
+    ? costo
+    : calculatePrice(costo, categoryId, profitMultiplier);
   const formattedPrice = formatPrice(price);
   
   const quantityInCart = getItemQuantity(id, type);

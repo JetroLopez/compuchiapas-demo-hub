@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 
 export interface CartItem {
   id: string;
-  type: 'product' | 'promotion';
+  type: 'product' | 'promotion' | 'software';
   name: string;
   image_url: string | null;
   quantity: number;
@@ -14,9 +14,9 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'>, openSidebar?: boolean) => void;
-  removeItem: (id: string, type: 'product' | 'promotion') => void;
-  updateQuantity: (id: string, type: 'product' | 'promotion', quantity: number) => void;
-  getItemQuantity: (id: string, type: 'product' | 'promotion') => number;
+  removeItem: (id: string, type: 'product' | 'promotion' | 'software') => void;
+  updateQuantity: (id: string, type: 'product' | 'promotion' | 'software', quantity: number) => void;
+  getItemQuantity: (id: string, type: 'product' | 'promotion' | 'software') => number;
   clearCart: () => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -73,11 +73,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  const removeItem = useCallback((id: string, type: 'product' | 'promotion') => {
+  const removeItem = useCallback((id: string, type: 'product' | 'promotion' | 'software') => {
     setItems(prev => prev.filter(item => !(item.id === id && item.type === type)));
   }, []);
 
-  const updateQuantity = useCallback((id: string, type: 'product' | 'promotion', quantity: number) => {
+  const updateQuantity = useCallback((id: string, type: 'product' | 'promotion' | 'software', quantity: number) => {
     if (quantity <= 0) {
       removeItem(id, type);
       return;
@@ -97,7 +97,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   }, [removeItem]);
 
-  const getItemQuantity = useCallback((id: string, type: 'product' | 'promotion') => {
+  const getItemQuantity = useCallback((id: string, type: 'product' | 'promotion' | 'software') => {
     const item = items.find(i => i.id === id && i.type === type);
     return item?.quantity || 0;
   }, [items]);

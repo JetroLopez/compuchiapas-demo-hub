@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Servicios from "./pages/Servicios";
 import Productos from "./pages/Productos";
 import PCBuilder from "./pages/PCBuilder";
+import SoftwareESD from "./pages/SoftwareESD";
 import Blog from "./pages/Blog";
 import Contacto from "./pages/Contacto";
 import Auth from "./pages/Auth";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/servicios" element={<Servicios />} />
             <Route path="/productos" element={<Productos />} />
             <Route path="/productos/arma-tu-pc" element={<PCBuilder />} />
+            <Route path="/software-esd" element={<SoftwareESD />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/contacto" element={<Contacto />} />
             <Route path="/auth" element={<Auth />} />
