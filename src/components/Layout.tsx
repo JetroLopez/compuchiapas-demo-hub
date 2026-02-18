@@ -8,7 +8,6 @@ import Footer from './Footer';
 import WhatsAppButton from './WhatsAppButton';
 import CartButton from './cart/CartButton';
 import CartSidebar from './cart/CartSidebar';
-import { CartProvider } from '@/hooks/useCart';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -96,9 +95,9 @@ const LayoutContent: React.FC<LayoutProps> = ({ children, productSearchTerm, onP
 
 const Layout: React.FC<LayoutProps> = ({ children, productSearchTerm, onProductSearchChange }) => {
   return (
-    <CartProvider>
-      <LayoutContent productSearchTerm={productSearchTerm} onProductSearchChange={onProductSearchChange}>{children}</LayoutContent>
-    </CartProvider>
+    <LayoutContent productSearchTerm={productSearchTerm} onProductSearchChange={onProductSearchChange}>
+      {children}
+    </LayoutContent>
   );
 };
 
