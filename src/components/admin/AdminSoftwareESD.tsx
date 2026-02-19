@@ -48,9 +48,37 @@ interface SoftwareBrand {
   id: string;
   name: string;
   image_url: string | null;
+  display_order: number | null;
 }
 
 type FilterType = 'all' | 'active' | 'inactive';
+
+// Sortable brand item component
+const SortableBrandItem: React.FC<{
+  brand: SoftwareBrand;
+  onEditImage: (name: string, imageUrl: string) => void;
+}> = ({ brand, onEditImage }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: brand.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-3 bg-background border rounded-lg p-2">
+      <div className="cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+        <GripVertical size={16} className="text-muted-foreground" />
+      </div>
+      <div className="w-8 h-8 rounded overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+        {brand.image_url ? (
+          <img src={brand.image_url} alt={brand.name} className="w-full h-full object-contain" />
+        ) : (
+          <Download size={14} className="text-muted-foreground" />
+        )}
+      </div>
+      <span className="text-sm font-medium flex-1">{brand.name}</span>
+      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => onEditImage(brand.name, brand.image_url || '')}>
+        <Edit size={12} />
+      </Button>
+    </div>
+  );
+};
 
 // Sortable table row component
 const SortableRow: React.FC<{
@@ -97,23 +125,20 @@ const SortableRow: React.FC<{
       </TableCell>
       <TableCell className="text-right font-semibold text-tech-blue">{formatPrice(software.precio)}</TableCell>
       <TableCell className="text-center">
-        <Badge variant={software.is_active ? 'default' : 'secondary'}>
-          {software.is_active ? 'Activo' : 'Inactivo'}
-        </Badge>
+        <Switch
+          checked={software.is_active}
+          onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: software.id, is_active: checked })}
+        />
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => handleEdit(software)}>
             <Edit size={16} />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toggleActiveMutation.mutate({ id: software.id, is_active: !software.is_active })}
-            title={software.is_active ? 'Desactivar' : 'Activar'}
-          >
-            {software.is_active ? '✓' : '✗'}
-          </Button>
+          <Switch
+            checked={software.is_active}
+            onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: software.id, is_active: checked })}
+          />
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
@@ -188,7 +213,8 @@ const AdminSoftwareESD: React.FC = () => {
     queryFn: async (): Promise<SoftwareBrand[]> => {
       const { data, error } = await (supabase
         .from('software_esd_brands')
-        .select('*') as any);
+        .select('*')
+        .order('display_order', { ascending: true }) as any);
       if (error) throw error;
       return data || [];
     },
@@ -216,6 +242,21 @@ const AdminSoftwareESD: React.FC = () => {
       setBrandImageUrl('');
     },
     onError: () => toast.error('Error al actualizar imagen de marca'),
+  });
+
+  // Reorder brands mutation
+  const reorderBrandsMutation = useMutation({
+    mutationFn: async (orderedBrands: { id: string; display_order: number }[]) => {
+      for (const item of orderedBrands) {
+        const { error } = await (supabase.from('software_esd_brands').update({ display_order: item.display_order }).eq('id', item.id) as any);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['software-esd-brands'] });
+      toast.success('Orden de marcas actualizado');
+    },
+    onError: () => toast.error('Error al reordenar marcas'),
   });
 
   // Save mutation
@@ -452,40 +493,43 @@ const AdminSoftwareESD: React.FC = () => {
       </CardHeader>
       <CardContent>
         {/* Brand images management */}
-        {uniqueBrands.length > 0 && (
+        {(brandsList as SoftwareBrand[]).length > 0 && (
           <div className="mb-6 p-4 border rounded-lg bg-muted/30">
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <Image size={16} />
-              Imágenes de marcas
+              Imágenes y orden de marcas (arrastra para reordenar)
             </h3>
-            <div className="flex flex-wrap gap-3">
-              {uniqueBrands.map(brand => {
-                const currentImg = brandImageMap.get(brand);
-                return (
-                  <div key={brand} className="flex items-center gap-2 bg-background border rounded-lg p-2">
-                    <div className="w-8 h-8 rounded overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
-                      {currentImg ? (
-                        <img src={currentImg} alt={brand} className="w-full h-full object-contain" />
-                      ) : (
-                        <Download size={14} className="text-muted-foreground" />
-                      )}
-                    </div>
-                    <span className="text-sm font-medium">{brand}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2"
-                      onClick={() => {
-                        setEditingBrandName(brand);
-                        setBrandImageUrl(currentImg || '');
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event) => {
+                const { active, over } = event;
+                if (!over || active.id === over.id) return;
+                const brands = brandsList as SoftwareBrand[];
+                const oldIndex = brands.findIndex(b => b.id === active.id);
+                const newIndex = brands.findIndex(b => b.id === over.id);
+                if (oldIndex === -1 || newIndex === -1) return;
+                const reordered = arrayMove(brands, oldIndex, newIndex);
+                const updates = reordered.map((b, i) => ({ id: b.id, display_order: i }));
+                queryClient.setQueryData(['software-esd-brands'], reordered.map((b, i) => ({ ...b, display_order: i })));
+                reorderBrandsMutation.mutate(updates);
+              }}
+            >
+              <SortableContext items={(brandsList as SoftwareBrand[]).map(b => b.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {(brandsList as SoftwareBrand[]).map(brand => (
+                    <SortableBrandItem
+                      key={brand.id}
+                      brand={brand}
+                      onEditImage={(name, imageUrl) => {
+                        setEditingBrandName(name);
+                        setBrandImageUrl(imageUrl);
                       }}
-                    >
-                      <Edit size={12} />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
         )}
 
@@ -572,7 +616,7 @@ const AdminSoftwareESD: React.FC = () => {
                     <TableHead>Clave</TableHead>
                     <TableHead>Marca / Descripción</TableHead>
                     <TableHead className="text-right">Precio</TableHead>
-                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-center">Activo</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
