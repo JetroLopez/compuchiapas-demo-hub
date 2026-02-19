@@ -870,6 +870,30 @@ export type Database = {
         }
         Relationships: []
       }
+      software_esd_brands: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       special_orders: {
         Row: {
           anticipo: number | null

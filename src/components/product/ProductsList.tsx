@@ -30,6 +30,7 @@ interface ExhibitedWarehouse {
 
 interface WarehouseInfo {
   id: string;
+  name: string;
   profit_multiplier: number;
 }
 
@@ -126,17 +127,18 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     },
   });
 
-  // Obtener multiplicadores de almacenes
+  // Obtener multiplicadores y nombres de almacenes
   const { data: warehouseInfos = [] } = useQuery({
-    queryKey: ['warehouse-multipliers'],
+    queryKey: ['warehouse-infos'],
     queryFn: async (): Promise<WarehouseInfo[]> => {
       const { data, error } = await (supabase
         .from('warehouses')
-        .select('id, profit_multiplier') as any);
+        .select('id, name, profit_multiplier') as any);
       
       if (error) throw error;
       return (data || []).map((w: any) => ({
         id: w.id,
+        name: w.name,
         profit_multiplier: w.profit_multiplier ?? 1.20,
       }));
     },
@@ -151,52 +153,131 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     );
   }, [exhibitedWarehouses]);
 
-  // Build map: warehouseId -> profit_multiplier
-  const warehouseMultiplierMap = useMemo(() => {
-    const map = new Map<string, number>();
-    warehouseInfos.forEach(w => map.set(w.id, w.profit_multiplier));
+  // Build map: warehouseId -> info
+  const warehouseInfoMap = useMemo(() => {
+    const map = new Map<string, WarehouseInfo>();
+    warehouseInfos.forEach(w => map.set(w.id, w));
     return map;
   }, [warehouseInfos]);
 
-  // Build map: productId -> best multiplier (from first exhibited warehouse with stock)
-  const productMultiplierMap = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const ws of warehouseStock) {
-      if (exhibitedWarehouseIds.has(ws.warehouse_id) && ws.existencias > 0 && !map.has(ws.product_id)) {
-        map.set(ws.product_id, warehouseMultiplierMap.get(ws.warehouse_id) ?? 1.20);
-      }
-    }
-    return map;
-  }, [warehouseStock, exhibitedWarehouseIds, warehouseMultiplierMap]);
+  // Find the "CSC" warehouse id (first warehouse alphabetically or one containing CSC)
+  const cscWarehouseId = useMemo(() => {
+    const csc = warehouseInfos.find(w => w.name.toUpperCase().includes('CSC'));
+    return csc?.id || warehouseInfos[0]?.id || null;
+  }, [warehouseInfos]);
 
   // Obtener software ESD
   const { data: softwareESD = [] } = useQuery({
     queryKey: ['software-esd'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('software_esd')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true) as any);
       
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Filtrar productos según almacenes exhibidos
+  // DEDUPLICATION: Merge products with same clave.
+  // For products with same clave, keep description/price from warehouse with most exhibited stock.
+  // If equal, prefer CSC warehouse.
+  const deduplicatedProducts = useMemo(() => {
+    // Group products by clave
+    const byClave = new Map<string, Product[]>();
+    for (const p of products) {
+      if (!p.clave) {
+        // Products without clave are unique
+        byClave.set(p.id, [p]);
+        continue;
+      }
+      const existing = byClave.get(p.clave);
+      if (existing) {
+        existing.push(p);
+      } else {
+        byClave.set(p.clave, [p]);
+      }
+    }
+
+    const result: Product[] = [];
+    for (const [key, group] of byClave) {
+      if (group.length === 1) {
+        result.push(group[0]);
+        continue;
+      }
+
+      // Multiple products with same clave - pick the best one
+      // Calculate total exhibited stock per product entry
+      let bestProduct = group[0];
+      let bestStock = 0;
+      let bestIsCsc = false;
+
+      for (const p of group) {
+        const stockInExhibited = warehouseStock
+          .filter(ws => ws.product_id === p.id && exhibitedWarehouseIds.has(ws.warehouse_id) && ws.existencias > 0)
+          .reduce((sum, ws) => sum + ws.existencias, 0);
+
+        const isCsc = warehouseStock.some(
+          ws => ws.product_id === p.id && ws.warehouse_id === cscWarehouseId && ws.existencias > 0
+        );
+
+        if (stockInExhibited > bestStock || (stockInExhibited === bestStock && isCsc && !bestIsCsc)) {
+          bestProduct = p;
+          bestStock = stockInExhibited;
+          bestIsCsc = isCsc;
+        }
+      }
+
+      // Merge: use best product's name/costo but aggregate stock from ALL entries with same clave
+      // We'll aggregate stock at render time, but the product entry itself uses the best one
+      result.push({
+        ...bestProduct,
+        // We'll use a special marker to aggregate stock from all products with same clave
+      });
+    }
+
+    return result;
+  }, [products, warehouseStock, exhibitedWarehouseIds, cscWarehouseId]);
+
+  // Build a map: clave -> all product IDs (for aggregating stock of merged products)
+  const claveToProductIds = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const p of products) {
+      if (!p.clave) continue;
+      const existing = map.get(p.clave) || [];
+      existing.push(p.id);
+      map.set(p.clave, existing);
+    }
+    return map;
+  }, [products]);
+
+  // Build map: productId -> best multiplier (from first exhibited warehouse with stock)
+  const productMultiplierMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const ws of warehouseStock) {
+      if (exhibitedWarehouseIds.has(ws.warehouse_id) && ws.existencias > 0 && !map.has(ws.product_id)) {
+        const info = warehouseInfoMap.get(ws.warehouse_id);
+        map.set(ws.product_id, info?.profit_multiplier ?? 1.20);
+      }
+    }
+    return map;
+  }, [warehouseStock, exhibitedWarehouseIds, warehouseInfoMap]);
+
+  // Filtrar productos según almacenes exhibidos (using deduplicated list)
   const productsInExhibitedWarehouses = useMemo(() => {
     if (exhibitedWarehouseIds.size === 0) {
       return [];
     }
 
-    const productIdsInExhibitedWarehouses = new Set(
-      warehouseStock
-        .filter(ws => exhibitedWarehouseIds.has(ws.warehouse_id) && ws.existencias > 0)
-        .map(ws => ws.product_id)
-    );
-
-    return products.filter(product => productIdsInExhibitedWarehouses.has(product.id));
-  }, [products, warehouseStock, exhibitedWarehouseIds]);
+    // For deduplicated products, check if ANY of the products with same clave has exhibited stock
+    return deduplicatedProducts.filter(product => {
+      const allIds = product.clave ? (claveToProductIds.get(product.clave) || [product.id]) : [product.id];
+      return allIds.some(pid =>
+        warehouseStock.some(ws => ws.product_id === pid && exhibitedWarehouseIds.has(ws.warehouse_id) && ws.existencias > 0)
+      );
+    });
+  }, [deduplicatedProducts, warehouseStock, exhibitedWarehouseIds, claveToProductIds]);
 
   // Determinar si estamos filtrando por categoría "Software"
   const isSoftwareCategory = useMemo(() => {
@@ -214,7 +295,6 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
   
   // Aplicar filtros adicionales (categoría y búsqueda con ranking por tokens)
   const filteredProducts = useMemo(() => {
-    // Filter by category - supports comma-separated multi-category from parent selection
     let categoryFiltered;
     if (activeCategory === 'all') {
       categoryFiltered = productsInExhibitedWarehouses;
@@ -225,10 +305,8 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
       categoryFiltered = productsInExhibitedWarehouses.filter(p => p.category_id === activeCategory);
     }
 
-    // Then apply token-based search with relevance ranking
     const searched = searchProducts(categoryFiltered, searchTerm) as Product[];
     
-    // If no search term, sort: products with image first
     if (!searchTerm.trim()) {
       return searched.sort((a, b) => {
         const aHasImg = a.image_url ? 1 : 0;
@@ -251,19 +329,17 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
       return productItems;
     }
 
-    // Convertir software ESD a formato compatible
-    const softwareItems = softwareESD.map(s => ({
+    const softwareItems = (softwareESD as any[]).map((s: any) => ({
       id: s.id,
       clave: s.clave,
       name: `${s.marca} - ${s.descripcion}`,
       category_id: activeCategory,
       image_url: s.img_url,
-      existencias: 9999, // Sin límite
+      existencias: 9999,
       costo: s.precio,
       type: 'software' as const
     }));
 
-    // Combinar y filtrar por búsqueda si hay término
     const combined = [...productItems, ...softwareItems];
 
     if (searchTerm.trim()) {
@@ -272,6 +348,17 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
 
     return combined;
   }, [filteredProducts, softwareESD, isSoftwareCategory, searchTerm, activeCategory]);
+
+  // Helper to get aggregated exhibited stock for a product (considering clave merging)
+  const getAggregatedStock = (item: any): number => {
+    if (item.type === 'software') return item.existencias || 9999;
+    const allIds = item.clave ? (claveToProductIds.get(item.clave) || [item.id]) : [item.id];
+    return allIds.reduce((total: number, pid: string) => {
+      return total + warehouseStock
+        .filter(ws => exhibitedWarehouseIds.has(ws.warehouse_id) && ws.product_id === pid)
+        .reduce((sum, ws) => sum + ws.existencias, 0);
+    }, 0);
+  };
 
   const isLoading = isLoadingProducts;
   const error = productsError;
@@ -315,11 +402,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
           clave={item.clave}
           name={item.name}
           image={item.image_url || 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1000&q=80'}
-          existencias={item.type === 'software' 
-            ? item.existencias || 9999
-            : warehouseStock
-                .filter(ws => exhibitedWarehouseIds.has(ws.warehouse_id) && ws.product_id === item.id)
-                .reduce((sum, ws) => sum + ws.existencias, 0)}
+          existencias={getAggregatedStock(item)}
           costo={item.costo}
           categoryId={item.category_id}
           showPrice={showPrices}
