@@ -47,7 +47,8 @@ const catalogStructure = [
       { name: 'Fuentes de Poder', codes: ['FUENT'] },
       { name: 'Gabinetes', codes: ['GABIN'] },
       { name: 'Tarjetas Gráficas', codes: ['VIDEO'] },
-      { name: 'Sistemas de Enfriamiento', codes: ['ENFRI'] }
+      { name: 'Sistemas de Enfriamiento', codes: ['ENFRI'] },
+      { name: 'Memorias RAM DIMM/UDIMM', codes: ['MEDIM'] }
     ]
   },
   {
@@ -60,7 +61,6 @@ const catalogStructure = [
       { name: 'Discos Duros Externos', codes: ['DDURE'] },
       { name: 'Memorias USB', codes: ['MEUSB'] },
       { name: 'Memorias Flash', codes: ['MEFLA'] },
-      { name: 'Memorias RAM DIMM/UDIMM', codes: ['MEDIM'] },
       { name: 'Memorias RAM SODIMM', codes: ['MESOD'] },
       { name: 'Marca SanDisk', codes: ['SDISK'] }
     ]
@@ -183,7 +183,6 @@ const catalogStructure = [
     icon: Wrench,
     color: 'from-gray-500 to-gray-600',
     subcategories: [
-      { name: 'Refacciones Generales', codes: ['REFAC'] },
       { name: 'Refacciones de Cargadores', codes: ['REFCA'] },
       { name: 'Refacciones de Pantallas', codes: ['REFPA'] },
       { name: 'Refacciones de Teclados', codes: ['REFTE'] },
