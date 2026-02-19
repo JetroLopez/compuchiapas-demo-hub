@@ -43,6 +43,7 @@ const SoftwareESDPage: React.FC = () => {
   const { toast } = useToast();
   const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
   const [detailSoftware, setDetailSoftware] = useState<SoftwareESD | null>(null);
+  const productsRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.title = "Software ESD | Compuchiapas";
@@ -195,7 +196,15 @@ const SoftwareESDPage: React.FC = () => {
                             ? "border-primary shadow-lg ring-2 ring-primary/20"
                             : "border-transparent hover:border-primary/30"
                         )}
-                        onClick={() => setExpandedBrand(isSelected ? null : brand)}
+                        onClick={() => {
+                          const newBrand = isSelected ? null : brand;
+                          setExpandedBrand(newBrand);
+                          if (newBrand) {
+                            setTimeout(() => {
+                              productsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }, 400);
+                          }
+                        }}
                       >
                         <CardContent className="p-4 md:p-6 flex flex-col items-center text-center gap-3">
                           <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl flex items-center justify-center overflow-hidden bg-muted">
@@ -228,6 +237,7 @@ const SoftwareESDPage: React.FC = () => {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.35, ease: 'easeInOut' }}
                     className="overflow-hidden"
+                    ref={productsRef}
                   >
                     <div className="border rounded-xl p-4 md:p-6 bg-card mb-4">
                       <div className="flex items-center justify-between mb-6">
