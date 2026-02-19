@@ -530,11 +530,24 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       
       // 7. Add zero stock products to "Por Surtir" table WITH warehouse_id
       if (zeroStockProducts.length > 0) {
-        // Check for existing entries for this warehouse to avoid duplicates
+        const zeroStockProductIds = zeroStockProducts.map(p => p.id);
+        
+        // First, clean up any legacy entries (without warehouse_id) for these products
+        // This prevents duplicates between old (no warehouse_id) and new (with warehouse_id) entries
+        for (let i = 0; i < zeroStockProductIds.length; i += chunkSize) {
+          const chunk = zeroStockProductIds.slice(i, i + chunkSize);
+          await supabase
+            .from('products_por_surtir')
+            .delete()
+            .in('product_id', chunk)
+            .is('warehouse_id', null);
+        }
+        
+        // Check for existing entries for this specific warehouse to avoid duplicates
         const { data: existingPorSurtir } = await supabase
           .from('products_por_surtir')
           .select('product_id')
-          .in('product_id', zeroStockProducts.map((p) => p.id))
+          .in('product_id', zeroStockProductIds)
           .eq('warehouse_id', warehouseId);
         
         const existingProductIds2 = new Set((existingPorSurtir || []).map((e: any) => e.product_id));

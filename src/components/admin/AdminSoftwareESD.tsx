@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Trash2, Plus, Loader2, Search, Edit, Download, GripVertical } from 'lucide-react';
+import { Trash2, Plus, Loader2, Search, Edit, Download, GripVertical, Image } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,6 +42,12 @@ interface SoftwareESD {
   img_url: string | null;
   is_active: boolean;
   display_order: number | null;
+}
+
+interface SoftwareBrand {
+  id: string;
+  name: string;
+  image_url: string | null;
 }
 
 type FilterType = 'all' | 'active' | 'inactive';
@@ -153,6 +159,9 @@ const AdminSoftwareESD: React.FC = () => {
     img_url: '',
     is_active: true,
   });
+  // Brand image editing
+  const [editingBrandName, setEditingBrandName] = useState<string | null>(null);
+  const [brandImageUrl, setBrandImageUrl] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -163,30 +172,69 @@ const AdminSoftwareESD: React.FC = () => {
   const { data: softwareList = [], isLoading } = useQuery({
     queryKey: ['admin-software-esd'],
     queryFn: async (): Promise<SoftwareESD[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('software_esd')
         .select('*')
         .order('marca', { ascending: true })
-        .order('display_order', { ascending: true });
+        .order('display_order', { ascending: true }) as any);
       if (error) throw error;
       return data || [];
     },
+  });
+
+  // Fetch brands
+  const { data: brandsList = [] } = useQuery({
+    queryKey: ['software-esd-brands'],
+    queryFn: async (): Promise<SoftwareBrand[]> => {
+      const { data, error } = await (supabase
+        .from('software_esd_brands')
+        .select('*') as any);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Brand image map
+  const brandImageMap = React.useMemo(() => {
+    const map = new Map<string, string | null>();
+    (brandsList as SoftwareBrand[]).forEach(b => map.set(b.name, b.image_url));
+    return map;
+  }, [brandsList]);
+
+  // Save brand image mutation
+  const saveBrandImageMutation = useMutation({
+    mutationFn: async ({ name, image_url }: { name: string; image_url: string | null }) => {
+      const { error } = await (supabase
+        .from('software_esd_brands')
+        .upsert({ name, image_url }, { onConflict: 'name' }) as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['software-esd-brands'] });
+      toast.success('Imagen de marca actualizada');
+      setEditingBrandName(null);
+      setBrandImageUrl('');
+    },
+    onError: () => toast.error('Error al actualizar imagen de marca'),
   });
 
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (data: { marca: string; clave: string; descripcion: string; detalles: string | null; precio: number; img_url: string | null; is_active: boolean; display_order: number }) => {
       if (editingSoftware) {
-        const { error } = await supabase.from('software_esd').update(data).eq('id', editingSoftware.id);
+        const { error } = await (supabase.from('software_esd').update(data).eq('id', editingSoftware.id) as any);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('software_esd').insert([data]);
+        const { error } = await (supabase.from('software_esd').insert([data]) as any);
         if (error) throw error;
       }
+      // Ensure the brand exists in brands table
+      await (supabase.from('software_esd_brands').upsert({ name: data.marca }, { onConflict: 'name' }) as any);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-software-esd'] });
       queryClient.invalidateQueries({ queryKey: ['software-esd'] });
+      queryClient.invalidateQueries({ queryKey: ['software-esd-brands'] });
       toast.success(editingSoftware ? 'Software actualizado' : 'Software agregado');
       resetForm();
     },
@@ -195,7 +243,7 @@ const AdminSoftwareESD: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('software_esd').delete().eq('id', id);
+      const { error } = await (supabase.from('software_esd').delete().eq('id', id) as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -208,7 +256,7 @@ const AdminSoftwareESD: React.FC = () => {
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from('software_esd').update({ is_active }).eq('id', id);
+      const { error } = await (supabase.from('software_esd').update({ is_active }).eq('id', id) as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -223,7 +271,7 @@ const AdminSoftwareESD: React.FC = () => {
   const reorderMutation = useMutation({
     mutationFn: async (orderedIds: { id: string; display_order: number }[]) => {
       for (const item of orderedIds) {
-        const { error } = await supabase.from('software_esd').update({ display_order: item.display_order }).eq('id', item.id);
+        const { error } = await (supabase.from('software_esd').update({ display_order: item.display_order }).eq('id', item.id) as any);
         if (error) throw error;
       }
     },
@@ -260,7 +308,6 @@ const AdminSoftwareESD: React.FC = () => {
       toast.error('Marca, clave, descripción y precio son requeridos');
       return;
     }
-    // Use current max display_order + 1 for new items
     const maxOrder = softwareList.reduce((max, s) => Math.max(max, s.display_order || 0), 0);
     saveMutation.mutate({
       marca: formData.marca.trim(),
@@ -286,7 +333,6 @@ const AdminSoftwareESD: React.FC = () => {
     const reordered = arrayMove(filteredSoftware, oldIndex, newIndex);
     const updates = reordered.map((s, i) => ({ id: s.id, display_order: i }));
 
-    // Optimistic update
     queryClient.setQueryData(['admin-software-esd'], (old: SoftwareESD[] | undefined) => {
       if (!old) return old;
       const orderMap = new Map(updates.map(u => [u.id, u.display_order]));
@@ -312,14 +358,14 @@ const AdminSoftwareESD: React.FC = () => {
       return matchesSearch && matchesFilter;
     });
 
-  const formatPrice = (price: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(price);
+  const formatPriceFn = (price: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(price);
 
   const totalCount = softwareList.length;
   const activeCount = softwareList.filter(s => s.is_active).length;
   const inactiveCount = softwareList.filter(s => !s.is_active).length;
 
   // Get unique brands for dropdown
-  const brands = Array.from(new Set(softwareList.map(s => s.marca))).sort();
+  const uniqueBrands = Array.from(new Set(softwareList.map(s => s.marca))).sort();
 
   return (
     <Card>
@@ -349,7 +395,7 @@ const AdminSoftwareESD: React.FC = () => {
                       list="brands-list"
                     />
                     <datalist id="brands-list">
-                      {brands.map(brand => (
+                      {uniqueBrands.map(brand => (
                         <option key={brand} value={brand} />
                       ))}
                     </datalist>
@@ -379,7 +425,7 @@ const AdminSoftwareESD: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="img_url">URL de imagen (opcional)</Label>
+                    <Label htmlFor="img_url">URL de imagen del producto (opcional)</Label>
                     <Input id="img_url" value={formData.img_url} onChange={(e) => setFormData({ ...formData, img_url: e.target.value })} placeholder="https://..." />
                     {formData.img_url && (
                       <div className="mt-2 aspect-[4/3] max-w-[200px] overflow-hidden rounded border">
@@ -405,6 +451,78 @@ const AdminSoftwareESD: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Brand images management */}
+        {uniqueBrands.length > 0 && (
+          <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Image size={16} />
+              Imágenes de marcas
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {uniqueBrands.map(brand => {
+                const currentImg = brandImageMap.get(brand);
+                return (
+                  <div key={brand} className="flex items-center gap-2 bg-background border rounded-lg p-2">
+                    <div className="w-8 h-8 rounded overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+                      {currentImg ? (
+                        <img src={currentImg} alt={brand} className="w-full h-full object-contain" />
+                      ) : (
+                        <Download size={14} className="text-muted-foreground" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium">{brand}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => {
+                        setEditingBrandName(brand);
+                        setBrandImageUrl(currentImg || '');
+                      }}
+                    >
+                      <Edit size={12} />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Brand image edit dialog */}
+        <Dialog open={!!editingBrandName} onOpenChange={(open) => !open && setEditingBrandName(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Imagen de marca: {editingBrandName}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>URL de imagen</Label>
+                <Input
+                  value={brandImageUrl}
+                  onChange={(e) => setBrandImageUrl(e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              {brandImageUrl && (
+                <div className="aspect-square max-w-[150px] mx-auto rounded border overflow-hidden bg-muted">
+                  <img src={brandImageUrl} alt="Preview" className="w-full h-full object-contain" />
+                </div>
+              )}
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditingBrandName(null)}>Cancelar</Button>
+                <Button
+                  onClick={() => editingBrandName && saveBrandImageMutation.mutate({ name: editingBrandName, image_url: brandImageUrl.trim() || null })}
+                  disabled={saveBrandImageMutation.isPending}
+                >
+                  {saveBrandImageMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+                  Guardar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Search */}
         <div className="mb-4 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -464,7 +582,7 @@ const AdminSoftwareESD: React.FC = () => {
                       <SortableRow
                         key={software.id}
                         software={software}
-                        formatPrice={formatPrice}
+                        formatPrice={formatPriceFn}
                         handleEdit={handleEdit}
                         deleteMutation={deleteMutation}
                         toggleActiveMutation={toggleActiveMutation}
