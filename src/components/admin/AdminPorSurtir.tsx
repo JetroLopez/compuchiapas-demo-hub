@@ -327,17 +327,10 @@ const AdminPorSurtir: React.FC = () => {
     addProductMutation.mutate({ clave: newClave.trim(), nombre: newNombre.trim() });
   };
 
-  // Filter by warehouse - now uses warehouse_id directly from the record
+  // Filter by warehouse - uses warehouse_id directly from the record
   const filterByWarehouse = (product: PorSurtirProduct) => {
     if (selectedWarehouse === 'all') return true;
-    // If the record has a warehouse_id, filter directly
-    if (product.warehouse_id) return product.warehouse_id === selectedWarehouse;
-    // Legacy records without warehouse_id: fallback to stock-based check
-    if (!product.product_id) return true;
-    const stocks = warehouseStockMap.get(product.clave) || [];
-    const warehouseEntry = stocks.find(s => s.warehouse_id === selectedWarehouse);
-    if (!warehouseEntry) return false;
-    return warehouseEntry.existencias === 0;
+    return product.warehouse_id === selectedWarehouse;
   };
 
   // Apply optimistic state: get effective status for a product
@@ -346,9 +339,21 @@ const AdminPorSurtir: React.FC = () => {
   };
 
   // Filter out optimistically deleted, then apply warehouse filter
-  const visibleProducts = productsPorSurtir
-    .filter(p => !optimisticDeleted.has(p.id))
-    .filter(filterByWarehouse);
+  // Also deduplicate by clave+warehouse_id to prevent visual duplicates
+  const visibleProducts = (() => {
+    const filtered = productsPorSurtir
+      .filter(p => !optimisticDeleted.has(p.id))
+      .filter(filterByWarehouse);
+    
+    // Deduplicate: keep first entry per clave+warehouse_id
+    const seen = new Set<string>();
+    return filtered.filter(p => {
+      const key = `${p.clave}|||${p.warehouse_id || 'none'}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
 
   const pendingProducts = visibleProducts.filter(p => getEffectiveStatus(p) === 'pending');
   const orderedProducts = visibleProducts.filter(p => getEffectiveStatus(p) === 'ordered');
