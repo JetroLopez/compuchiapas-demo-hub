@@ -828,6 +828,48 @@ export type Database = {
         }
         Relationships: []
       }
+      software_esd: {
+        Row: {
+          clave: string
+          created_at: string
+          descripcion: string
+          detalles: string | null
+          display_order: number | null
+          id: string
+          img_url: string | null
+          is_active: boolean | null
+          marca: string
+          precio: number
+          updated_at: string
+        }
+        Insert: {
+          clave: string
+          created_at?: string
+          descripcion: string
+          detalles?: string | null
+          display_order?: number | null
+          id?: string
+          img_url?: string | null
+          is_active?: boolean | null
+          marca: string
+          precio: number
+          updated_at?: string
+        }
+        Update: {
+          clave?: string
+          created_at?: string
+          descripcion?: string
+          detalles?: string | null
+          display_order?: number | null
+          id?: string
+          img_url?: string | null
+          is_active?: boolean | null
+          marca?: string
+          precio?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       special_orders: {
         Row: {
           anticipo: number | null
