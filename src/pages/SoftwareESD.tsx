@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { Download, ChevronDown, ChevronUp, ShoppingCart, Plus, Minus, MessageCircle, Eye } from 'lucide-react';
+import { Download, ShoppingCart, Plus, Minus, MessageCircle, Eye, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/price-utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ interface SoftwareBrand {
   id: string;
   name: string;
   image_url: string | null;
+  display_order: number | null;
 }
 
 const SoftwareESDPage: React.FC = () => {
@@ -55,26 +57,23 @@ const SoftwareESDPage: React.FC = () => {
         .eq('is_active', true)
         .order('marca', { ascending: true })
         .order('display_order', { ascending: true }) as any);
-      
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Fetch brand images
   const { data: brands = [] } = useQuery({
     queryKey: ['software-esd-brands'],
     queryFn: async (): Promise<SoftwareBrand[]> => {
       const { data, error } = await (supabase
         .from('software_esd_brands')
-        .select('*') as any);
-      
+        .select('*')
+        .order('display_order', { ascending: true }) as any);
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Map brand name -> image_url
   const brandImageMap = React.useMemo(() => {
     const map = new Map<string, string | null>();
     (brands as SoftwareBrand[]).forEach(b => map.set(b.name, b.image_url));
@@ -85,15 +84,19 @@ const SoftwareESDPage: React.FC = () => {
   const softwareByBrand = React.useMemo(() => {
     const grouped: Record<string, SoftwareESD[]> = {};
     softwareList.forEach(item => {
-      if (!grouped[item.marca]) {
-        grouped[item.marca] = [];
-      }
+      if (!grouped[item.marca]) grouped[item.marca] = [];
       grouped[item.marca].push(item);
     });
     return grouped;
   }, [softwareList]);
 
-  const brandNames = Object.keys(softwareByBrand).sort();
+  // Brand names ordered by display_order from brands table, then alphabetically for any not in brands table
+  const brandNames = React.useMemo(() => {
+    const allBrandNames = Object.keys(softwareByBrand);
+    const orderedFromDb = (brands as SoftwareBrand[]).map(b => b.name).filter(n => allBrandNames.includes(n));
+    const remaining = allBrandNames.filter(n => !orderedFromDb.includes(n)).sort();
+    return [...orderedFromDb, ...remaining];
+  }, [softwareByBrand, brands]);
 
   const handleAddToCart = (software: SoftwareESD) => {
     addItem({
@@ -105,11 +108,7 @@ const SoftwareESDPage: React.FC = () => {
       maxStock: 9999,
       clave: software.clave
     });
-    
-    toast({
-      title: "Agregado al carrito",
-      description: `${software.descripcion} agregado correctamente`,
-    });
+    toast({ title: "Agregado al carrito", description: `${software.descripcion} agregado correctamente` });
   };
 
   const handleIncrement = (software: SoftwareESD) => {
@@ -123,7 +122,6 @@ const SoftwareESDPage: React.FC = () => {
   };
 
   const whatsappNumber = "9622148546";
-
   const handleWhatsAppClick = (software: SoftwareESD) => {
     const message = `Hola, me interesa cotizar el software:\n\n*${software.marca}*\n*${software.descripcion}*\nClave: ${software.clave}\n\n¿Podrían darme información de precio y disponibilidad?`;
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
@@ -138,9 +136,9 @@ const SoftwareESDPage: React.FC = () => {
               <Skeleton className="h-12 w-64 mx-auto mb-4" />
               <Skeleton className="h-6 w-96 mx-auto" />
             </div>
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-24 w-full" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <Skeleton key={i} className="h-40 w-full rounded-xl" />
               ))}
             </div>
           </div>
@@ -157,7 +155,6 @@ const SoftwareESDPage: React.FC = () => {
           <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
           <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-300 rounded-full blur-3xl" />
         </div>
-        
         <div className="container-padding max-w-7xl mx-auto text-center relative z-10 py-0">
           <div className="flex items-center justify-center mb-4">
             <Download size={48} className="text-white" />
@@ -169,69 +166,110 @@ const SoftwareESDPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Software Brands */}
-      <section className="py-10 mx-0 px-0 my-0 bg-white dark:bg-slate-900 md:py-[30px]">
+      {/* Brand Cards Grid */}
+      <section className="py-10 bg-background">
         <div className="container-padding max-w-7xl mx-auto">
           {brandNames.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-muted-foreground">No hay software disponible en este momento.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {brandNames.map((brand) => {
-                const brandSoftware = softwareByBrand[brand];
-                const isExpanded = expandedBrand === brand;
-                const brandImage = brandImageMap.get(brand);
+            <>
+              {/* Brand selector grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                {brandNames.map((brand) => {
+                  const brandImage = brandImageMap.get(brand);
+                  const productCount = softwareByBrand[brand]?.length || 0;
+                  const isSelected = expandedBrand === brand;
 
-                return (
-                  <Card key={brand} className="overflow-hidden">
-                    <button
-                      onClick={() => setExpandedBrand(isExpanded ? null : brand)}
-                      className="w-full p-6 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
+                  return (
+                    <motion.div
+                      key={brand}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden bg-muted">
-                          {brandImage ? (
-                            <img src={brandImage} alt={brand} className="w-full h-full object-contain" />
-                          ) : (
-                            <Download size={24} className="text-tech-blue dark:text-primary" />
-                          )}
+                      <Card
+                        className={cn(
+                          "cursor-pointer transition-all duration-200 hover:shadow-lg border-2",
+                          isSelected
+                            ? "border-primary shadow-lg ring-2 ring-primary/20"
+                            : "border-transparent hover:border-primary/30"
+                        )}
+                        onClick={() => setExpandedBrand(isSelected ? null : brand)}
+                      >
+                        <CardContent className="p-4 md:p-6 flex flex-col items-center text-center gap-3">
+                          <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl flex items-center justify-center overflow-hidden bg-muted">
+                            {brandImage ? (
+                              <img src={brandImage} alt={brand} className="w-full h-full object-contain p-1" />
+                            ) : (
+                              <Download size={28} className="text-primary" />
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-foreground text-sm md:text-base">{brand}</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {productCount} producto{productCount !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Expanded brand products */}
+              <AnimatePresence mode="wait">
+                {expandedBrand && softwareByBrand[expandedBrand] && (
+                  <motion.div
+                    key={expandedBrand}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.35, ease: 'easeInOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="border rounded-xl p-4 md:p-6 bg-card mb-4">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                            {brandImageMap.get(expandedBrand) ? (
+                              <img src={brandImageMap.get(expandedBrand)!} alt={expandedBrand} className="w-full h-full object-contain" />
+                            ) : (
+                              <Download size={20} className="text-primary" />
+                            )}
+                          </div>
+                          <h2 className="text-xl md:text-2xl font-bold text-foreground">{expandedBrand}</h2>
                         </div>
-                        <div>
-                          <h3 className="text-xl font-semibold text-foreground">{brand}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {brandSoftware.length} producto{brandSoftware.length !== 1 ? 's' : ''} disponible{brandSoftware.length !== 1 ? 's' : ''}
-                          </p>
-                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => setExpandedBrand(null)}>
+                          <X size={20} />
+                        </Button>
                       </div>
-                      {isExpanded ? (
-                        <ChevronUp size={24} className="text-muted-foreground" />
-                      ) : (
-                        <ChevronDown size={24} className="text-muted-foreground" />
-                      )}
-                    </button>
 
-                    {isExpanded && (
-                      <div className="border-t border-border p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {brandSoftware.map((software) => {
-                            const quantityInCart = getItemQuantity(software.id, 'software');
-                            const isInCart = quantityInCart > 0;
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {softwareByBrand[expandedBrand].map((software) => {
+                          const quantityInCart = getItemQuantity(software.id, 'software');
+                          const isInCart = quantityInCart > 0;
 
-                            return (
-                              <Card key={software.id} className={cn("relative", isInCart && "ring-2 ring-primary")}>
+                          return (
+                            <motion.div
+                              key={software.id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.25 }}
+                            >
+                              <Card className={cn("relative h-full", isInCart && "ring-2 ring-primary")}>
                                 <CardContent className="p-4">
-                                  {/* Product image */}
                                   {software.img_url && (
-                                    <div className="mb-3 aspect-video rounded overflow-hidden bg-muted">
-                                      <img 
-                                        src={software.img_url} 
-                                        alt={software.descripcion} 
+                                    <div className="mb-3 aspect-video rounded-lg overflow-hidden bg-white">
+                                      <img
+                                        src={software.img_url}
+                                        alt={software.descripcion}
                                         className="w-full h-full object-contain"
                                       />
                                     </div>
                                   )}
-                                  
+
                                   <div className="mb-3">
                                     <Badge variant="outline" className="text-xs mb-2">
                                       {software.clave}
@@ -263,52 +301,36 @@ const SoftwareESDPage: React.FC = () => {
 
                                   {!isInCart ? (
                                     <div className="flex gap-2">
-                                      <Button
-                                        onClick={() => handleAddToCart(software)}
-                                        className="flex-1"
-                                        size="sm"
-                                      >
+                                      <Button onClick={() => handleAddToCart(software)} className="flex-1" size="sm">
                                         <ShoppingCart size={16} className="mr-2" />
                                         Agregar
                                       </Button>
-                                      <Button
-                                        onClick={() => handleWhatsAppClick(software)}
-                                        variant="outline"
-                                        size="sm"
-                                      >
+                                      <Button onClick={() => handleWhatsAppClick(software)} variant="outline" size="sm">
                                         <MessageCircle size={16} />
                                       </Button>
                                     </div>
                                   ) : (
                                     <div className="flex items-center gap-2">
-                                      <Button
-                                        onClick={() => handleDecrement(software)}
-                                        variant="outline"
-                                        size="sm"
-                                      >
+                                      <Button onClick={() => handleDecrement(software)} variant="outline" size="sm">
                                         <Minus size={16} />
                                       </Button>
                                       <span className="flex-1 text-center font-semibold">{quantityInCart}</span>
-                                      <Button
-                                        onClick={() => handleIncrement(software)}
-                                        variant="outline"
-                                        size="sm"
-                                      >
+                                      <Button onClick={() => handleIncrement(software)} variant="outline" size="sm">
                                         <Plus size={16} />
                                       </Button>
                                     </div>
                                   )}
                                 </CardContent>
                               </Card>
-                            );
-                          })}
-                        </div>
+                            </motion.div>
+                          );
+                        })}
                       </div>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
           )}
         </div>
       </section>
@@ -322,7 +344,7 @@ const SoftwareESDPage: React.FC = () => {
           {detailSoftware && (
             <div className="space-y-4">
               {detailSoftware.img_url && (
-                <div className="aspect-video rounded overflow-hidden bg-muted">
+                <div className="aspect-video rounded-lg overflow-hidden bg-white">
                   <img src={detailSoftware.img_url} alt={detailSoftware.descripcion} className="w-full h-full object-contain" />
                 </div>
               )}
