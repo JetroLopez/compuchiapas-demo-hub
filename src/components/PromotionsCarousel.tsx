@@ -31,15 +31,15 @@ const PromotionsCarousel: React.FC = () => {
   const { data: promotions = [], isLoading } = useQuery({
     queryKey: ['active-promotions'],
     queryFn: async (): Promise<Promotion[]> => {
-      const { data, error } = await supabase
-        .from('promotions')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-      
+      const { data, error } = await supabase.
+      from('promotions').
+      select('*').
+      eq('is_active', true).
+      order('display_order', { ascending: true });
+
       if (error) throw error;
       return data || [];
-    },
+    }
   });
 
   if (isLoading) {
@@ -51,13 +51,13 @@ const PromotionsCarousel: React.FC = () => {
             <Skeleton className="h-6 w-80 mx-auto" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-80 rounded-2xl" />
-            ))}
+            {[1, 2, 3].map((i) =>
+            <Skeleton key={i} className="h-80 rounded-2xl" />
+            )}
           </div>
         </div>
-      </section>
-    );
+      </section>);
+
   }
 
   if (promotions.length === 0) {
@@ -67,7 +67,7 @@ const PromotionsCarousel: React.FC = () => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'MXN',
+      currency: 'MXN'
     }).format(price);
   };
 
@@ -91,7 +91,7 @@ const PromotionsCarousel: React.FC = () => {
       });
       return;
     }
-    
+
     addItem({
       id: promo.id,
       type: 'promotion',
@@ -123,10 +123,10 @@ const PromotionsCarousel: React.FC = () => {
   };
 
   return (
-    <section className="pt-0 pb-3 md:pt-4 md:pb-8 bg-gradient-to-br from-tech-blue/5 to-tech-orange/5">
+    <section className="py-3 md:section-padding bg-gradient-to-br from-tech-blue/5 to-tech-orange/5">
       <div className="container-padding max-w-7xl mx-auto">
-        <div className="text-center mb-2 md:mb-12">
-          <div className="inline-flex items-center gap-2 bg-tech-orange/10 text-tech-orange px-4 py-2 rounded-full mb-2 md:mb-4">
+        <div className="text-center mb-3 md:mb-12">
+          <div className="inline-flex items-center gap-2 bg-tech-orange/10 text-tech-orange px-4 rounded-full mb-2 md:mb-4 py-[4px]">
             <Tag size={18} />
             <span className="font-semibold">Ofertas Especiales</span>
           </div>
@@ -141,13 +141,13 @@ const PromotionsCarousel: React.FC = () => {
         <Carousel
           opts={{
             align: "start",
-            loop: true,
+            loop: true
           }}
           plugins={[
-            Autoplay({ delay: 2000, stopOnInteraction: true, stopOnMouseEnter: true }),
-          ]}
-          className="w-full"
-        >
+          Autoplay({ delay: 2000, stopOnInteraction: true, stopOnMouseEnter: true })]
+          }
+          className="w-full">
+
           <CarouselContent className="-ml-4">
             {promotions.map((promo) => {
               const quantityInCart = getItemQuantity(promo.id, 'promotion');
@@ -157,25 +157,25 @@ const PromotionsCarousel: React.FC = () => {
 
               return (
                 <CarouselItem key={promo.id} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3">
-                  <Card 
+                  <Card
                     className={`overflow-hidden h-full group hover:shadow-xl transition-all duration-300 border-0 bg-white ${isInCart ? 'ring-2 ring-primary' : ''}`}
                     onMouseEnter={() => setHoveredId(promo.id)}
-                    onMouseLeave={() => setHoveredId(null)}
-                  >
+                    onMouseLeave={() => setHoveredId(null)}>
+
                     {/* Image container with fixed aspect ratio */}
                     <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-                      {promo.img_url ? (
-                        <img
-                          src={promo.img_url}
-                          alt={promo.nombre}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-tech-blue/10 to-tech-orange/10">
+                      {promo.img_url ?
+                      <img
+                        src={promo.img_url}
+                        alt={promo.nombre}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy" /> :
+
+
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-tech-blue/10 to-tech-orange/10">
                           <Tag size={48} className="text-gray-300" />
                         </div>
-                      )}
+                      }
                       
                       {/* Price badge */}
                       <div className="absolute top-4 right-4">
@@ -185,62 +185,62 @@ const PromotionsCarousel: React.FC = () => {
                       </div>
                       
                       {/* Stock indicator */}
-                      {stock > 0 && (
-                        <div className="absolute bottom-4 left-4">
+                      {stock > 0 &&
+                      <div className="absolute bottom-4 left-4">
                           <Badge variant="secondary" className="bg-green-500/90 text-white">
                             {stock} disponibles
                           </Badge>
                         </div>
-                      )}
-                      {stock === 0 && (
-                        <div className="absolute bottom-4 left-4">
+                      }
+                      {stock === 0 &&
+                      <div className="absolute bottom-4 left-4">
                           <Badge variant="secondary" className="bg-red-500/90 text-white">
                             Agotado
                           </Badge>
                         </div>
-                      )}
+                      }
 
                       {/* Cart overlay */}
-                      {(isHovered || isInCart) && stock > 0 && (
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-300">
-                          {!isInCart ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddToCart(promo);
-                              }}
-                              className="bg-primary text-primary-foreground rounded-full p-4 hover:scale-110 transition-transform shadow-lg"
-                              aria-label="Agregar al carrito"
-                            >
+                      {(isHovered || isInCart) && stock > 0 &&
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-300">
+                          {!isInCart ?
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(promo);
+                          }}
+                          className="bg-primary text-primary-foreground rounded-full p-4 hover:scale-110 transition-transform shadow-lg"
+                          aria-label="Agregar al carrito">
+
                               <ShoppingCart size={24} />
-                            </button>
-                          ) : (
-                            <div className="flex items-center gap-3 bg-background rounded-full px-2 py-1 shadow-lg">
+                            </button> :
+
+                        <div className="flex items-center gap-3 bg-background rounded-full px-2 py-1 shadow-lg">
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDecrement(promo);
-                                }}
-                                className="p-2 hover:bg-muted rounded-full transition-colors"
-                                aria-label="Reducir cantidad"
-                              >
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDecrement(promo);
+                            }}
+                            className="p-2 hover:bg-muted rounded-full transition-colors"
+                            aria-label="Reducir cantidad">
+
                                 <Minus size={20} />
                               </button>
                               <span className="font-bold text-lg min-w-[2rem] text-center">{quantityInCart}</span>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleIncrement(promo);
-                                }}
-                                className="p-2 hover:bg-muted rounded-full transition-colors"
-                                aria-label="Aumentar cantidad"
-                              >
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleIncrement(promo);
+                            }}
+                            className="p-2 hover:bg-muted rounded-full transition-colors"
+                            aria-label="Aumentar cantidad">
+
                                 <Plus size={20} />
                               </button>
                             </div>
-                          )}
+                        }
                         </div>
-                      )}
+                      }
                     </div>
                     
                     <CardContent className="p-6">
@@ -248,22 +248,22 @@ const PromotionsCarousel: React.FC = () => {
                       <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-tech-blue transition-colors">
                         {promo.nombre}
                       </h3>
-                      {promo.descripcion && (
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                      {promo.descripcion &&
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-4">
                           {promo.descripcion}
                         </p>
-                      )}
+                      }
                       <Button
                         onClick={() => handleWhatsAppClick(promo)}
-                        className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold"
-                      >
+                        className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold">
+
                         <MessageCircle className="w-4 h-4 mr-2" />
                         Cotizar por WhatsApp
                       </Button>
                     </CardContent>
                   </Card>
-                </CarouselItem>
-              );
+                </CarouselItem>);
+
             })}
           </CarouselContent>
           <CarouselPrevious className="hidden md:flex -left-4 bg-white shadow-lg hover:bg-tech-blue hover:text-white" />
@@ -275,8 +275,8 @@ const PromotionsCarousel: React.FC = () => {
           <p className="text-sm text-gray-500">Desliza para ver más →</p>
         </div>
       </div>
-    </section>
-  );
+    </section>);
+
 };
 
 export default PromotionsCarousel;
