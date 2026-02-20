@@ -21,6 +21,8 @@ const Productos: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState(() => searchParams.get('categoria') || 'all');
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('buscar') || '');
+  const [localSearch, setLocalSearch] = useState(() => searchParams.get('buscar') || '');
+  const searchDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showOrderSearch, setShowOrderSearch] = useState(searchParams.get('pedido') === 'true');
   const isUrlSync = React.useRef(false);
 
@@ -35,13 +37,14 @@ const Productos: React.FC = () => {
     // When coming from header search (has 't' param), force reset category
     if (hasTimestamp) {
       setSearchTerm(urlSearch);
+      setLocalSearch(urlSearch);
       setActiveCategory('all');
       // Strip the 't' param immediately
       const clean = new URLSearchParams();
       if (urlSearch) clean.set('buscar', urlSearch);
       setSearchParams(clean, { replace: true });
     } else {
-      if (urlSearch !== searchTerm) setSearchTerm(urlSearch);
+      if (urlSearch !== searchTerm) { setSearchTerm(urlSearch); setLocalSearch(urlSearch); }
       if (urlCategory !== activeCategory) setActiveCategory(urlCategory);
     }
 
@@ -84,13 +87,22 @@ const Productos: React.FC = () => {
     setSearchParams(newParams, { replace: true });
   }, [activeCategory, searchTerm, setSearchParams]);
 
+  const handleLocalSearchChange = (value: string) => {
+    setLocalSearch(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchTerm(value);
+    }, 300);
+  };
+
   const resetFilters = () => {
     setSearchTerm('');
+    setLocalSearch('');
     setActiveCategory('all');
   };
 
   return (
-    <Layout productSearchTerm={searchTerm} onProductSearchChange={setSearchTerm}>
+    <Layout productSearchTerm={localSearch} onProductSearchChange={handleLocalSearchChange}>
       {/* Desktop Hero - hidden on mobile */}
       <div className="hidden md:block">
         <ProductHero />
@@ -162,8 +174,8 @@ const Productos: React.FC = () => {
             categories={categories}
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
+            searchTerm={localSearch}
+            setSearchTerm={handleLocalSearchChange}
           />
           
           {/* Products Grid */}

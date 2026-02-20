@@ -237,13 +237,25 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
           )}
           
-          <button 
-            onClick={handleWhatsAppClick}
-            className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
-          >
-            <MessageCircle size={18} />
-            Cotizar por WhatsApp
-          </button>
+          <div className="flex gap-2">
+            {existencias > 0 && (
+              <button 
+                onClick={handleAddToCart}
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <ShoppingCart size={18} />
+                Agregar
+              </button>
+            )}
+            <button 
+              onClick={handleWhatsAppClick}
+              className={`bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${existencias <= 0 ? 'flex-1' : ''}`}
+              title="Más información por WhatsApp"
+            >
+              <MessageCircle size={18} />
+              {existencias <= 0 && 'Cotizar por WhatsApp'}
+            </button>
+          </div>
         </div>
       </div>
     </>

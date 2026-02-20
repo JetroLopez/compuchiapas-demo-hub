@@ -7,6 +7,18 @@ import { searchProducts } from '@/lib/product-search';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 
+interface Promotion {
+  id: string;
+  clave: string;
+  nombre: string;
+  descripcion: string | null;
+  precio: number;
+  existencias: number | null;
+  img_url: string | null;
+  is_active: boolean;
+  display_order: number | null;
+}
+
 interface Product {
   id: string;
   clave: string | null;
@@ -180,6 +192,20 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     },
   });
 
+  // Obtener promociones activas
+  const { data: promotions = [] } = useQuery({
+    queryKey: ['active-promotions'],
+    queryFn: async (): Promise<Promotion[]> => {
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // DEDUPLICATION: Merge products with same clave.
   // For products with same clave, keep description/price from warehouse with most exhibited stock.
   // If equal, prefer CSC warehouse.
@@ -292,6 +318,19 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
              cat?.name.toUpperCase().includes('SOFT');
     });
   }, [activeCategory, categories]);
+
+  // Determinar si estamos filtrando por categoría "Promociones"
+  const isPromotionsCategory = useMemo(() => {
+    if (activeCategory === 'all') return false;
+    const categoryIds = activeCategory.includes(',') 
+      ? activeCategory.split(',') 
+      : [activeCategory];
+    
+    return categoryIds.some(catId => {
+      const cat = categories.find(c => c.id === catId);
+      return cat?.name.toUpperCase().includes('PROMO');
+    });
+  }, [activeCategory, categories]);
   
   // Aplicar filtros adicionales (categoría y búsqueda con ranking por tokens)
   const filteredProducts = useMemo(() => {
@@ -318,36 +357,49 @@ const ProductsList: React.FC<ProductsListProps> = ({ searchTerm, activeCategory,
     return searched;
   }, [productsInExhibitedWarehouses, activeCategory, searchTerm]);
 
-  // Combinar productos físicos con software ESD si es categoría Software
+  // Combinar productos físicos con software ESD y/o promociones
   const allFilteredItems = useMemo(() => {
-    const productItems = filteredProducts.map(p => ({
+    const productItems: any[] = filteredProducts.map(p => ({
       ...p,
       type: 'product' as const
     }));
 
-    if (!isSoftwareCategory) {
-      return productItems;
+    let combined: any[] = [...productItems];
+
+    if (isSoftwareCategory) {
+      const softwareItems = (softwareESD as any[]).map((s: any) => ({
+        id: s.id,
+        clave: s.clave,
+        name: `${s.marca} - ${s.descripcion}`,
+        category_id: activeCategory,
+        image_url: s.img_url,
+        existencias: 9999,
+        costo: s.precio,
+        type: 'software' as const
+      }));
+      combined = [...combined, ...softwareItems];
     }
 
-    const softwareItems = (softwareESD as any[]).map((s: any) => ({
-      id: s.id,
-      clave: s.clave,
-      name: `${s.marca} - ${s.descripcion}`,
-      category_id: activeCategory,
-      image_url: s.img_url,
-      existencias: 9999,
-      costo: s.precio,
-      type: 'software' as const
-    }));
+    if (isPromotionsCategory) {
+      const promotionItems = promotions.map((p: Promotion) => ({
+        id: p.id,
+        clave: p.clave,
+        name: p.nombre,
+        category_id: activeCategory,
+        image_url: p.img_url,
+        existencias: p.existencias ?? 0,
+        costo: p.precio,
+        type: 'promotion' as const
+      }));
+      combined = [...combined, ...promotionItems];
+    }
 
-    const combined = [...productItems, ...softwareItems];
-
-    if (searchTerm.trim()) {
+    if (searchTerm.trim() && (isSoftwareCategory || isPromotionsCategory)) {
       return searchProducts(combined, searchTerm);
     }
 
     return combined;
-  }, [filteredProducts, softwareESD, isSoftwareCategory, searchTerm, activeCategory]);
+  }, [filteredProducts, softwareESD, promotions, isSoftwareCategory, isPromotionsCategory, searchTerm, activeCategory]);
 
   // Helper to get aggregated exhibited stock for a product (considering clave merging)
   const getAggregatedStock = (item: any): number => {

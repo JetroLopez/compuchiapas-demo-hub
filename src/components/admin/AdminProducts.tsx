@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Upload, Download, Trash2, Plus, Loader2, Search, Save, ChevronDown, Percent } from 'lucide-react';
+import { Upload, Download, Trash2, Plus, Loader2, Search, Save, ChevronDown, Percent, LayoutList, LayoutGrid } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -103,6 +103,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
   const [showAll, setShowAll] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showZeroStock, setShowZeroStock] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const { showPrices: showPublicPrices } = useStoreSettings();
   const [isTogglingPrices, setIsTogglingPrices] = useState(false);
   const [newProduct, setNewProduct] = useState({
@@ -922,18 +923,38 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
         </div>
 
 
+        {/* View mode toggle */}
+        <div className="flex items-center gap-2 mb-4">
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <LayoutList size={16} className="mr-1" />
+            Lista
+          </Button>
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid size={16} className="mr-1" />
+            Grid
+          </Button>
+        </div>
+
         {hasChanges && (
           <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
             Hay {Object.keys(editedProducts).length} producto(s) con cambios sin guardar
           </div>
         )}
 
-        {/* Products Table */}
+        {/* Products Table or Grid */}
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
-        ) : (
+        ) : viewMode === 'list' ? (
           <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
@@ -1041,6 +1062,68 @@ const AdminProducts: React.FC<AdminProductsProps> = ({ userRole }) => {
                 )}
               </TableBody>
             </Table>
+          </div>
+        ) : (
+          /* Grid View */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {displayedProducts.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No se encontraron productos
+              </div>
+            ) : (
+              displayedProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className={`border rounded-lg overflow-hidden bg-card ${isProductEdited(product.id) ? 'ring-2 ring-amber-400' : ''}`}
+                >
+                  {/* Image */}
+                  <div className="aspect-square bg-muted overflow-hidden">
+                    {(getFieldValue(product, 'image_url') as string) ? (
+                      <img
+                        src={(getFieldValue(product, 'image_url') as string) || ''}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">Sin imagen</div>
+                    )}
+                  </div>
+                  {/* Editable fields */}
+                  <div className="p-3 space-y-2">
+                    <Input
+                      value={(getFieldValue(product, 'clave') as string) || ''}
+                      onChange={(e) => updateProductField(product.id, 'clave', e.target.value)}
+                      className="h-7 font-mono text-xs"
+                      placeholder="Clave"
+                    />
+                    <Input
+                      value={(getFieldValue(product, 'name') as string) || ''}
+                      onChange={(e) => updateProductField(product.id, 'name', e.target.value)}
+                      className="h-7 text-xs"
+                      placeholder="Descripción"
+                    />
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span>Almacén: {getProductWarehouses(product.id)}</span>
+                    </div>
+                    <Input
+                      value={(getFieldValue(product, 'image_url') as string) || ''}
+                      onChange={(e) => updateProductField(product.id, 'image_url', e.target.value)}
+                      className="h-7 text-xs"
+                      placeholder="IMG URL"
+                    />
+                    {canDelete && (
+                      <div className="flex justify-end">
+                        <Button variant="ghost" size="sm" onClick={() => deleteProductMutation.mutate(product.id)} disabled={deleteProductMutation.isPending}>
+                          <Trash2 size={14} className="text-destructive" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
