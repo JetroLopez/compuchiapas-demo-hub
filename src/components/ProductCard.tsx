@@ -163,7 +163,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
       {/* ===== DESKTOP: Original vertical card ===== */}
       <div 
-        className={`hidden md:block glass-card rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group relative ${isInCart ? 'ring-2 ring-primary' : ''}`}
+        className={`hidden md:flex md:flex-col glass-card rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group relative ${isInCart ? 'ring-2 ring-primary' : ''}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -221,23 +221,23 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
         
-        <div className="p-6">
+        <div className="p-6 flex flex-col flex-1">
           {clave && (
             <p className="text-xs text-muted-foreground mb-1">Clave: {clave}</p>
           )}
           <h3 className="text-lg font-semibold mb-2 line-clamp-2">{name}</h3>
           
           {showPrice && price > 0 && (
-            <p className="text-2xl font-bold text-primary mb-4">{formattedPrice}</p>
+            <p className="text-2xl font-bold text-primary">{formattedPrice}</p>
           )}
           {showPrice && price === 0 && (
-            <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
+            <p className="text-lg text-muted-foreground">Consultar precio</p>
           )}
           {!showPrice && (
-            <p className="text-lg text-muted-foreground mb-4">Consultar precio</p>
+            <p className="text-lg text-muted-foreground">Consultar precio</p>
           )}
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-auto pt-4">
             {existencias > 0 && (
               <button 
                 onClick={handleAddToCart}
