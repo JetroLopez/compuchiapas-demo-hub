@@ -34,7 +34,7 @@ const ScrollToTopButton: React.FC = () => {
       )}>
 
       {/* Desktop: text + icon */}
-      <span className="hidden md:inline-flex items-center gap-2 font-semibold mx-[21px] text-sm text-center">
+      <span className="hidden md:inline-flex items-center gap-2 font-semibold text-sm py-[2px]">
         <ArrowUp size={18} />
         Regresar al inicio
       </span>
