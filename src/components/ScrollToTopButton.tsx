@@ -28,20 +28,20 @@ const ScrollToTopButton: React.FC = () => {
         "md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:rounded-full md:px-6 md:py-3.5",
         // Mobile: bottom left, circular icon only
         "bottom-8 left-5 rounded-full p-3 md:p-0",
-        visible ?
-        "opacity-100 translate-y-0 pointer-events-auto" :
-        "opacity-0 translate-y-4 pointer-events-none"
-      )}>
-
+        visible
+          ? "opacity-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 translate-y-4 pointer-events-none"
+      )}
+    >
       {/* Desktop: text + icon */}
-      <span className="hidden md:inline-flex items-center gap-2 font-semibold text-sm px-[4px] py-[4px]">
+      <span className="hidden md:inline-flex items-center gap-2 font-semibold text-sm">
         <ArrowUp size={18} />
         Regresar al inicio
       </span>
       {/* Mobile: icon only */}
       <ArrowUp size={24} className="md:hidden" />
-    </button>);
-
+    </button>
+  );
 };
 
 export default ScrollToTopButton;
