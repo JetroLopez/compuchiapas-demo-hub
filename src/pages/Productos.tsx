@@ -134,7 +134,7 @@ const Productos: React.FC = () => {
       {/* Desktop Quick Actions - Arma tu PC + Buscar pedido */}
       <section className="py-4 hidden md:block">
         <div className="container-padding max-w-7xl mx-auto">
-          <div className="flex gap-4 my-[10px] py-0">
+          <div className="flex gap-4">
             {/* Arma tu PC */}
             <Link
               to="/productos/arma-tu-pc"
@@ -167,7 +167,7 @@ const Productos: React.FC = () => {
       </section>
       
       {/* Product Catalog */}
-      <section className="py-4 md:py-4">
+      <section className="py-4 md:py-0">
         <div className="container-padding max-w-7xl mx-auto">
           {/* Search and Filter */}
           <ProductFilters
@@ -175,7 +175,7 @@ const Productos: React.FC = () => {
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
             searchTerm={localSearch}
-            setSearchTerm={handleLocalSearchChange} className="my-0" />
+            setSearchTerm={handleLocalSearchChange} />
 
           
           {/* Products Grid */}
