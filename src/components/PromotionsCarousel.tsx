@@ -123,9 +123,9 @@ const PromotionsCarousel: React.FC = () => {
   };
 
   return (
-    <section className="py-3 md:section-padding bg-gradient-to-br from-tech-blue/5 to-tech-orange/5">
+    <section className="pt-0 pb-3 md:section-padding bg-gradient-to-br from-tech-blue/5 to-tech-orange/5">
       <div className="container-padding max-w-7xl mx-auto">
-        <div className="text-center mb-3 md:mb-12">
+        <div className="text-center mb-2 md:mb-12">
           <div className="inline-flex items-center gap-2 bg-tech-orange/10 text-tech-orange px-4 py-2 rounded-full mb-2 md:mb-4">
             <Tag size={18} />
             <span className="font-semibold">Ofertas Especiales</span>
