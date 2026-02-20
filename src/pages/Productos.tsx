@@ -44,28 +44,28 @@ const Productos: React.FC = () => {
       if (urlSearch) clean.set('buscar', urlSearch);
       setSearchParams(clean, { replace: true });
     } else {
-      if (urlSearch !== searchTerm) { setSearchTerm(urlSearch); setLocalSearch(urlSearch); }
+      if (urlSearch !== searchTerm) {setSearchTerm(urlSearch);setLocalSearch(urlSearch);}
       if (urlCategory !== activeCategory) setActiveCategory(urlCategory);
     }
 
     // Allow state→URL sync again after this tick
-    requestAnimationFrame(() => { isUrlSync.current = false; });
+    requestAnimationFrame(() => {isUrlSync.current = false;});
   }, [searchParams]);
 
   // Obtener categorías de la base de datos
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: async (): Promise<Category[]> => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name, display_order')
-        .order('display_order', { ascending: true });
-        
+      const { data, error } = await supabase.
+      from('categories').
+      select('id, name, display_order').
+      order('display_order', { ascending: true });
+
       if (error) {
         console.error('Error fetching categories:', error);
         return [{ id: 'all', name: 'Todos', display_order: 0 }];
       }
-      
+
       return data || [{ id: 'all', name: 'Todos', display_order: 0 }];
     }
   });
@@ -116,15 +116,15 @@ const Productos: React.FC = () => {
         <div className="flex items-center justify-center gap-3 mt-3">
           <Link
             to="/productos/arma-tu-pc"
-            className="flex items-center gap-1.5 px-4 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-medium rounded-full border border-white/20 transition-colors"
-          >
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-medium rounded-full border border-white/20 transition-colors">
+
             <Monitor size={14} />
             Arma tu PC
           </Link>
           <button
             onClick={() => setShowOrderSearch(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-medium rounded-full border border-white/20 transition-colors"
-          >
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-medium rounded-full border border-white/20 transition-colors">
+
             <Package size={14} />
             Pedidos
           </button>
@@ -132,14 +132,14 @@ const Productos: React.FC = () => {
       </div>
       
       {/* Desktop Quick Actions - Arma tu PC + Buscar pedido */}
-      <section className="py-2 hidden md:block">
+      <section className="py-4 hidden md:block">
         <div className="container-padding max-w-7xl mx-auto">
-          <div className="flex gap-4">
+          <div className="flex gap-4 my-[10px] py-0">
             {/* Arma tu PC */}
             <Link
               to="/productos/arma-tu-pc"
-              className="flex-1 flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-tech-blue to-blue-700 text-white hover:shadow-lg transition-all duration-300 group"
-            >
+              className="flex-1 flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-tech-blue to-blue-700 text-white hover:shadow-lg transition-all duration-300 group">
+
               <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
                 <Monitor size={24} />
               </div>
@@ -152,8 +152,8 @@ const Productos: React.FC = () => {
             {/* Buscar mi pedido */}
             <button
               onClick={() => setShowOrderSearch(true)}
-              className="flex-1 flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 group text-left"
-            >
+              className="flex-1 flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 group text-left">
+
               <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
                 <Package size={24} className="text-primary" />
               </div>
@@ -170,21 +170,21 @@ const Productos: React.FC = () => {
       <section className="py-4 md:py-4">
         <div className="container-padding max-w-7xl mx-auto">
           {/* Search and Filter */}
-          <ProductFilters 
+          <ProductFilters
             categories={categories}
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
             searchTerm={localSearch}
-            setSearchTerm={handleLocalSearchChange}
-          />
+            setSearchTerm={handleLocalSearchChange} className="my-0" />
+
           
           {/* Products Grid */}
-          <ProductsList 
+          <ProductsList
             searchTerm={searchTerm}
             activeCategory={activeCategory}
             resetFilters={resetFilters}
-            categories={categories}
-          />
+            categories={categories} />
+
         </div>
       </section>
       
@@ -201,8 +201,8 @@ const Productos: React.FC = () => {
           <OrderStatusSearch embedded />
         </DialogContent>
       </Dialog>
-    </Layout>
-  );
+    </Layout>);
+
 };
 
 export default Productos;
