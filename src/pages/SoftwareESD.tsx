@@ -311,11 +311,11 @@ const SoftwareESDPage: React.FC = () => {
 
                                   {!isInCart ? (
                                     <div className="flex gap-2">
-                                      <Button onClick={() => handleAddToCart(software)} className="flex-1" size="sm">
+                                      <Button onClick={() => handleAddToCart(software)} className="flex-1 bg-primary hover:bg-primary/90" size="sm">
                                         <ShoppingCart size={16} className="mr-2" />
                                         Agregar
                                       </Button>
-                                      <Button onClick={() => handleWhatsAppClick(software)} variant="outline" size="sm">
+                                      <Button onClick={() => handleWhatsAppClick(software)} size="sm" className="bg-green-500 hover:bg-green-600 text-white" title="Más información por WhatsApp">
                                         <MessageCircle size={16} />
                                       </Button>
                                     </div>
@@ -374,12 +374,12 @@ const SoftwareESDPage: React.FC = () => {
                 ) : (
                   <span className="text-muted-foreground">Consultar precio</span>
                 )}
-                <div className="flex gap-2">
-                  <Button onClick={() => { handleAddToCart(detailSoftware); setDetailSoftware(null); }} size="sm">
+                 <div className="flex gap-2">
+                  <Button onClick={() => { handleAddToCart(detailSoftware); setDetailSoftware(null); }} size="sm" className="bg-primary hover:bg-primary/90">
                     <ShoppingCart size={16} className="mr-2" />
                     Agregar
                   </Button>
-                  <Button onClick={() => handleWhatsAppClick(detailSoftware)} variant="outline" size="sm">
+                  <Button onClick={() => handleWhatsAppClick(detailSoftware)} size="sm" className="bg-green-500 hover:bg-green-600 text-white" title="Más información por WhatsApp">
                     <MessageCircle size={16} />
                   </Button>
                 </div>

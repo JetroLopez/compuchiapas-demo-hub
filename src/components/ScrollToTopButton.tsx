@@ -25,7 +25,7 @@ const ScrollToTopButton: React.FC = () => {
         "fixed z-50 shadow-lg transition-all duration-300",
         "bg-primary text-primary-foreground hover:scale-110 active:scale-95",
         // Desktop: bottom center, pill with text
-        "md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:rounded-full md:px-5 md:py-3",
+        "md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:rounded-full md:px-6 md:py-3.5",
         // Mobile: bottom left, circular icon only
         "bottom-8 left-5 rounded-full p-3 md:p-0",
         visible

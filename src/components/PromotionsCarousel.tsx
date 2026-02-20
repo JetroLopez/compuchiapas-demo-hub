@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -142,6 +143,9 @@ const PromotionsCarousel: React.FC = () => {
             align: "start",
             loop: true,
           }}
+          plugins={[
+            Autoplay({ delay: 2000, stopOnInteraction: true, stopOnMouseEnter: true }),
+          ]}
           className="w-full"
         >
           <CarouselContent className="-ml-4">

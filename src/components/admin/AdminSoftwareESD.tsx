@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Trash2, Plus, Loader2, Search, Edit, Download, GripVertical, Image } from 'lucide-react';
+import { Trash2, Plus, Loader2, Search, Edit, Download, GripVertical, Image, ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -135,10 +136,6 @@ const SortableRow: React.FC<{
           <Button variant="ghost" size="sm" onClick={() => handleEdit(software)}>
             <Edit size={16} />
           </Button>
-          <Switch
-            checked={software.is_active}
-            onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: software.id, is_active: checked })}
-          />
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
@@ -187,6 +184,10 @@ const AdminSoftwareESD: React.FC = () => {
   // Brand image editing
   const [editingBrandName, setEditingBrandName] = useState<string | null>(null);
   const [brandImageUrl, setBrandImageUrl] = useState('');
+  const [brandsOpen, setBrandsOpen] = useState(false);
+  const [isAddBrandDialogOpen, setIsAddBrandDialogOpen] = useState(false);
+  const [newBrandName, setNewBrandName] = useState('');
+  const [newBrandImageUrl, setNewBrandImageUrl] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -417,6 +418,34 @@ const AdminSoftwareESD: React.FC = () => {
             Software ESD
           </CardTitle>
           <div className="flex flex-wrap gap-2">
+            <Dialog open={isAddBrandDialogOpen} onOpenChange={setIsAddBrandDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline"><Plus size={16} className="mr-2" />Agregar Marca</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Agregar Marca</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="new-brand-name">Nombre de marca *</Label>
+                    <Input id="new-brand-name" value={newBrandName} onChange={(e) => setNewBrandName(e.target.value)} placeholder="Ej: Adobe" />
+                  </div>
+                  <div>
+                    <Label htmlFor="new-brand-image">URL de imagen (opcional)</Label>
+                    <Input id="new-brand-image" value={newBrandImageUrl} onChange={(e) => setNewBrandImageUrl(e.target.value)} placeholder="https://..." />
+                  </div>
+                  <Button className="w-full" disabled={!newBrandName.trim() || saveBrandImageMutation.isPending} onClick={() => {
+                    saveBrandImageMutation.mutate({ name: newBrandName.trim(), image_url: newBrandImageUrl.trim() || null }, {
+                      onSuccess: () => { setNewBrandName(''); setNewBrandImageUrl(''); setIsAddBrandDialogOpen(false); }
+                    });
+                  }}>
+                    {saveBrandImageMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+                    Agregar Marca
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setIsAddDialogOpen(open); }}>
               <DialogTrigger asChild>
                 <Button size="sm"><Plus size={16} className="mr-2" />Agregar Software</Button>
@@ -492,45 +521,55 @@ const AdminSoftwareESD: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
-        {/* Brand images management */}
+        {/* Brand images management - Collapsible */}
         {(brandsList as SoftwareBrand[]).length > 0 && (
-          <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Image size={16} />
-              Imágenes y orden de marcas (arrastra para reordenar)
-            </h3>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={(event) => {
-                const { active, over } = event;
-                if (!over || active.id === over.id) return;
-                const brands = brandsList as SoftwareBrand[];
-                const oldIndex = brands.findIndex(b => b.id === active.id);
-                const newIndex = brands.findIndex(b => b.id === over.id);
-                if (oldIndex === -1 || newIndex === -1) return;
-                const reordered = arrayMove(brands, oldIndex, newIndex);
-                const updates = reordered.map((b, i) => ({ id: b.id, display_order: i }));
-                queryClient.setQueryData(['software-esd-brands'], reordered.map((b, i) => ({ ...b, display_order: i })));
-                reorderBrandsMutation.mutate(updates);
-              }}
-            >
-              <SortableContext items={(brandsList as SoftwareBrand[]).map(b => b.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {(brandsList as SoftwareBrand[]).map(brand => (
-                    <SortableBrandItem
-                      key={brand.id}
-                      brand={brand}
-                      onEditImage={(name, imageUrl) => {
-                        setEditingBrandName(name);
-                        setBrandImageUrl(imageUrl);
-                      }}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          </div>
+          <Collapsible open={brandsOpen} onOpenChange={setBrandsOpen} className="mb-6">
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between p-3 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <span className="text-sm font-semibold flex items-center gap-2">
+                  <Image size={16} />
+                  Imágenes y orden de marcas ({(brandsList as SoftwareBrand[]).length})
+                </span>
+                {brandsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="mt-2 p-4 border rounded-lg bg-muted/30">
+                <p className="text-xs text-muted-foreground mb-3">Arrastra para reordenar</p>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event) => {
+                    const { active, over } = event;
+                    if (!over || active.id === over.id) return;
+                    const brands = brandsList as SoftwareBrand[];
+                    const oldIndex = brands.findIndex(b => b.id === active.id);
+                    const newIndex = brands.findIndex(b => b.id === over.id);
+                    if (oldIndex === -1 || newIndex === -1) return;
+                    const reordered = arrayMove(brands, oldIndex, newIndex);
+                    const updates = reordered.map((b, i) => ({ id: b.id, display_order: i }));
+                    queryClient.setQueryData(['software-esd-brands'], reordered.map((b, i) => ({ ...b, display_order: i })));
+                    reorderBrandsMutation.mutate(updates);
+                  }}
+                >
+                  <SortableContext items={(brandsList as SoftwareBrand[]).map(b => b.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
+                      {(brandsList as SoftwareBrand[]).map(brand => (
+                        <SortableBrandItem
+                          key={brand.id}
+                          brand={brand}
+                          onEditImage={(name, imageUrl) => {
+                            setEditingBrandName(name);
+                            setBrandImageUrl(imageUrl);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         {/* Brand image edit dialog */}
