@@ -3,7 +3,7 @@ import React from 'react';
 const ProductHero: React.FC = () => {
   return (
     <section 
-      className="pt-24 pb-6 md:pt-32 md:pb-8"
+      className="pt-24 pb-3 md:pt-32 md:pb-4"
       style={{ background: 'linear-gradient(to bottom, #1e293b, #1e3a5f)' }}
     >
       <div className="container-padding max-w-7xl mx-auto text-center">
