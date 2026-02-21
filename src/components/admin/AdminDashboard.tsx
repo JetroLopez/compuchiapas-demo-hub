@@ -1645,6 +1645,15 @@ const MonthlyGoalWidget: React.FC = () => {
             {metaVal > 0 && progress >= 1 && ' 🥳'}
           </p>
         </div>
+
+        {metaVal > 0 && progress < 1 && (
+          <div className="text-center rounded-lg px-3 py-1.5 mt-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Por vender</p>
+            <p className="text-2xl font-extrabold text-muted-foreground">
+              ${(metaVal - totalSales).toLocaleString('es-MX')}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
