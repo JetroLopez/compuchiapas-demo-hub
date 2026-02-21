@@ -9,12 +9,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { 
-  Wrench, 
-  MessageCircle, 
-  Package, 
-  Tag, 
-  Clock, 
+import {
+  Wrench,
+  MessageCircle,
+  Package,
+  Tag,
+  Clock,
   AlertTriangle,
   Maximize2,
   Minimize2,
@@ -29,8 +29,8 @@ import {
   ShoppingCart,
   FolderKanban,
   User,
-  ShieldCheck
-} from 'lucide-react';
+  ShieldCheck } from
+'lucide-react';
 import { format, differenceInDays, differenceInHours, differenceInMinutes, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -111,8 +111,8 @@ interface AdminDashboardProps {
   isTecnico?: boolean;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
-  onNavigateToTab, 
+const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  onNavigateToTab,
   pendingContactsCount,
   onContactsViewed,
   isTecnico = false
@@ -138,23 +138,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Create notification sound
   const playNotificationSound = useCallback(() => {
     if (!soundEnabled) return;
-    
+
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
+
       const playBeep = (startTime: number, frequency: number, duration: number) => {
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
+
         oscillator.frequency.value = frequency;
         oscillator.type = 'square';
-        
+
         gainNode.gain.setValueAtTime(0.6, startTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-        
+
         oscillator.start(startTime);
         oscillator.stop(startTime + duration);
       };
@@ -165,7 +165,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       playBeep(currentTime + 0.2, 988, 0.15);
       playBeep(currentTime + 0.4, 1047, 0.15);
       playBeep(currentTime + 0.6, 1175, 0.25);
-      
+
     } catch (error) {
       console.log('Could not play notification sound:', error);
     }
@@ -175,31 +175,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { data: services = [], isLoading: servicesLoading, refetch: refetchServices } = useQuery({
     queryKey: ['dashboard-services'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .in('estatus', ['Emitida', 'Remitida'])
-        .order('fecha_elaboracion', { ascending: true });
+      const { data, error } = await supabase.
+      from('services').
+      select('*').
+      in('estatus', ['Emitida', 'Remitida']).
+      order('fecha_elaboracion', { ascending: true });
       if (error) throw error;
       return (data || []) as Service[];
     },
-    refetchInterval: 60000,
+    refetchInterval: 60000
   });
 
   // Fetch pending contacts
   const { data: contacts = [], isLoading: contactsLoading } = useQuery({
     queryKey: ['dashboard-contacts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contact_submissions')
-        .select('id, name, subject, created_at, status')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const { data, error } = await supabase.
+      from('contact_submissions').
+      select('id, name, subject, created_at, status').
+      eq('status', 'pending').
+      order('created_at', { ascending: false }).
+      limit(10);
       if (error) throw error;
       return (data || []) as ContactSubmission[];
     },
-    refetchInterval: 30000,
+    refetchInterval: 30000
   });
 
   // Play sound when contacts change
@@ -214,78 +214,78 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { data: promotions = [], isLoading: promotionsLoading } = useQuery({
     queryKey: ['dashboard-promotions'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('promotions')
-        .select('id, nombre, precio, existencias, is_active, created_at')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+      const { data, error } = await supabase.
+      from('promotions').
+      select('id, nombre, precio, existencias, is_active, created_at').
+      eq('is_active', true).
+      order('display_order', { ascending: true });
       if (error) throw error;
       return (data || []) as Promotion[];
-    },
+    }
   });
 
   // Fetch warehouse sync info
   const { data: warehouseInfo = [], isLoading: warehousesLoading } = useQuery({
     queryKey: ['dashboard-warehouses'],
     queryFn: async () => {
-      const { data: warehouses, error: wError } = await supabase
-        .from('warehouses')
-        .select('id, name');
+      const { data: warehouses, error: wError } = await supabase.
+      from('warehouses').
+      select('id, name');
       if (wError) throw wError;
 
       const result: WarehouseStock[] = [];
       for (const warehouse of warehouses || []) {
-        const { data: stockData, error: sError } = await supabase
-          .from('product_warehouse_stock')
-          .select('updated_at')
-          .eq('warehouse_id', warehouse.id)
-          .order('updated_at', { ascending: false })
-          .limit(1);
-        
-        const { count, error: cError } = await supabase
-          .from('product_warehouse_stock')
-          .select('id', { count: 'exact', head: true })
-          .eq('warehouse_id', warehouse.id)
-          .gt('existencias', 0);
+        const { data: stockData, error: sError } = await supabase.
+        from('product_warehouse_stock').
+        select('updated_at').
+        eq('warehouse_id', warehouse.id).
+        order('updated_at', { ascending: false }).
+        limit(1);
+
+        const { count, error: cError } = await supabase.
+        from('product_warehouse_stock').
+        select('id', { count: 'exact', head: true }).
+        eq('warehouse_id', warehouse.id).
+        gt('existencias', 0);
 
         result.push({
           id: warehouse.id,
           name: warehouse.name,
           updated_at: stockData?.[0]?.updated_at || '',
-          product_count: count || 0,
+          product_count: count || 0
         });
       }
       return result;
-    },
+    }
   });
 
   // Fetch special orders (pending - not delivered)
   const { data: specialOrders = [], isLoading: specialOrdersLoading, refetch: refetchSpecialOrders } = useQuery({
     queryKey: ['dashboard-special-orders'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('special_orders')
-        .select('*')
-        .neq('estatus', 'Entregado')
-        .order('fecha', { ascending: true });
+      const { data, error } = await supabase.
+      from('special_orders').
+      select('*').
+      neq('estatus', 'Entregado').
+      order('fecha', { ascending: true });
       if (error) throw error;
       return (data || []) as SpecialOrder[];
     },
-    refetchInterval: 60000,
+    refetchInterval: 60000
   });
 
   // Fetch pending web orders
   const { data: pendingWebOrders = 0 } = useQuery({
     queryKey: ['dashboard-web-orders-count'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('web_orders')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending');
+      const { count, error } = await supabase.
+      from('web_orders').
+      select('id', { count: 'exact', head: true }).
+      eq('status', 'pending');
       if (error) throw error;
       return count || 0;
     },
-    refetchInterval: 30000,
+    refetchInterval: 30000
   });
 
   // Fetch active projects with last log date
@@ -293,36 +293,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     queryKey: ['dashboard-projects', user?.id, isAdmin],
     queryFn: async () => {
       // Fetch projects
-      let projectsQuery = supabase
-        .from('projects')
-        .select('id, project_number, nombre_proyecto, cliente_nombre, assigned_user_id, assigned_user_name, is_completed, is_discarded')
-        .eq('is_completed', false)
-        .or('is_discarded.is.null,is_discarded.eq.false');
-      
+      let projectsQuery = supabase.
+      from('projects').
+      select('id, project_number, nombre_proyecto, cliente_nombre, assigned_user_id, assigned_user_name, is_completed, is_discarded').
+      eq('is_completed', false).
+      or('is_discarded.is.null,is_discarded.eq.false');
+
       // Filter by user for non-admin roles
       if (!isAdmin && user?.id) {
         projectsQuery = projectsQuery.eq('assigned_user_id', user.id);
       }
-      
+
       const { data: projects, error: pError } = await projectsQuery;
       if (pError) throw pError;
-      
+
       // Fetch last log date for each project
       const projectsWithLogs: ProjectWithLastLog[] = [];
       for (const project of projects || []) {
-        const { data: logData } = await supabase
-          .from('project_logs')
-          .select('created_at')
-          .eq('project_id', project.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        
+        const { data: logData } = await supabase.
+        from('project_logs').
+        select('created_at').
+        eq('project_id', project.id).
+        order('created_at', { ascending: false }).
+        limit(1);
+
         projectsWithLogs.push({
           ...project,
           last_log_at: logData?.[0]?.created_at || null
         });
       }
-      
+
       return projectsWithLogs;
     },
     refetchInterval: 60000,
@@ -331,11 +331,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Mutation to update service estatus_interno
   const updateEstatusInternoMutation = useMutation({
-    mutationFn: async ({ serviceId, estatusInterno }: { serviceId: string; estatusInterno: EstatusInterno }) => {
-      const { error } = await supabase
-        .from('services')
-        .update({ estatus_interno: estatusInterno })
-        .eq('id', serviceId);
+    mutationFn: async ({ serviceId, estatusInterno }: {serviceId: string;estatusInterno: EstatusInterno;}) => {
+      const { error } = await supabase.
+      from('services').
+      update({ estatus_interno: estatusInterno }).
+      eq('id', serviceId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -345,7 +345,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onError: (error) => {
       console.error('Error updating estatus interno:', error);
       toast.error('Error al actualizar estatus');
-    },
+    }
   });
 
   // Get time-based glow/shadow color class (only the glow, not the border)
@@ -360,7 +360,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Get service background and border color based on estatus_interno
   const getServiceBackgroundColor = (estatusInterno: EstatusInterno, fechaElaboracion: string) => {
     const days = differenceInDays(currentTime, new Date(fechaElaboracion));
-    
+
     if (estatusInterno === 'Listo y avisado a cliente') {
       // Gray, no glow
       return 'bg-gray-200 dark:bg-gray-700 border-gray-400 text-gray-600 dark:text-gray-300';
@@ -412,7 +412,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
       currency: 'MXN',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 0
     }).format(price);
   };
 
@@ -453,10 +453,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     // "Listo y avisado" items go to bottom
     const aIsListo = a.estatus_interno === 'Listo y avisado a cliente';
     const bIsListo = b.estatus_interno === 'Listo y avisado a cliente';
-    
+
     if (aIsListo && !bIsListo) return 1; // a goes after b
     if (!aIsListo && bIsListo) return -1; // b goes after a
-    
+
     // Within same status group, sort by clave descending (lower clave = older, should be at bottom)
     // So we sort ascending to have lower claves at top when we want them at bottom visually
     const claveA = parseInt(a.clave) || 0;
@@ -469,9 +469,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     // First priority: orders with fecha_aprox_entrega that are overdue or close
     const daysA = a.fecha_aprox_entrega ? differenceInDays(new Date(a.fecha_aprox_entrega), currentTime) : 999;
     const daysB = b.fecha_aprox_entrega ? differenceInDays(new Date(b.fecha_aprox_entrega), currentTime) : 999;
-    
+
     if (daysA !== daysB) return daysA - daysB; // Most urgent first
-    
+
     // Second priority: oldest fecha first
     return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
   });
@@ -492,9 +492,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return daysB - daysA; // Most urgent (oldest interaction) first
   });
 
-  const containerClass = isFullscreen 
-    ? 'fixed inset-0 z-50 bg-background p-4 overflow-auto' 
-    : '';
+  const containerClass = isFullscreen ?
+  'fixed inset-0 z-50 bg-background p-4 overflow-auto' :
+  '';
 
   const handleEstatusInternoChange = (serviceId: string, newEstatus: EstatusInterno, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -521,8 +521,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             size="icon"
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="rounded-full"
-            title={soundEnabled ? 'Silenciar notificaciones' : 'Activar notificaciones'}
-          >
+            title={soundEnabled ? 'Silenciar notificaciones' : 'Activar notificaciones'}>
+
             {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </Button>
           <Button variant="outline" size="icon" className="md:hidden" onClick={() => refetchServices()} title="Actualizar">
@@ -532,19 +532,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <RefreshCw size={16} className="mr-2" />
             Actualizar
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsFullscreen(!isFullscreen)}
-          >
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsFullscreen(!isFullscreen)}>
+
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </Button>
         </div>
       </div>
 
       {/* Stats Overview - Hide some for tecnico */}
-      {isTecnico ? (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+      {isTecnico ?
+      <div className="grid grid-cols-3 gap-4 mb-6">
           <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -559,22 +559,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer hover:bg-muted/50 transition-colors relative",
-              specialOrders.length > 0 && "ring-2 ring-cyan-500"
-            )} 
-            onClick={() => onNavigateToTab('special-orders')}
-          >
+          <Card
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 transition-colors relative",
+            specialOrders.length > 0 && "ring-2 ring-cyan-500"
+          )}
+          onClick={() => onNavigateToTab('special-orders')}>
+
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-cyan-500/10 relative">
                   <ShoppingBag className="h-5 w-5 text-cyan-500" />
-                  {sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                  {sortedSpecialOrders.some((o) => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) &&
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
                       <AlertTriangle className="h-3 w-3 text-white" />
                     </span>
-                  )}
+                }
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{specialOrders.length}</p>
@@ -584,13 +584,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer hover:bg-muted/50 transition-colors relative",
-              activeProjects.length > 0 && "ring-2 ring-teal-500"
-            )} 
-            onClick={() => onNavigateToTab('projects')}
-          >
+          <Card
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 transition-colors relative",
+            activeProjects.length > 0 && "ring-2 ring-teal-500"
+          )}
+          onClick={() => onNavigateToTab('projects')}>
+
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-teal-500/10">
@@ -603,9 +603,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </CardContent>
           </Card>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+        </div> :
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
           <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onNavigateToTab('services')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -620,22 +620,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer hover:bg-muted/50 transition-colors relative",
-              specialOrders.length > 0 && "ring-2 ring-cyan-500"
-            )} 
-            onClick={() => onNavigateToTab('special-orders')}
-          >
+          <Card
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 transition-colors relative",
+            specialOrders.length > 0 && "ring-2 ring-cyan-500"
+          )}
+          onClick={() => onNavigateToTab('special-orders')}>
+
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-cyan-500/10 relative">
                   <ShoppingBag className="h-5 w-5 text-cyan-500" />
-                  {sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                  {sortedSpecialOrders.some((o) => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) &&
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
                       <AlertTriangle className="h-3 w-3 text-white" />
                     </span>
-                  )}
+                }
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{specialOrders.length}</p>
@@ -645,13 +645,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer hover:bg-muted/50 transition-colors relative",
-              activeProjects.length > 0 && "ring-2 ring-teal-500"
-            )} 
-            onClick={() => onNavigateToTab('projects')}
-          >
+          <Card
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 transition-colors relative",
+            activeProjects.length > 0 && "ring-2 ring-teal-500"
+          )}
+          onClick={() => onNavigateToTab('projects')}>
+
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-teal-500/10">
@@ -665,36 +665,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </CardContent>
           </Card>
 
-          <Card 
-            className={cn(
-              "cursor-pointer hover:bg-muted/50 transition-colors relative",
-              pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
-            )} 
-            onClick={() => {
-              onNavigateToTab('contacts');
-              onContactsViewed();
-            }}
-          >
+          <Card
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 transition-colors relative",
+            pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
+          )}
+          onClick={() => {
+            onNavigateToTab('contacts');
+            onContactsViewed();
+          }}>
+
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-orange-500/10 relative">
                   <MessageCircle className="h-5 w-5 text-orange-500" />
-                  {pendingContactsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-notification-bounce">
+                  {pendingContactsCount > 0 &&
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold animate-notification-bounce">
                       {pendingContactsCount > 9 ? '9+' : pendingContactsCount}
                     </span>
-                  )}
+                }
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{contacts.length}</p>
                   <p className="text-xs text-muted-foreground">Contactos pendientes</p>
                 </div>
               </div>
-              {pendingContactsCount > 0 && (
-                <div className="absolute top-1 right-1">
+              {pendingContactsCount > 0 &&
+            <div className="absolute top-1 right-1">
                   <Bell className="h-5 w-5 text-orange-500 animate-bounce" />
                 </div>
-              )}
+            }
             </CardContent>
           </Card>
 
@@ -714,22 +714,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <WarrantiesStatCard onNavigateToTab={onNavigateToTab} />
 
-          <Card 
-            className={cn(
-              "cursor-pointer hover:bg-muted/50 transition-colors relative",
-              pendingWebOrders > 0 && "ring-2 ring-indigo-500"
-            )} 
-            onClick={() => onNavigateToTab('web-orders')}
-          >
+          <Card
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 transition-colors relative",
+            pendingWebOrders > 0 && "ring-2 ring-indigo-500"
+          )}
+          onClick={() => onNavigateToTab('web-orders')}>
+
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-indigo-500/10 relative">
                   <ShoppingCart className="h-5 w-5 text-indigo-500" />
-                  {pendingWebOrders > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+                  {pendingWebOrders > 0 &&
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
                       {pendingWebOrders > 9 ? '9+' : pendingWebOrders}
                     </span>
-                  )}
+                }
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{pendingWebOrders}</p>
@@ -739,24 +739,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </CardContent>
           </Card>
         </div>
-      )}
+      }
 
       {/* Main Grid - Different layout for tecnico */}
-      {isTecnico ? (
-        // Tecnico layout: Services left (wider), Special Orders right (narrower)
-        <div className="space-y-4">
+      {isTecnico ?
+      // Tecnico layout: Services left (wider), Special Orders right (narrower)
+      <div className="space-y-4">
           {/* Servicios sync card for tecnico - single line */}
           {(() => {
-            const lastServiceSync = services.length > 0 
-              ? services.reduce((latest, s) => {
-                  const sDate = new Date(s.created_at);
-                  return sDate > latest ? sDate : latest;
-                }, new Date(0))
-              : null;
-            const hoursAgo = lastServiceSync ? differenceInHours(currentTime, lastServiceSync) : null;
-            const isStale = hoursAgo !== null && hoursAgo > 24;
-            return (
-              <Card className={cn(isStale ? "border-yellow-500 bg-yellow-500/10" : "")}>
+          const lastServiceSync = services.length > 0 ?
+          services.reduce((latest, s) => {
+            const sDate = new Date(s.created_at);
+            return sDate > latest ? sDate : latest;
+          }, new Date(0)) :
+          null;
+          const hoursAgo = lastServiceSync ? differenceInHours(currentTime, lastServiceSync) : null;
+          const isStale = hoursAgo !== null && hoursAgo > 24;
+          return (
+            <Card className={cn(isStale ? "border-yellow-500 bg-yellow-500/10" : "")}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-blue-500/10">
@@ -771,9 +771,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            );
-          })()}
+              </Card>);
+
+        })()}
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
           {/* Left Column - Services (2/3 width) */}
           <div className="lg:col-span-2">
@@ -799,52 +799,52 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-3 flex-1">
-                {servicesLoading ? (
-                  <div className="space-y-1">
-                    {[...Array(8)].map((_, i) => (
-                      <Skeleton key={i} className="h-14 w-full" />
-                    ))}
-                  </div>
-                ) : sortedServices.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
+                {servicesLoading ?
+                <div className="space-y-1">
+                    {[...Array(8)].map((_, i) =>
+                  <Skeleton key={i} className="h-14 w-full" />
+                  )}
+                  </div> :
+                sortedServices.length === 0 ?
+                <div className="text-center py-12 text-muted-foreground">
                     <Wrench className="h-12 w-12 mx-auto mb-2 opacity-30" />
                     <p className="text-sm">No hay servicios activos</p>
-                  </div>
-                ) : (
-                  <ScrollArea className={isFullscreen ? "h-[calc(100vh-280px)]" : "h-[calc(100vh-350px)] min-h-[400px]"}>
+                  </div> :
+
+                <ScrollArea className={isFullscreen ? "h-[calc(100vh-280px)]" : "h-[calc(100vh-350px)] min-h-[400px]"}>
                     <div className="space-y-2 pr-4">
                       {sortedServices.map((service) => {
-                        const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
-                        const isExpanded = expandedServiceId === service.id;
-                        return (
-                          <div
-                            key={service.id}
-                            className={cn(
-                              "p-3 rounded-lg border-2 transition-all cursor-pointer",
-                              getServiceBackgroundColor(service.estatus_interno, service.fecha_elaboracion),
-                              getTimeBasedGlowClass(service.fecha_elaboracion, service.estatus_interno),
-                              getUrgencyClass(service.fecha_elaboracion, service.estatus_interno)
-                            )}
-                            onClick={() => toggleServiceExpand(service.id)}
-                          >
+                      const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
+                      const isExpanded = expandedServiceId === service.id;
+                      return (
+                        <div
+                          key={service.id}
+                          className={cn(
+                            "p-3 rounded-lg border-2 transition-all cursor-pointer",
+                            getServiceBackgroundColor(service.estatus_interno, service.fecha_elaboracion),
+                            getTimeBasedGlowClass(service.fecha_elaboracion, service.estatus_interno),
+                            getUrgencyClass(service.fecha_elaboracion, service.estatus_interno)
+                          )}
+                          onClick={() => toggleServiceExpand(service.id)}>
+
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-bold text-sm">#{service.clave}</span>
-                                  {canEditServices ? (
-                                    <Select
-                                      value={service.estatus_interno}
-                                      onValueChange={(value: EstatusInterno) => {
-                                        updateEstatusInternoMutation.mutate({ 
-                                          serviceId: service.id, 
-                                          estatusInterno: value 
-                                        });
-                                      }}
-                                    >
-                                      <SelectTrigger 
-                                        className="h-5 w-auto text-[10px] px-1.5 py-0 border-0 bg-transparent hover:bg-muted/50"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
+                                  {canEditServices ?
+                                <Select
+                                  value={service.estatus_interno}
+                                  onValueChange={(value: EstatusInterno) => {
+                                    updateEstatusInternoMutation.mutate({
+                                      serviceId: service.id,
+                                      estatusInterno: value
+                                    });
+                                  }}>
+
+                                      <SelectTrigger
+                                    className="h-5 w-auto text-[10px] px-1.5 py-0 border-0 bg-transparent hover:bg-muted/50"
+                                    onClick={(e) => e.stopPropagation()}>
+
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent onClick={(e) => e.stopPropagation()}>
@@ -852,10 +852,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         <SelectItem value="En proceso">En proceso</SelectItem>
                                         <SelectItem value="Listo y avisado a cliente">Listo</SelectItem>
                                       </SelectContent>
-                                    </Select>
-                                  ) : (
-                                    getEstatusInternoBadge(service.estatus_interno)
-                                  )}
+                                    </Select> :
+
+                                getEstatusInternoBadge(service.estatus_interno)
+                                }
                   
                                 </div>
                                 <p className="text-xs opacity-80 mt-0.5">
@@ -866,31 +866,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <Badge className={cn("text-white text-xs px-2 py-0.5", getServiceBadgeColor(days))}>
                                   {days === 0 ? 'Hoy' : `${days}d`}
                                 </Badge>
-                                {days >= 5 && (
-                                  <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
-                                )}
+                                {days >= 5 &&
+                              <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                              }
                                 {(service.comentarios || canEditServices) && (
-                                  isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />
-                                )}
+                              isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />)
+                              }
                               </div>
                             </div>
                             
-                            {isExpanded && (
-                              <div className="mt-2 pt-2 border-t border-current/20 space-y-2">
-                                {service.comentarios && (
-                                  <p className="text-xs opacity-90">{service.comentarios}</p>
-                                )}
+                            {isExpanded &&
+                          <div className="mt-2 pt-2 border-t border-current/20 space-y-2">
+                                {service.comentarios &&
+                            <p className="text-xs opacity-90">{service.comentarios}</p>
+                            }
                                 <div className="text-xs opacity-75">
                                   <span>Ingreso: {format(new Date(service.fecha_elaboracion), "d MMM yyyy", { locale: es })}</span>
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                          }
+                          </div>);
+
+                    })}
                     </div>
                   </ScrollArea>
-                )}
+                }
               </CardContent>
             </Card>
           </div>
@@ -899,7 +899,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="lg:col-span-1">
             <Card className={cn(
               "flex flex-col h-full",
-              sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
+              sortedSpecialOrders.some((o) => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
             )}>
               <CardHeader className="pb-2 pt-3">
                 <CardTitle className="flex items-center justify-between text-base">
@@ -916,36 +916,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-3 flex-1">
-                {specialOrdersLoading ? (
-                  <div className="space-y-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : sortedSpecialOrders.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                {specialOrdersLoading ?
+                <div className="space-y-1">
+                    {[...Array(5)].map((_, i) =>
+                  <Skeleton key={i} className="h-12 w-full" />
+                  )}
+                  </div> :
+                sortedSpecialOrders.length === 0 ?
+                <div className="text-center py-8 text-muted-foreground">
                     <ShoppingBag className="h-8 w-8 mx-auto mb-1 opacity-30" />
                     <p className="text-sm">No hay pedidos</p>
-                  </div>
-                ) : (
-                  <ScrollArea className={isFullscreen ? "h-[calc(100vh-280px)]" : "h-[calc(100vh-350px)] min-h-[400px]"}>
+                  </div> :
+
+                <ScrollArea className={isFullscreen ? "h-[calc(100vh-280px)]" : "h-[calc(100vh-350px)] min-h-[400px]"}>
                     <div className="space-y-2 pr-2">
                       {sortedSpecialOrders.map((order) => {
-                        const daysUntilDelivery = order.fecha_aprox_entrega 
-                          ? differenceInDays(new Date(order.fecha_aprox_entrega), currentTime)
-                          : null;
-                        const isOverdue = daysUntilDelivery !== null && daysUntilDelivery < 0;
-                        
-                        return (
-                          <div
-                            key={order.id}
-                            className={cn(
-                              "p-2 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
-                              getSpecialOrderColor(order.fecha_aprox_entrega),
-                              getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
-                            )}
-                            onClick={() => onNavigateToTab('special-orders')}
-                          >
+                      const daysUntilDelivery = order.fecha_aprox_entrega ?
+                      differenceInDays(new Date(order.fecha_aprox_entrega), currentTime) :
+                      null;
+                      const isOverdue = daysUntilDelivery !== null && daysUntilDelivery < 0;
+
+                      return (
+                        <div
+                          key={order.id}
+                          className={cn(
+                            "p-2 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                            getSpecialOrderColor(order.fecha_aprox_entrega),
+                            getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
+                          )}
+                          onClick={() => onNavigateToTab('special-orders')}>
+
                             <div className="flex items-center justify-between gap-1">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1 flex-wrap">
@@ -957,42 +957,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 </div>
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0">
-                                {daysUntilDelivery !== null ? (
-                                  <Badge className={cn(
-                                    "text-white text-[10px] px-1.5 py-0",
-                                    isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
-                                  )}>
-                                    {isOverdue 
-                                      ? `-${Math.abs(daysUntilDelivery)}d` 
-                                      : daysUntilDelivery === 0 
-                                        ? 'Hoy' 
-                                        : `${daysUntilDelivery}d`}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-[9px] px-1">S/F</Badge>
-                                )}
-                                {isOverdue && (
-                                  <AlertTriangle className="h-3 w-3 text-red-500 animate-pulse" />
-                                )}
+                                {daysUntilDelivery !== null ?
+                              <Badge className={cn(
+                                "text-white text-[10px] px-1.5 py-0",
+                                isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
+                              )}>
+                                    {isOverdue ?
+                                `-${Math.abs(daysUntilDelivery)}d` :
+                                daysUntilDelivery === 0 ?
+                                'Hoy' :
+                                `${daysUntilDelivery}d`}
+                                  </Badge> :
+
+                              <Badge variant="outline" className="text-[9px] px-1">S/F</Badge>
+                              }
+                                {isOverdue &&
+                              <AlertTriangle className="h-3 w-3 text-red-500 animate-pulse" />
+                              }
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                    })}
                     </div>
                   </ScrollArea>
-                )}
+                }
               </CardContent>
             </Card>
           </div>
         </div>
-        </div>
-      ) : (
-        // Default layout for admin/ventas
-        <div className={cn(
-          "grid gap-4",
-          isFullscreen ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2"
-        )}>
+        </div> :
+
+      // Default layout for admin/ventas
+      <div className={cn(
+        "grid gap-4",
+        isFullscreen ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2"
+      )}>
           {/* Left Column - Services + Special Orders */}
           <div className="space-y-4">
             {/* Services Panel - Expanded */}
@@ -1018,52 +1018,52 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-3 flex-1">
-                {servicesLoading ? (
-                  <div className="space-y-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-14 w-full" />
-                    ))}
-                  </div>
-                ) : sortedServices.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                {servicesLoading ?
+              <div className="space-y-1">
+                    {[...Array(5)].map((_, i) =>
+                <Skeleton key={i} className="h-14 w-full" />
+                )}
+                  </div> :
+              sortedServices.length === 0 ?
+              <div className="text-center py-8 text-muted-foreground">
                     <Wrench className="h-10 w-10 mx-auto mb-2 opacity-30" />
                     <p className="text-sm">No hay servicios activos</p>
-                  </div>
-                ) : (
-                  <ScrollArea className={isFullscreen ? "h-[calc(60vh-180px)]" : "h-[350px] min-h-[250px]"}>
+                  </div> :
+
+              <ScrollArea className={isFullscreen ? "h-[calc(60vh-180px)]" : "h-[350px] min-h-[250px]"}>
                     <div className="space-y-2 pr-4">
                       {sortedServices.map((service) => {
-                        const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
-                        const isExpanded = expandedServiceId === service.id;
-                        return (
-                          <div
-                            key={service.id}
-                            className={cn(
-                              "p-3 rounded-lg border-2 transition-all cursor-pointer",
-                              getServiceBackgroundColor(service.estatus_interno, service.fecha_elaboracion),
-                              getTimeBasedGlowClass(service.fecha_elaboracion, service.estatus_interno),
-                              getUrgencyClass(service.fecha_elaboracion, service.estatus_interno)
-                            )}
-                            onClick={() => toggleServiceExpand(service.id)}
-                          >
+                    const days = differenceInDays(currentTime, new Date(service.fecha_elaboracion));
+                    const isExpanded = expandedServiceId === service.id;
+                    return (
+                      <div
+                        key={service.id}
+                        className={cn(
+                          "p-3 rounded-lg border-2 transition-all cursor-pointer",
+                          getServiceBackgroundColor(service.estatus_interno, service.fecha_elaboracion),
+                          getTimeBasedGlowClass(service.fecha_elaboracion, service.estatus_interno),
+                          getUrgencyClass(service.fecha_elaboracion, service.estatus_interno)
+                        )}
+                        onClick={() => toggleServiceExpand(service.id)}>
+
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-bold text-sm">#{service.clave}</span>
-                                  {canEditServices ? (
-                                    <Select
-                                      value={service.estatus_interno}
-                                      onValueChange={(value: EstatusInterno) => {
-                                        updateEstatusInternoMutation.mutate({ 
-                                          serviceId: service.id, 
-                                          estatusInterno: value 
-                                        });
-                                      }}
-                                    >
-                                      <SelectTrigger 
-                                        className="h-5 w-auto text-[10px] px-1.5 py-0 border-0 bg-transparent hover:bg-muted/50"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
+                                  {canEditServices ?
+                              <Select
+                                value={service.estatus_interno}
+                                onValueChange={(value: EstatusInterno) => {
+                                  updateEstatusInternoMutation.mutate({
+                                    serviceId: service.id,
+                                    estatusInterno: value
+                                  });
+                                }}>
+
+                                      <SelectTrigger
+                                  className="h-5 w-auto text-[10px] px-1.5 py-0 border-0 bg-transparent hover:bg-muted/50"
+                                  onClick={(e) => e.stopPropagation()}>
+
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent onClick={(e) => e.stopPropagation()}>
@@ -1071,10 +1071,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                         <SelectItem value="En proceso">En proceso</SelectItem>
                                         <SelectItem value="Listo y avisado a cliente">Listo</SelectItem>
                                       </SelectContent>
-                                    </Select>
-                                  ) : (
-                                    getEstatusInternoBadge(service.estatus_interno)
-                                  )}
+                                    </Select> :
+
+                              getEstatusInternoBadge(service.estatus_interno)
+                              }
                                   
                                 </div>
                                 <p className="text-xs truncate opacity-80 mt-0.5">
@@ -1085,39 +1085,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <Badge className={cn("text-white text-xs px-2 py-0.5", getServiceBadgeColor(days))}>
                                   {days === 0 ? 'Hoy' : `${days}d`}
                                 </Badge>
-                                {days >= 5 && (
-                                  <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
-                                )}
+                                {days >= 5 &&
+                            <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                            }
                                 {(service.comentarios || canEditServices) && (
-                                  isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />
-                                )}
+                            isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />)
+                            }
                               </div>
                             </div>
                             
-                            {isExpanded && (
-                              <div className="mt-2 pt-2 border-t border-current/20 space-y-2">
-                                {service.comentarios && (
-                                  <p className="text-xs opacity-90">{service.comentarios}</p>
-                                )}
+                            {isExpanded &&
+                        <div className="mt-2 pt-2 border-t border-current/20 space-y-2">
+                                {service.comentarios &&
+                          <p className="text-xs opacity-90">{service.comentarios}</p>
+                          }
                                 <div className="text-xs opacity-75">
                                   <span>Ingreso: {format(new Date(service.fecha_elaboracion), "d MMM yyyy", { locale: es })}</span>
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                        }
+                          </div>);
+
+                  })}
                     </div>
                   </ScrollArea>
-                )}
+              }
               </CardContent>
             </Card>
 
             {/* Special Orders Monitor - Below Services */}
             <Card className={cn(
-              "flex flex-col",
-              sortedSpecialOrders.some(o => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
-            )}>
+            "flex flex-col",
+            sortedSpecialOrders.some((o) => o.fecha_aprox_entrega && differenceInDays(new Date(o.fecha_aprox_entrega), currentTime) < 0) && "ring-2 ring-red-500"
+          )}>
               <CardHeader className="pb-2 pt-3">
                 <CardTitle className="flex items-center justify-between text-base">
                   <div className="flex items-center gap-2">
@@ -1139,36 +1139,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-3 flex-1">
-                {specialOrdersLoading ? (
-                  <div className="space-y-1">
-                    {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : sortedSpecialOrders.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground">
+                {specialOrdersLoading ?
+              <div className="space-y-1">
+                    {[...Array(3)].map((_, i) =>
+                <Skeleton key={i} className="h-12 w-full" />
+                )}
+                  </div> :
+              sortedSpecialOrders.length === 0 ?
+              <div className="text-center py-6 text-muted-foreground">
                     <ShoppingBag className="h-8 w-8 mx-auto mb-1 opacity-30" />
                     <p className="text-sm">No hay pedidos pendientes</p>
-                  </div>
-                ) : (
-                  <ScrollArea className={isFullscreen ? "h-[calc(40vh-150px)]" : "h-[250px] min-h-[180px]"}>
+                  </div> :
+
+              <ScrollArea className={isFullscreen ? "h-[calc(40vh-150px)]" : "h-[250px] min-h-[180px]"}>
                     <div className="space-y-2 pr-4">
                       {sortedSpecialOrders.map((order) => {
-                        const daysUntilDelivery = order.fecha_aprox_entrega 
-                          ? differenceInDays(new Date(order.fecha_aprox_entrega), currentTime)
-                          : null;
-                        const isOverdue = daysUntilDelivery !== null && daysUntilDelivery < 0;
-                        
-                        return (
-                          <div
-                            key={order.id}
-                            className={cn(
-                              "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
-                              getSpecialOrderColor(order.fecha_aprox_entrega),
-                              getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
-                            )}
-                            onClick={() => onNavigateToTab('special-orders')}
-                          >
+                    const daysUntilDelivery = order.fecha_aprox_entrega ?
+                    differenceInDays(new Date(order.fecha_aprox_entrega), currentTime) :
+                    null;
+                    const isOverdue = daysUntilDelivery !== null && daysUntilDelivery < 0;
+
+                    return (
+                      <div
+                        key={order.id}
+                        className={cn(
+                          "p-3 rounded-lg border-2 transition-all cursor-pointer bg-white dark:bg-slate-800",
+                          getSpecialOrderColor(order.fecha_aprox_entrega),
+                          getSpecialOrderUrgencyClass(order.fecha_aprox_entrega)
+                        )}
+                        onClick={() => onNavigateToTab('special-orders')}>
+
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -1177,44 +1177,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 </div>
                                 <div className="flex items-center gap-1 text-xs opacity-75 mt-0.5">
                                   <span>{order.cliente}</span>
-                                  {order.fecha_aprox_entrega && (
-                                    <span>• {format(new Date(order.fecha_aprox_entrega), "d MMM", { locale: es })}</span>
-                                  )}
+                                  {order.fecha_aprox_entrega &&
+                              <span>• {format(new Date(order.fecha_aprox_entrega), "d MMM", { locale: es })}</span>
+                              }
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                {daysUntilDelivery !== null ? (
-                                  <Badge className={cn(
-                                    "text-white text-xs px-2 py-0.5",
-                                    isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
-                                  )}>
-                                    {isOverdue 
-                                      ? `-${Math.abs(daysUntilDelivery)}d` 
-                                      : daysUntilDelivery === 0 
-                                        ? 'Hoy' 
-                                        : `${daysUntilDelivery}d`}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-[10px] px-1.5">S/F</Badge>
-                                )}
-                                {isOverdue && (
-                                  <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
-                                )}
+                                {daysUntilDelivery !== null ?
+                            <Badge className={cn(
+                              "text-white text-xs px-2 py-0.5",
+                              isOverdue ? "bg-red-500" : daysUntilDelivery <= 1 ? "bg-red-500" : daysUntilDelivery <= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
+                            )}>
+                                    {isOverdue ?
+                              `-${Math.abs(daysUntilDelivery)}d` :
+                              daysUntilDelivery === 0 ?
+                              'Hoy' :
+                              `${daysUntilDelivery}d`}
+                                  </Badge> :
+
+                            <Badge variant="outline" className="text-[10px] px-1.5">S/F</Badge>
+                            }
+                                {isOverdue &&
+                            <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                            }
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                  })}
                     </div>
                   </ScrollArea>
-                )}
+              }
               </CardContent>
             </Card>
 
             {/* Warranties Monitor - Below Special Orders (admin/supervisor only) */}
-            {(isAdmin || hasAccess(['supervisor'])) && (
-              <WarrantiesDashboardWidget onNavigateToTab={onNavigateToTab} />
-            )}
+            {(isAdmin || hasAccess(['supervisor'])) &&
+          <WarrantiesDashboardWidget onNavigateToTab={onNavigateToTab} />
+          }
           </div>
 
           {/* Right Column */}
@@ -1231,73 +1231,73 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3 flex-1 flex flex-col">
-                  {warehousesLoading ? (
-                    <Skeleton className="h-12 w-full" />
-                  ) : warehouseInfo.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-2">
+                  {warehousesLoading ?
+                <Skeleton className="h-12 w-full" /> :
+                warehouseInfo.length === 0 ?
+                <p className="text-xs text-muted-foreground text-center py-2">
                       Sin almacenes
-                    </p>
-                  ) : (
-                    <div className="flex flex-col gap-2 flex-1">
+                    </p> :
+
+                <div className="flex flex-col gap-2 flex-1">
                       {warehouseInfo.map((warehouse) => {
-                        const hoursAgo = warehouse.updated_at 
-                          ? differenceInHours(currentTime, new Date(warehouse.updated_at))
-                          : null;
-                        const isStale = hoursAgo !== null && hoursAgo > 24;
-                        
-                        return (
-                          <div
-                            key={warehouse.id}
-                            className={cn(
-                              "p-3 rounded-lg border text-xs flex-1 flex flex-col justify-center",
-                              isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
-                            )}
-                          >
+                    const hoursAgo = warehouse.updated_at ?
+                    differenceInHours(currentTime, new Date(warehouse.updated_at)) :
+                    null;
+                    const isStale = hoursAgo !== null && hoursAgo > 24;
+
+                    return (
+                      <div
+                        key={warehouse.id}
+                        className={cn(
+                          "p-3 rounded-lg border text-xs flex-1 flex flex-col justify-center",
+                          isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
+                        )}>
+
                             <p className="font-medium text-sm">{warehouse.name}</p>
                             <div className="flex items-center gap-1 mt-1">
                               <Clock size={12} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
                               <span className={cn(
-                                isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
-                              )}>
+                            isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
+                          )}>
                                 {formatTimeAgo(warehouse.updated_at)}
                               </span>
                             </div>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                  })}
                       {/* Servicios sync entry */}
                       {(() => {
-                        const lastServiceSync = services.length > 0 
-                          ? services.reduce((latest, s) => {
-                              const sDate = new Date(s.created_at);
-                              return sDate > latest ? sDate : latest;
-                            }, new Date(0))
-                          : null;
-                        const hoursAgo = lastServiceSync 
-                          ? differenceInHours(currentTime, lastServiceSync)
-                          : null;
-                        const isStale = hoursAgo !== null && hoursAgo > 24;
-                        return (
-                          <div
-                            className={cn(
-                              "p-3 rounded-lg border text-xs flex-1 flex flex-col justify-center",
-                              isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
-                            )}
-                          >
+                    const lastServiceSync = services.length > 0 ?
+                    services.reduce((latest, s) => {
+                      const sDate = new Date(s.created_at);
+                      return sDate > latest ? sDate : latest;
+                    }, new Date(0)) :
+                    null;
+                    const hoursAgo = lastServiceSync ?
+                    differenceInHours(currentTime, lastServiceSync) :
+                    null;
+                    const isStale = hoursAgo !== null && hoursAgo > 24;
+                    return (
+                      <div
+                        className={cn(
+                          "p-3 rounded-lg border text-xs flex-1 flex flex-col justify-center",
+                          isStale ? "border-yellow-500 bg-yellow-500/10" : "border-border"
+                        )}>
+
                             <p className="font-medium text-sm">Servicios</p>
                             <div className="flex items-center gap-1 mt-1">
                               <Clock size={12} className={isStale ? "text-yellow-500" : "text-muted-foreground"} />
                               <span className={cn(
-                                isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
-                              )}>
+                            isStale ? "text-yellow-600 dark:text-yellow-400 font-medium" : "text-muted-foreground"
+                          )}>
                                 {lastServiceSync ? formatTimeAgo(lastServiceSync.toISOString()) : 'Sin datos'}
                               </span>
                             </div>
-                          </div>
-                        );
-                      })()}
+                          </div>);
+
+                  })()}
                     </div>
-                  )}
+                }
                 </CardContent>
               </Card>
 
@@ -1327,33 +1327,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {projectsLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : sortedActiveProjects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
+                {projectsLoading ?
+              <div className="space-y-2">
+                    {[...Array(3)].map((_, i) =>
+                <Skeleton key={i} className="h-12 w-full" />
+                )}
+                  </div> :
+              sortedActiveProjects.length === 0 ?
+              <p className="text-sm text-muted-foreground text-center py-4">
                     No hay proyectos activos
-                  </p>
-                ) : (
-                  <ScrollArea className="h-[200px]">
+                  </p> :
+
+              <ScrollArea className="h-[200px]">
                     <div className="space-y-2 pr-4">
                       {sortedActiveProjects.map((project) => {
-                        const daysSinceLog = project.last_log_at 
-                          ? differenceInDays(currentTime, new Date(project.last_log_at))
-                          : null;
-                        
-                        return (
-                          <div
-                            key={project.id}
-                            className={cn(
-                              "p-3 rounded-lg border-2 cursor-pointer hover:opacity-80 transition-opacity",
-                              getProjectColor(project.last_log_at)
-                            )}
-                            onClick={() => onNavigateToTab('projects')}
-                          >
+                    const daysSinceLog = project.last_log_at ?
+                    differenceInDays(currentTime, new Date(project.last_log_at)) :
+                    null;
+
+                    return (
+                      <div
+                        key={project.id}
+                        className={cn(
+                          "p-3 rounded-lg border-2 cursor-pointer hover:opacity-80 transition-opacity",
+                          getProjectColor(project.last_log_at)
+                        )}
+                        onClick={() => onNavigateToTab('projects')}>
+
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm truncate">{project.nombre_proyecto}</p>
@@ -1366,24 +1366,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 </p>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                {daysSinceLog !== null ? (
-                                  <Badge className={cn(
-                                    "text-white text-xs px-2 py-0.5",
-                                    daysSinceLog >= 5 ? "bg-red-500" : daysSinceLog >= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
-                                  )}>
+                                {daysSinceLog !== null ?
+                            <Badge className={cn(
+                              "text-white text-xs px-2 py-0.5",
+                              daysSinceLog >= 5 ? "bg-red-500" : daysSinceLog >= 3 ? "bg-yellow-500 text-black" : "bg-green-500"
+                            )}>
                                     {daysSinceLog === 0 ? 'Hoy' : `${daysSinceLog}d`}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-[10px] px-1.5">Sin log</Badge>
-                                )}
+                                  </Badge> :
+
+                            <Badge variant="outline" className="text-[10px] px-1.5">Sin log</Badge>
+                            }
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                  })}
                     </div>
                   </ScrollArea>
-                )}
+              }
               </CardContent>
             </Card>
 
@@ -1396,26 +1396,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {promotionsLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : promotions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
+                {promotionsLoading ?
+              <div className="space-y-2">
+                    {[...Array(3)].map((_, i) =>
+                <Skeleton key={i} className="h-12 w-full" />
+                )}
+                  </div> :
+              promotions.length === 0 ?
+              <p className="text-sm text-muted-foreground text-center py-4">
                     No hay promociones activas
-                  </p>
-                ) : (
-                  <ScrollArea className="h-[200px]">
+                  </p> :
+
+              <ScrollArea className="h-[200px]">
                     <div className="space-y-2 pr-4">
                       {promotions.map((promo) => {
-                        const daysActive = differenceInDays(currentTime, new Date(promo.created_at));
-                        return (
-                          <div
-                            key={promo.id}
-                            className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors"
-                          >
+                    const daysActive = differenceInDays(currentTime, new Date(promo.created_at));
+                    return (
+                      <div
+                        key={promo.id}
+                        className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors">
+
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{promo.nombre}</p>
                               <p className="text-xs text-muted-foreground">
@@ -1425,54 +1425,54 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <Badge variant="outline" className="text-xs ml-2">
                               {daysActive === 0 ? 'Hoy' : `${daysActive}d activa`}
                             </Badge>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                  })}
                     </div>
                   </ScrollArea>
-                )}
+              }
               </CardContent>
             </Card>
 
             {/* Recent Contact Requests */}
             <Card className={cn(
-              pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
-            )}>
+            pendingContactsCount > 0 && "ring-2 ring-orange-500 animate-glow"
+          )}>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between text-base">
                   <div className="flex items-center gap-2">
                     <MessageCircle size={18} />
                     Contactos Recientes
                   </div>
-                  {pendingContactsCount > 0 && (
-                    <Badge className="bg-orange-500 animate-notification-bounce">
+                  {pendingContactsCount > 0 &&
+                <Badge className="bg-orange-500 animate-notification-bounce">
                       {pendingContactsCount} nuevo{pendingContactsCount > 1 ? 's' : ''}
                     </Badge>
-                  )}
+                }
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {contactsLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : contacts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
+                {contactsLoading ?
+              <div className="space-y-2">
+                    {[...Array(3)].map((_, i) =>
+                <Skeleton key={i} className="h-12 w-full" />
+                )}
+                  </div> :
+              contacts.length === 0 ?
+              <p className="text-sm text-muted-foreground text-center py-4">
                     No hay contactos pendientes
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {contacts.slice(0, 5).map((contact) => (
-                      <div
-                        key={contact.id}
-                        className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          onNavigateToTab('contacts');
-                          onContactsViewed();
-                        }}
-                      >
+                  </p> :
+
+              <div className="space-y-2">
+                    {contacts.slice(0, 5).map((contact) =>
+                <div
+                  key={contact.id}
+                  className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    onNavigateToTab('contacts');
+                    onContactsViewed();
+                  }}>
+
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{contact.name}</p>
                           <p className="text-xs text-muted-foreground truncate">
@@ -1483,16 +1483,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           {formatTimeAgo(contact.created_at)}
                         </span>
                       </div>
-                    ))}
-                  </div>
                 )}
+                  </div>
+              }
               </CardContent>
             </Card>
           </div>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 // Inline editable money field - looks like text, editable on click
@@ -1516,34 +1516,34 @@ const InlineMoneyField: React.FC<{
   return (
     <div className="flex items-center justify-between gap-2">
       <span className={cn("text-base font-bold tracking-wide", colorClass)}>{label}</span>
-      {editing ? (
-        <div className="relative">
+      {editing ?
+      <div className="relative">
           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">$</span>
           <input
-            ref={inputRef}
-            type="number"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={() => setEditing(false)}
-            onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
-            className="w-36 pl-7 pr-2 py-1 text-xl font-bold rounded-md border border-primary/30 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-right"
-            placeholder="0"
-          />
-        </div>
-      ) : (
-        <button
-          onClick={() => setEditing(true)}
-          className={cn(
-            "text-xl font-bold cursor-pointer hover:opacity-70 transition-opacity px-2 py-0.5 rounded-md hover:bg-muted/50",
-            colorClass
-          )}
-          title="Click para editar"
-        >
+          ref={inputRef}
+          type="number"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={() => setEditing(false)}
+          onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
+          className="w-36 pl-7 pr-2 py-1 text-xl font-bold rounded-md border border-primary/30 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-right"
+          placeholder="0" />
+
+        </div> :
+
+      <button
+        onClick={() => setEditing(true)}
+        className={cn(
+          "text-xl font-bold cursor-pointer hover:opacity-70 transition-opacity px-2 py-0.5 rounded-md hover:bg-muted/50",
+          colorClass
+        )}
+        title="Click para editar">
+
           ${numVal > 0 ? numVal.toLocaleString('es-MX') : '___'}
         </button>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 // Monthly Goal Widget - persisted in store_settings
@@ -1557,11 +1557,11 @@ const MonthlyGoalWidget: React.FC = () => {
   // Load values from store_settings on mount
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data, error } = await (supabase
-        .from('store_settings' as any)
-        .select('meta_mensual, ventas_csc, ventas_at')
-        .eq('id', 'main')
-        .single() as any);
+      const { data, error } = await (supabase.
+      from('store_settings' as any).
+      select('meta_mensual, ventas_csc, ventas_at').
+      eq('id', 'main').
+      single() as any);
       if (!error && data) {
         setCsc(data.ventas_csc ? String(data.ventas_csc) : '');
         setAt(data.ventas_at ? String(data.ventas_at) : '');
@@ -1577,10 +1577,10 @@ const MonthlyGoalWidget: React.FC = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       const numVal = parseFloat(value) || 0;
-      await (supabase
-        .from('store_settings' as any)
-        .update({ [field]: numVal, updated_at: new Date().toISOString() })
-        .eq('id', 'main') as any);
+      await (supabase.
+      from('store_settings' as any).
+      update({ [field]: numVal, updated_at: new Date().toISOString() }).
+      eq('id', 'main') as any);
     }, 500);
   }, []);
 
@@ -1628,7 +1628,7 @@ const MonthlyGoalWidget: React.FC = () => {
           <InlineMoneyField label="" value={meta} onChange={handleMetaChange} colorClass="text-foreground" />
         </div>
       </CardHeader>
-      <CardContent className="pb-4 space-y-1">
+      <CardContent className="pb-4 space-y-1 my-0">
         <InlineMoneyField label="CSC" value={csc} onChange={handleCscChange} colorClass="text-blue-600 dark:text-blue-400" />
         <InlineMoneyField label="AT" value={at} onChange={handleAtChange} colorClass="text-emerald-600 dark:text-emerald-400" />
         
@@ -1646,32 +1646,32 @@ const MonthlyGoalWidget: React.FC = () => {
           </p>
         </div>
 
-        {metaVal > 0 && progress < 1 && (
-          <div className="text-center rounded-lg px-3 py-1.5 mt-1">
+        {metaVal > 0 && progress < 1 &&
+        <div className="text-center rounded-lg px-3 mt-1 my-0 py-0">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Por vender</p>
-            <p className="text-2xl font-extrabold text-muted-foreground">
+            <p className="text-2xl font-extrabold text-muted-foreground my-0">
               ${(metaVal - totalSales).toLocaleString('es-MX')}
             </p>
           </div>
-        )}
+        }
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 };
 
 // Warranties stat card for the top stats grid
-const WarrantiesStatCard: React.FC<{ onNavigateToTab: (tab: string) => void }> = ({ onNavigateToTab }) => {
+const WarrantiesStatCard: React.FC<{onNavigateToTab: (tab: string) => void;}> = ({ onNavigateToTab }) => {
   const { data: activeWarrantiesCount = 0 } = useQuery({
     queryKey: ['dashboard-warranties-count'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('warranties')
-        .select('id', { count: 'exact', head: true })
-        .neq('estatus', 'Listo para su entrega');
+      const { count, error } = await supabase.
+      from('warranties').
+      select('id', { count: 'exact', head: true }).
+      neq('estatus', 'Listo para su entrega');
       if (error) throw error;
       return count || 0;
     },
-    refetchInterval: 60000,
+    refetchInterval: 60000
   });
 
   return (
@@ -1687,24 +1687,24 @@ const WarrantiesStatCard: React.FC<{ onNavigateToTab: (tab: string) => void }> =
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 };
 
 // Warranties dashboard widget for admin/supervisor
-const WarrantiesDashboardWidget: React.FC<{ onNavigateToTab: (tab: string) => void }> = ({ onNavigateToTab }) => {
+const WarrantiesDashboardWidget: React.FC<{onNavigateToTab: (tab: string) => void;}> = ({ onNavigateToTab }) => {
   const { data: warranties = [], isLoading } = useQuery({
     queryKey: ['dashboard-warranties'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('warranties')
-        .select('id, descripcion_producto, clave_proveedor, estatus, fecha_ingreso')
-        .neq('estatus', 'Listo para su entrega')
-        .order('fecha_ingreso', { ascending: true });
+      const { data, error } = await supabase.
+      from('warranties').
+      select('id, descripcion_producto, clave_proveedor, estatus, fecha_ingreso').
+      neq('estatus', 'Listo para su entrega').
+      order('fecha_ingreso', { ascending: true });
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 60000,
+    refetchInterval: 60000
   });
 
   const getWarrantyStatusBadge = (estatus: string) => {
@@ -1730,26 +1730,26 @@ const WarrantiesDashboardWidget: React.FC<{ onNavigateToTab: (tab: string) => vo
         </CardTitle>
       </CardHeader>
       <CardContent className="pb-3">
-        {isLoading ? (
-          <div className="space-y-1">
-            {[...Array(2)].map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : warranties.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground">
+        {isLoading ?
+        <div className="space-y-1">
+            {[...Array(2)].map((_, i) =>
+          <Skeleton key={i} className="h-10 w-full" />
+          )}
+          </div> :
+        warranties.length === 0 ?
+        <div className="text-center py-4 text-muted-foreground">
             <ShieldCheck className="h-6 w-6 mx-auto mb-1 opacity-30" />
             <p className="text-sm">Sin garantías pendientes</p>
-          </div>
-        ) : (
-          <ScrollArea className="h-[180px] min-h-[120px]">
+          </div> :
+
+        <ScrollArea className="h-[180px] min-h-[120px]">
             <div className="space-y-2 pr-4">
-              {warranties.map((w: any) => (
-                <div
-                  key={w.id}
-                  className="p-2 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => onNavigateToTab('warranties')}
-                >
+              {warranties.map((w: any) =>
+            <div
+              key={w.id}
+              className="p-2 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+              onClick={() => onNavigateToTab('warranties')}>
+
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium truncate block">{w.descripcion_producto}</span>
@@ -1758,13 +1758,13 @@ const WarrantiesDashboardWidget: React.FC<{ onNavigateToTab: (tab: string) => vo
                     {getWarrantyStatusBadge(w.estatus)}
                   </div>
                 </div>
-              ))}
+            )}
             </div>
           </ScrollArea>
-        )}
+        }
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 };
 
 export default AdminDashboard;
