@@ -529,11 +529,12 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       }
       
       // 7. Add zero stock products to "Por Surtir" table WITH warehouse_id
+      // IMPORTANT: Only add if NO other product with the same clave has stock (handles duplicate product entries)
       if (zeroStockProducts.length > 0) {
         const zeroStockProductIds = zeroStockProducts.map(p => p.id);
+        const zeroStockClaves = [...new Set(zeroStockProducts.map(p => p.clave).filter(Boolean))];
         
         // First, clean up any legacy entries (without warehouse_id) for these products
-        // This prevents duplicates between old (no warehouse_id) and new (with warehouse_id) entries
         for (let i = 0; i < zeroStockProductIds.length; i += chunkSize) {
           const chunk = zeroStockProductIds.slice(i, i + chunkSize);
           await supabase
@@ -543,35 +544,85 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
             .is('warehouse_id', null);
         }
         
-        // Check for existing entries for this specific warehouse to avoid duplicates
-        const { data: existingPorSurtir } = await supabase
-          .from('products_por_surtir')
-          .select('product_id')
-          .in('product_id', zeroStockProductIds)
-          .eq('warehouse_id', warehouseId);
+        // Check which claves have stock via OTHER product entries (duplicate products with same clave)
+        const clavesWithStock = new Set<string>();
+        if (zeroStockClaves.length > 0) {
+          for (let i = 0; i < zeroStockClaves.length; i += chunkSize) {
+            const chunk = zeroStockClaves.slice(i, i + chunkSize);
+            const { data: productsWithStock } = await supabase
+              .from('products')
+              .select('clave, id')
+              .in('clave', chunk);
+            
+            if (productsWithStock) {
+              const otherProductIds = productsWithStock
+                .filter(p => !zeroStockProductIds.includes(p.id))
+                .map(p => p.id);
+              
+              if (otherProductIds.length > 0) {
+                const { data: stockData } = await supabase
+                  .from('product_warehouse_stock')
+                  .select('product_id, existencias')
+                  .in('product_id', otherProductIds)
+                  .gt('existencias', 0);
+                
+                if (stockData) {
+                  const productIdsWithStock = new Set(stockData.map(s => s.product_id));
+                  productsWithStock
+                    .filter(p => productIdsWithStock.has(p.id) && p.clave)
+                    .forEach(p => clavesWithStock.add(p.clave!));
+                }
+              }
+            }
+          }
+        }
         
-        const existingProductIds2 = new Set((existingPorSurtir || []).map((e: any) => e.product_id));
-        const newPorSurtir = zeroStockProducts
-          .filter((p) => !existingProductIds2.has(p.id))
-          .map((p) => ({
-            product_id: p.id,
-            clave: p.clave,
-            nombre: p.name,
-            status: 'pending',
-            warehouse_id: warehouseId,
-          }));
+        // Filter out products whose clave already has stock via another product entry
+        const filteredZeroStock = zeroStockProducts.filter(p => !clavesWithStock.has(p.clave));
         
-        if (newPorSurtir.length > 0) {
-          const { error: porSurtirError } = await supabase
-            .from('products_por_surtir')
-            .insert(newPorSurtir);
+        if (filteredZeroStock.length > 0) {
+          const filteredIds = filteredZeroStock.map(p => p.id);
           
-          if (porSurtirError) throw porSurtirError;
+          // Check for existing entries for this specific warehouse to avoid duplicates
+          const { data: existingPorSurtir } = await supabase
+            .from('products_por_surtir')
+            .select('product_id')
+            .in('product_id', filteredIds)
+            .eq('warehouse_id', warehouseId);
+          
+          const existingProductIds2 = new Set((existingPorSurtir || []).map((e: any) => e.product_id));
+          const newPorSurtir = filteredZeroStock
+            .filter((p) => !existingProductIds2.has(p.id))
+            .map((p) => ({
+              product_id: p.id,
+              clave: p.clave,
+              nombre: p.name,
+              status: 'pending',
+              warehouse_id: warehouseId,
+            }));
+          
+          if (newPorSurtir.length > 0) {
+            const { error: porSurtirError } = await supabase
+              .from('products_por_surtir')
+              .insert(newPorSurtir);
+            
+            if (porSurtirError) throw porSurtirError;
+          }
         }
       }
       
       // 8. Remove restored products from "Por Surtir" for THIS warehouse only
+      // Also remove by clave to handle duplicate product entries
       if (restoredProducts.length > 0) {
+        // Get claves of restored products
+        const { data: restoredProductInfo } = await supabase
+          .from('products')
+          .select('id, clave')
+          .in('id', restoredProducts);
+        
+        const restoredClaves = [...new Set((restoredProductInfo || []).map(p => p.clave).filter(Boolean))];
+        
+        // Delete by product_id for this warehouse
         for (let i = 0; i < restoredProducts.length; i += chunkSize) {
           const chunk = restoredProducts.slice(i, i + chunkSize);
           const { error: removeError } = await supabase
@@ -581,6 +632,18 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
             .eq('warehouse_id', warehouseId);
           
           if (removeError) throw removeError;
+        }
+        
+        // Also delete by clave for this warehouse (catches duplicate product entries)
+        if (restoredClaves.length > 0) {
+          for (let i = 0; i < restoredClaves.length; i += chunkSize) {
+            const chunk = restoredClaves.slice(i, i + chunkSize);
+            await supabase
+              .from('products_por_surtir')
+              .delete()
+              .in('clave', chunk)
+              .eq('warehouse_id', warehouseId);
+          }
         }
       }
 
