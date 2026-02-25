@@ -545,40 +545,53 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         }
         
         // Check which claves have stock via OTHER product entries (duplicate products with same clave)
-        const clavesWithStock = new Set<string>();
+        // Normalize claves by stripping leading zeros to handle POS inconsistencies
+        const normalizeClave = (c: string) => c.replace(/^0+/, '') || c;
+        const clavesWithStockNormalized = new Set<string>();
+        
         if (zeroStockClaves.length > 0) {
-          for (let i = 0; i < zeroStockClaves.length; i += chunkSize) {
-            const chunk = zeroStockClaves.slice(i, i + chunkSize);
-            const { data: productsWithStock } = await supabase
-              .from('products')
-              .select('clave, id')
-              .in('clave', chunk);
-            
-            if (productsWithStock) {
-              const otherProductIds = productsWithStock
-                .filter(p => !zeroStockProductIds.includes(p.id))
-                .map(p => p.id);
+          // We need to check ALL products because leading zeros mean exact match won't work
+          // Use the existingProducts array we already fetched in step 1
+          const zeroStockProductIdSet = new Set(zeroStockProductIds);
+          const normalizedClaveMap = new Map<string, string[]>(); // normalized -> product_ids (non-zero-stock)
+          
+          for (const p of existingProducts) {
+            if (!p.clave || zeroStockProductIdSet.has(p.id)) continue;
+            const norm = normalizeClave(p.clave);
+            const existing = normalizedClaveMap.get(norm) || [];
+            existing.push(p.id);
+            normalizedClaveMap.set(norm, existing);
+          }
+          
+          // Check which of these other products actually have stock
+          const otherProductIds = [...new Set(
+            zeroStockClaves
+              .flatMap(c => normalizedClaveMap.get(normalizeClave(c)) || [])
+          )];
+          
+          if (otherProductIds.length > 0) {
+            for (let i = 0; i < otherProductIds.length; i += chunkSize) {
+              const chunk = otherProductIds.slice(i, i + chunkSize);
+              const { data: stockData } = await supabase
+                .from('product_warehouse_stock')
+                .select('product_id, existencias')
+                .in('product_id', chunk)
+                .gt('existencias', 0);
               
-              if (otherProductIds.length > 0) {
-                const { data: stockData } = await supabase
-                  .from('product_warehouse_stock')
-                  .select('product_id, existencias')
-                  .in('product_id', otherProductIds)
-                  .gt('existencias', 0);
-                
-                if (stockData) {
-                  const productIdsWithStock = new Set(stockData.map(s => s.product_id));
-                  productsWithStock
-                    .filter(p => productIdsWithStock.has(p.id) && p.clave)
-                    .forEach(p => clavesWithStock.add(p.clave!));
+              if (stockData) {
+                const productIdsWithStock = new Set(stockData.map(s => s.product_id));
+                for (const p of existingProducts) {
+                  if (p.clave && productIdsWithStock.has(p.id)) {
+                    clavesWithStockNormalized.add(normalizeClave(p.clave));
+                  }
                 }
               }
             }
           }
         }
         
-        // Filter out products whose clave already has stock via another product entry
-        const filteredZeroStock = zeroStockProducts.filter(p => !clavesWithStock.has(p.clave));
+        // Filter out products whose clave (normalized) already has stock via another product entry
+        const filteredZeroStock = zeroStockProducts.filter(p => !clavesWithStockNormalized.has(normalizeClave(p.clave)));
         
         if (filteredZeroStock.length > 0) {
           const filteredIds = filteredZeroStock.map(p => p.id);
@@ -612,15 +625,16 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
       }
       
       // 8. Remove restored products from "Por Surtir" for THIS warehouse only
-      // Also remove by clave to handle duplicate product entries
+      // Also remove by normalized clave to handle leading-zero duplicates
       if (restoredProducts.length > 0) {
-        // Get claves of restored products
-        const { data: restoredProductInfo } = await supabase
-          .from('products')
-          .select('id, clave')
-          .in('id', restoredProducts);
+        const normalizeClave2 = (c: string) => c.replace(/^0+/, '') || c;
         
-        const restoredClaves = [...new Set((restoredProductInfo || []).map(p => p.clave).filter(Boolean))];
+        // Get claves of restored products from the existingProducts array we already have
+        const restoredClaves = [...new Set(
+          existingProducts
+            .filter(p => restoredProducts.includes(p.id) && p.clave)
+            .map(p => p.clave!)
+        )];
         
         // Delete by product_id for this warehouse
         for (let i = 0; i < restoredProducts.length; i += chunkSize) {
@@ -634,10 +648,21 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
           if (removeError) throw removeError;
         }
         
-        // Also delete by clave for this warehouse (catches duplicate product entries)
+        // Also delete by clave AND normalized variants for this warehouse
         if (restoredClaves.length > 0) {
-          for (let i = 0; i < restoredClaves.length; i += chunkSize) {
-            const chunk = restoredClaves.slice(i, i + chunkSize);
+          // Collect all clave variants (with and without leading zeros) 
+          const allClaveVariants = new Set<string>();
+          const normalizedRestored = new Set(restoredClaves.map(normalizeClave2));
+          
+          for (const p of existingProducts) {
+            if (p.clave && normalizedRestored.has(normalizeClave2(p.clave))) {
+              allClaveVariants.add(p.clave);
+            }
+          }
+          
+          const variantArray = [...allClaveVariants];
+          for (let i = 0; i < variantArray.length; i += chunkSize) {
+            const chunk = variantArray.slice(i, i + chunkSize);
             await supabase
               .from('products_por_surtir')
               .delete()
