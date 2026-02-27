@@ -20,6 +20,9 @@ type DeliveryMethod = 'pickup' | 'delivery';
 type ShippingZone = 'local' | 'foraneo';
 type PaymentMethod = 'cash' | 'card' | 'transfer';
 
+const OPENPAY_MERCHANT_ID = 'mcab7cvx29eyy9e9rgyt';
+const OPENPAY_PUBLIC_KEY = 'pk_e3c60084ffac428eaff2c985e990ed7f';
+
 const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, requiresQuote }) => {
   const { items, subtotal, clearCart } = useCart();
   const { toast } = useToast();
@@ -38,6 +41,16 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Card data state
+  const [cardData, setCardData] = useState({
+    holder_name: '',
+    card_number: '',
+    expiration_month: '',
+    expiration_year: '',
+    cvv2: ''
+  });
+  const [openpayError, setOpenpayError] = useState<string | null>(null);
+
   const whatsappNumber = "9622148546";
 
   // Derived state
@@ -50,11 +63,13 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
     setDeliveryMethod(method);
     setShippingZone(null);
     setPaymentMethod(null);
+    setOpenpayError(null);
   };
 
   const handleShippingZoneChange = (zone: ShippingZone) => {
     setShippingZone(zone);
     setPaymentMethod(null);
+    setOpenpayError(null);
   };
 
   const getPaymentOptions = (): { value: PaymentMethod; label: string; icon: React.ReactNode }[] => {
@@ -68,11 +83,13 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
     if (deliveryMethod === 'delivery' && shippingZone === 'local') {
       return [
         { value: 'cash', label: 'Efectivo contra entrega', icon: <Banknote size={16} /> },
+        { value: 'card', label: 'Tarjeta de crédito o débito', icon: <CreditCard size={16} /> },
         { value: 'transfer', label: 'Transferencia electrónica', icon: <Building2 size={16} /> },
       ];
     }
     if (deliveryMethod === 'delivery' && shippingZone === 'foraneo') {
       return [
+        { value: 'card', label: 'Tarjeta de crédito o débito', icon: <CreditCard size={16} /> },
         { value: 'transfer', label: 'Transferencia electrónica', icon: <Building2 size={16} /> },
       ];
     }
@@ -99,6 +116,54 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
     return null;
   };
 
+  const createOpenpayToken = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const OpenPay = (window as any).OpenPay;
+      if (!OpenPay) {
+        reject(new Error('Openpay.js no se ha cargado correctamente'));
+        return;
+      }
+      OpenPay.setId(OPENPAY_MERCHANT_ID);
+      OpenPay.setApiKey(OPENPAY_PUBLIC_KEY);
+      OpenPay.setSandboxMode(true);
+
+      OpenPay.token.create(
+        {
+          holder_name: cardData.holder_name,
+          card_number: cardData.card_number.replace(/\s/g, ''),
+          expiration_month: cardData.expiration_month,
+          expiration_year: cardData.expiration_year,
+          cvv2: cardData.cvv2,
+        },
+        (response: any) => {
+          resolve(response.data.id);
+        },
+        (error: any) => {
+          const msg = error?.data?.description || error?.message || 'Error al tokenizar la tarjeta';
+          reject(new Error(msg));
+        }
+      );
+    });
+  };
+
+  const processCardCharge = async (tokenId: string): Promise<void> => {
+    const { data, error } = await supabase.functions.invoke('process-openpay-charge', {
+      body: {
+        token_id: tokenId,
+        amount: subtotal,
+        description: 'Compra en tienda web',
+      },
+    });
+
+    if (error) {
+      throw new Error('Error de conexión con el procesador de pagos');
+    }
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'El cobro con tarjeta fue rechazado');
+    }
+  };
+
   const handleSubmitOrder = async () => {
     if (!canSubmit) return;
 
@@ -114,8 +179,37 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
     }
 
     setIsSubmitting(true);
+    setOpenpayError(null);
 
     try {
+      // If card payment, tokenize and charge first
+      if (paymentMethod === 'card') {
+        if (!cardData.holder_name || !cardData.card_number || !cardData.expiration_month || !cardData.expiration_year || !cardData.cvv2) {
+          toast({
+            title: "Datos de tarjeta incompletos",
+            description: "Por favor completa todos los campos de la tarjeta",
+            variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        try {
+          const tokenId = await createOpenpayToken();
+          await processCardCharge(tokenId);
+        } catch (cardError: any) {
+          setOpenpayError(cardError.message);
+          toast({
+            title: "Error en el pago con tarjeta",
+            description: cardError.message,
+            variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Payment succeeded (or not card) — create order
       const orderItems = items.map(item => ({
         product_id: item.type === 'product' ? item.id : null,
         promotion_id: item.type === 'promotion' ? item.id : null,
@@ -316,7 +410,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
               {paymentOptions.map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => setPaymentMethod(opt.value)}
+                  onClick={() => { setPaymentMethod(opt.value); setOpenpayError(null); }}
                   className={cn(
                     "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
                     paymentMethod === opt.value
@@ -329,6 +423,89 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
                 </button>
               ))}
             </div>
+
+            {/* Card form */}
+            {paymentMethod === 'card' && (
+              <div className="space-y-3 p-4 rounded-lg border border-primary/20 bg-muted/30 animate-in fade-in slide-in-from-top-2 duration-200">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <CreditCard size={16} className="text-primary" />
+                  Datos de tarjeta
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="holder_name" className="text-xs">Nombre del titular</Label>
+                  <Input
+                    id="holder_name"
+                    data-openpay-card="holder_name"
+                    placeholder="Como aparece en la tarjeta"
+                    value={cardData.holder_name}
+                    onChange={(e) => setCardData(prev => ({ ...prev, holder_name: e.target.value }))}
+                    maxLength={80}
+                    autoComplete="cc-name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="card_number" className="text-xs">Número de tarjeta</Label>
+                  <Input
+                    id="card_number"
+                    data-openpay-card="card_number"
+                    placeholder="4111 1111 1111 1111"
+                    value={cardData.card_number}
+                    onChange={(e) => setCardData(prev => ({ ...prev, card_number: e.target.value.replace(/[^\d\s]/g, '') }))}
+                    maxLength={19}
+                    autoComplete="cc-number"
+                    inputMode="numeric"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="exp_month" className="text-xs">Mes</Label>
+                    <Input
+                      id="exp_month"
+                      data-openpay-card="expiration_month"
+                      placeholder="MM"
+                      value={cardData.expiration_month}
+                      onChange={(e) => setCardData(prev => ({ ...prev, expiration_month: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
+                      maxLength={2}
+                      autoComplete="cc-exp-month"
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exp_year" className="text-xs">Año</Label>
+                    <Input
+                      id="exp_year"
+                      data-openpay-card="expiration_year"
+                      placeholder="YY"
+                      value={cardData.expiration_year}
+                      onChange={(e) => setCardData(prev => ({ ...prev, expiration_year: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
+                      maxLength={2}
+                      autoComplete="cc-exp-year"
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cvv2" className="text-xs">CVV</Label>
+                    <Input
+                      id="cvv2"
+                      data-openpay-card="cvv2"
+                      placeholder="123"
+                      value={cardData.cvv2}
+                      onChange={(e) => setCardData(prev => ({ ...prev, cvv2: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                      maxLength={4}
+                      autoComplete="cc-csc"
+                      inputMode="numeric"
+                      type="password"
+                    />
+                  </div>
+                </div>
+                {openpayError && (
+                  <p className="text-sm text-destructive bg-destructive/10 p-2 rounded">{openpayError}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  🔒 Tus datos son procesados de forma segura por Openpay. No almacenamos tu información de tarjeta.
+                </p>
+              </div>
+            )}
 
             {/* Transfer info */}
             {paymentMethod === 'transfer' && (
@@ -415,10 +592,10 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
           {isSubmitting ? (
             <>
               <Loader2 size={18} className="mr-2 animate-spin" />
-              Procesando...
+              {paymentMethod === 'card' ? 'Procesando pago...' : 'Procesando...'}
             </>
           ) : (
-            'Realizar mi pedido'
+            paymentMethod === 'card' ? 'Pagar y realizar pedido' : 'Realizar mi pedido'
           )}
         </Button>
       </div>
