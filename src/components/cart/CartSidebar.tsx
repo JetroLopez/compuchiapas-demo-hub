@@ -11,7 +11,7 @@ import CartOrderConfirmation from './CartOrderConfirmation';
 interface OrderResult {
   orderNumber: number;
   deliveryMethod: 'pickup' | 'delivery' | null;
-  paymentMethod: 'cash' | 'transfer';
+  paymentMethod: 'cash' | 'card' | 'transfer';
 }
 
 const CartSidebar: React.FC = () => {
