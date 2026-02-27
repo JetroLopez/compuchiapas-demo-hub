@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 interface CartOrderConfirmationProps {
   orderNumber: number;
   deliveryMethod: 'pickup' | 'delivery' | null;
-  paymentMethod: 'cash' | 'transfer';
+  paymentMethod: 'cash' | 'card' | 'transfer';
   onClose: () => void;
 }
 
@@ -51,6 +51,28 @@ const CartOrderConfirmation: React.FC<CartOrderConfirmationProps> = ({
         <h3 className="text-xl font-bold mb-2">¡Pedido Recibido!</h3>
         <p className="text-2xl font-bold text-primary">#{orderNumber}</p>
       </div>
+
+      {paymentMethod === 'card' && (
+        <div className="bg-muted/50 p-4 rounded-lg text-left space-y-2">
+          <p className="text-sm">
+            Tu pedido <strong>#{orderNumber}</strong> ha sido pagado exitosamente con tarjeta.
+            {deliveryMethod === 'pickup' ? (
+              <> Puedes pasar por él a{' '}
+                <a 
+                  href={googleMapsUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary underline font-medium"
+                >
+                  tienda
+                </a>.
+              </>
+            ) : (
+              <> En breve nos comunicaremos contigo vía WhatsApp para definir ubicación y tiempo de entrega.</>
+            )}
+          </p>
+        </div>
+      )}
 
       {paymentMethod === 'cash' && (
         <div className="bg-muted/50 p-4 rounded-lg text-left space-y-2">
