@@ -1,1 +1,4 @@
 project_id = "ynokzerxlopkqmexqzcp"
+
+[functions.process-openpay-charge]
+verify_jwt = false
