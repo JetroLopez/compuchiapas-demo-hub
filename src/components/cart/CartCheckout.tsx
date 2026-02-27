@@ -152,6 +152,8 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
         token_id: tokenId,
         amount: subtotal,
         description: 'Compra en tienda web',
+        customer_name: cardData.holder_name,
+        customer_phone: phone.trim(),
       },
     });
 

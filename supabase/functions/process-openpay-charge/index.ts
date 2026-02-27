@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token_id, amount, description } = await req.json();
+    const { token_id, amount, description, customer_name, customer_email, customer_phone } = await req.json();
 
     if (!token_id || !amount) {
       return new Response(
@@ -36,12 +36,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Split customer_name into first and last name
+    const nameParts = (customer_name || 'Cliente').trim().split(' ');
+    const firstName = nameParts[0] || 'Cliente';
+    const lastName = nameParts.slice(1).join(' ') || 'N/A';
+
     const chargeBody = {
       source_id: token_id,
       method: 'card',
       amount: Number(amount.toFixed(2)),
       currency: 'MXN',
       description: description || 'Compra en tienda',
+      customer: {
+        name: firstName,
+        last_name: lastName,
+        email: customer_email || 'cliente@compuchiapas.com',
+        phone_number: customer_phone || '',
+      },
     };
 
     const basicAuth = btoa(`${privateKey}:`);
