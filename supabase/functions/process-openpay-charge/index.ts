@@ -36,22 +36,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Split customer_name into first and last name
-    const nameParts = (customer_name || 'Cliente').trim().split(' ');
-    const firstName = nameParts[0] || 'Cliente';
-    const lastName = nameParts.slice(1).join(' ') || 'N/A';
-
     const chargeBody = {
       source_id: token_id,
       method: 'card',
       amount: Number(amount.toFixed(2)),
       currency: 'MXN',
-      description: description || 'Compra en tienda',
+      description: description || 'Compra en tienda web',
       customer: {
-        name: firstName,
-        last_name: lastName,
-        email: customer_email || 'cliente@compuchiapas.com',
-        phone_number: customer_phone || '',
+        name: 'Cliente',
+        last_name: 'Web',
+        phone_number: customer_phone || '9620000000',
+        email: 'ventas@compuchiapas.com',
       },
     };
 
