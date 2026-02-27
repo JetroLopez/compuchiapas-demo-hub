@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token_id, amount, description, customer_name, customer_email, customer_phone } = await req.json();
+    const { token_id, amount, description, customer_name, customer_email, customer_phone, device_session_id } = await req.json();
 
     if (!token_id || !amount) {
       return new Response(
@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
       amount: Number(amount.toFixed(2)),
       currency: 'MXN',
       description: description || 'Compra en tienda web',
+      device_session_id: device_session_id,
       customer: {
         name: 'Cliente',
         last_name: 'Web',

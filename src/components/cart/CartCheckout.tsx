@@ -116,7 +116,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
     return null;
   };
 
-  const createOpenpayToken = (): Promise<string> => {
+  const createOpenpayToken = (): Promise<{ tokenId: string; deviceSessionId: string }> => {
     return new Promise((resolve, reject) => {
       const OpenPay = (window as any).OpenPay;
       if (!OpenPay) {
@@ -127,6 +127,8 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
       OpenPay.setApiKey(OPENPAY_PUBLIC_KEY);
       OpenPay.setSandboxMode(true);
 
+      const deviceSessionId = OpenPay.deviceData.setup();
+
       OpenPay.token.create(
         {
           holder_name: cardData.holder_name,
@@ -136,7 +138,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
           cvv2: cardData.cvv2,
         },
         (response: any) => {
-          resolve(response.data.id);
+          resolve({ tokenId: response.data.id, deviceSessionId });
         },
         (error: any) => {
           const msg = error?.data?.description || error?.message || 'Error al tokenizar la tarjeta';
@@ -146,7 +148,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
     });
   };
 
-  const processCardCharge = async (tokenId: string): Promise<void> => {
+  const processCardCharge = async (tokenId: string, deviceSessionId: string): Promise<void> => {
     const { data, error } = await supabase.functions.invoke('process-openpay-charge', {
       body: {
         token_id: tokenId,
@@ -154,6 +156,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
         description: 'Compra en tienda web',
         customer_name: cardData.holder_name,
         customer_phone: phone.trim(),
+        device_session_id: deviceSessionId,
       },
     });
 
@@ -197,8 +200,8 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({ onBack, onOrderComplete, re
         }
 
         try {
-          const tokenId = await createOpenpayToken();
-          await processCardCharge(tokenId);
+          const { tokenId, deviceSessionId } = await createOpenpayToken();
+          await processCardCharge(tokenId, deviceSessionId);
         } catch (cardError: any) {
           setOpenpayError(cardError.message);
           toast({
