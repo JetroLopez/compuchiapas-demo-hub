@@ -452,6 +452,27 @@ export type Database = {
         }
         Relationships: []
       }
+      page_visibility: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_warehouse_stock: {
         Row: {
           created_at: string

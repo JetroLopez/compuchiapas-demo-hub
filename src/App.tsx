@@ -16,6 +16,7 @@ import Contacto from "./pages/Contacto";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import VisibilityGuard from "./components/VisibilityGuard";
 
 const queryClient = new QueryClient();
 
@@ -28,13 +29,13 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/servicios" element={<Servicios />} />
-              <Route path="/productos" element={<Productos />} />
-              <Route path="/productos/arma-tu-pc" element={<PCBuilder />} />
-              <Route path="/software-esd" element={<SoftwareESD />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/contacto" element={<Contacto />} />
+              <Route path="/" element={<VisibilityGuard pageId="inicio"><Index /></VisibilityGuard>} />
+              <Route path="/servicios" element={<VisibilityGuard pageId="servicios"><Servicios /></VisibilityGuard>} />
+              <Route path="/productos" element={<VisibilityGuard pageId="productos"><Productos /></VisibilityGuard>} />
+              <Route path="/productos/arma-tu-pc" element={<VisibilityGuard pageId="productos"><PCBuilder /></VisibilityGuard>} />
+              <Route path="/software-esd" element={<VisibilityGuard pageId="software-esd"><SoftwareESD /></VisibilityGuard>} />
+              <Route path="/blog" element={<VisibilityGuard pageId="blog"><Blog /></VisibilityGuard>} />
+              <Route path="/contacto" element={<VisibilityGuard pageId="contacto"><Contacto /></VisibilityGuard>} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

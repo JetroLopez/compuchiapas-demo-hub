@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { usePageVisibility } from '@/hooks/usePageVisibility';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogOut, Package, Users, Shield, RefreshCw, Tag, MessageCircle, Wrench, LayoutDashboard, Moon, Sun, FileText, ShoppingBag, ChevronDown, Menu, PackageX, Calculator, Settings, ShoppingCart, FolderKanban, Store, MoreHorizontal, Eye, ShieldCheck, Warehouse, Image, Download } from 'lucide-react';
@@ -57,6 +58,7 @@ const TAB_LABELS: Record<string, string> = {
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const { user, userRole, isLoading, signOut, hasAccess } = useAuth();
+  const { isPageVisible } = usePageVisibility();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [lastViewedContactsTime, setLastViewedContactsTime] = useState<Date | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -779,8 +781,28 @@ const Admin: React.FC = () => {
     );
   }
 
+
+
   if (!user) {
     return null;
+  }
+
+  // If admin page is hidden and user is NOT admin, show restriction message
+  if (!isPageVisible('admin') && userRole !== 'admin') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center py-16 max-w-md">
+          <Shield className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Función no disponible en el plan actual</h2>
+          <p className="text-muted-foreground mb-6">
+            Esta funcionalidad no está disponible en este momento. Contacta al administrador para más información.
+          </p>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            Volver al inicio
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   // Check if user has any valid role (not just 'user')

@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo-compuchiapas.png';
 import GlobalSearchDropdown from './GlobalSearchDropdown';
+import { usePageVisibility } from '@/hooks/usePageVisibility';
 
 interface NavBarProps {
   productSearchTerm?: string;
@@ -15,6 +16,7 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const headerRef = useRef<HTMLElement>(null);
+  const { isPageVisible } = usePageVisibility();
   
   const needsDarkHeader = true;
   const navigate = useNavigate();
@@ -47,13 +49,24 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
     };
   }, [menuOpen]);
 
+  const PAGE_VISIBILITY_MAP: Record<string, string> = {
+    '/': 'inicio',
+    '/servicios': 'servicios',
+    '/productos': 'productos',
+    '/software-esd': 'software-esd',
+    '/blog': 'blog',
+  };
+
   const navLinks = [
     { name: 'Inicio', path: '/' },
     { name: 'Servicios', path: '/servicios' },
     { name: 'Productos', path: '/productos' },
     { name: 'Software ESD', path: '/software-esd' },
     { name: 'Blog', path: '/blog' },
-  ];
+  ].filter(link => {
+    const visId = PAGE_VISIBILITY_MAP[link.path];
+    return visId ? isPageVisible(visId) : true;
+  });
 
   const handleContactClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (location.pathname === '/contacto') {
@@ -105,13 +118,15 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
                 {link.name}
               </Link>
             ))}
-            <a 
-              href={location.pathname === '/contacto' ? '#contact-form' : '/contacto'} 
-              className="btn-primary bg-orange-500 hover:bg-orange-600 border-orange-500"
-              onClick={handleContactClick}
-            >
-              Contáctanos
-            </a>
+            {isPageVisible('contacto') && (
+              <a 
+                href={location.pathname === '/contacto' ? '#contact-form' : '/contacto'} 
+                className="btn-primary bg-orange-500 hover:bg-orange-600 border-orange-500"
+                onClick={handleContactClick}
+              >
+                Contáctanos
+              </a>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -146,13 +161,15 @@ const NavBar: React.FC<NavBarProps> = ({ productSearchTerm, onProductSearchChang
                 {link.name}
               </Link>
             ))}
-            <a 
-              href={location.pathname === '/contacto' ? '#contact-form' : '/contacto'} 
-              className="btn-primary bg-orange-500 hover:bg-orange-600 border-orange-500 text-center mt-2"
-              onClick={handleContactClick}
-            >
-              Contáctanos
-            </a>
+            {isPageVisible('contacto') && (
+              <a 
+                href={location.pathname === '/contacto' ? '#contact-form' : '/contacto'} 
+                className="btn-primary bg-orange-500 hover:bg-orange-600 border-orange-500 text-center mt-2"
+                onClick={handleContactClick}
+              >
+                Contáctanos
+              </a>
+            )}
           </nav>
         </div>
       )}
