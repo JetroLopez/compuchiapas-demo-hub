@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { z } from 'zod';
+import AdminPageManager from './AdminPageManager';
 
 type AppRole = 'admin' | 'tecnico' | 'ventas' | 'supervisor' | 'user';
 
@@ -162,6 +163,7 @@ const AdminUsers: React.FC = () => {
   const isLoading = loadingProfiles || loadingRoles;
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
@@ -316,6 +318,12 @@ const AdminUsers: React.FC = () => {
         </p>
       </CardContent>
     </Card>
+
+    {/* Page Manager - Admin only */}
+    <div className="mt-6">
+      <AdminPageManager />
+    </div>
+  </>
   );
 };
 
