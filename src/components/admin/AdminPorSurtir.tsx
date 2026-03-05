@@ -340,15 +340,18 @@ const AdminPorSurtir: React.FC = () => {
 
   // Filter out optimistically deleted, then apply warehouse filter
   // Also deduplicate by clave+warehouse_id to prevent visual duplicates
+  // Normalize clave: strip leading zeros to handle POS inconsistencies (e.g. "013803330991" vs "13803330991")
+  const normalizeClave = (c: string) => c.replace(/^0+/, '') || c;
+
   const visibleProducts = (() => {
     const filtered = productsPorSurtir
       .filter(p => !optimisticDeleted.has(p.id))
       .filter(filterByWarehouse);
     
-    // Deduplicate: keep first entry per clave+warehouse_id
+    // Deduplicate: keep first entry per NORMALIZED clave + warehouse_id
     const seen = new Set<string>();
     return filtered.filter(p => {
-      const key = `${p.clave}|||${p.warehouse_id || 'none'}`;
+      const key = `${normalizeClave(p.clave)}|||${p.warehouse_id || 'none'}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
