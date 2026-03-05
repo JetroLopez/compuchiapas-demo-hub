@@ -164,11 +164,11 @@ const GeneralQuotation: React.FC = () => {
       const impItem = total - (total / 1.08);
       return `
         <tr>
-          <td style="padding:8px 6px;border:1px solid #ccc;vertical-align:top;font-size:11px;line-height:1.4;white-space:pre-wrap;">${item.description.replace(/\n/g, '<br>')}</td>
-          <td style="padding:8px 6px;border:1px solid #ccc;text-align:right;vertical-align:top;font-size:11px;">${formatMXN(item.precioUnitario / 1.08)}</td>
-          <td style="padding:8px 6px;border:1px solid #ccc;text-align:center;vertical-align:top;font-size:11px;">${item.quantity}</td>
-          <td style="padding:8px 6px;border:1px solid #ccc;text-align:right;vertical-align:top;font-size:11px;">${formatMXN(impItem)}</td>
-          <td style="padding:8px 6px;border:1px solid #ccc;text-align:right;vertical-align:top;font-size:11px;font-weight:600;">${formatMXN(total)}</td>
+          <td style="white-space:pre-wrap;">${item.description.replace(/\n/g, '<br>')}</td>
+          <td style="text-align:right;">${formatMXN(item.precioUnitario / 1.08)}</td>
+          <td style="text-align:center;">${item.quantity}</td>
+          <td style="text-align:right;">${formatMXN(impItem)}</td>
+          <td style="text-align:right;font-weight:600;">${formatMXN(total)}</td>
         </tr>`;
     }).join('');
 
@@ -186,45 +186,58 @@ const GeneralQuotation: React.FC = () => {
 <html><head><meta charset="utf-8"><title>Cotización ${folio}</title>
 <style>
   @page { size: letter; margin: 15mm 15mm 15mm 15mm; }
+  @media print {
+    html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { margin-top: 10mm; margin-bottom: 10mm; margin-left: 15mm; margin-right: 15mm; }
+    header, footer, .no-print { display: none !important; }
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; font-size: 11px; line-height: 1.4; }
-  .header { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #1a3a6b; padding-bottom: 12px; margin-bottom: 12px; }
-  .logo { width: 90px; height: 90px; object-fit: contain; }
-  .company-info h1 { font-size: 16px; color: #1a3a6b; margin-bottom: 2px; font-weight: 700; }
-  .company-info p { font-size: 10px; color: #444; line-height: 1.4; }
-  .meta-row { display: flex; justify-content: space-between; margin-bottom: 14px; }
-  .meta-box { border: 1px solid #1a3a6b; border-radius: 4px; padding: 8px 12px; font-size: 10px; }
-  .meta-box strong { color: #1a3a6b; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-  thead th { background: #1a3a6b; color: #fff; padding: 8px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .totals-section { display: flex; justify-content: flex-end; margin-bottom: 14px; }
-  .totals-table { width: 260px; }
-  .totals-table td { padding: 5px 8px; font-size: 11px; border: 1px solid #ccc; }
-  .totals-table .total-row { background: #1a3a6b; color: #fff; font-weight: 700; font-size: 13px; }
-  .terms { background: #f5f7fa; border: 1px solid #ddd; border-radius: 4px; padding: 10px 14px; margin-bottom: 12px; }
-  .terms h3 { font-size: 11px; color: #1a3a6b; margin-bottom: 6px; text-transform: uppercase; font-weight: 700; }
-  .terms ol { padding-left: 18px; font-size: 9.5px; color: #444; }
-  .terms ol li { margin-bottom: 3px; }
-  .footer-bank { background: #1a3a6b; color: #fff; padding: 10px 14px; border-radius: 4px; font-size: 10px; text-align: center; }
-  .footer-bank p { margin-bottom: 2px; }
+  body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000000; font-size: 11px; line-height: 1.5; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0f355c; padding-bottom: 14px; margin-bottom: 16px; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo { width: 85px; height: 85px; object-fit: contain; }
+  .company-info h1 { font-size: 15px; color: #0f355c; margin-bottom: 2px; font-weight: 700; letter-spacing: 0.3px; }
+  .company-info p { font-size: 10px; color: #000000; line-height: 1.5; }
+  .meta-box { border: 1.5px solid #0f355c; border-radius: 6px; padding: 10px 14px; font-size: 10px; text-align: left; min-width: 210px; color: #000000; }
+  .meta-box strong { color: #0f355c; }
+  .meta-box p { margin-bottom: 3px; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  thead th { background: #0f355c; color: #ffffff; padding: 9px 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; border: none; }
+  tbody td { padding: 9px 8px; border-bottom: 1.5px solid #e0e0e0; vertical-align: top; font-size: 11px; line-height: 1.4; color: #000000; }
+  tbody tr:last-child td { border-bottom: 2px solid #0f355c; }
+
+  .totals-section { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .totals-table { width: 270px; }
+  .totals-table td { padding: 6px 10px; font-size: 11px; border-bottom: 1px solid #e0e0e0; color: #000000; }
+  .totals-table .total-row { background: #0f355c; color: #ffffff; font-weight: 700; font-size: 13px; }
+  .totals-table .total-row td { border-bottom: none; color: #ffffff; }
+
+  .terms { background: #f7f8fa; border: 1px solid #dde1e6; border-radius: 5px; padding: 12px 16px; margin-bottom: 14px; }
+  .terms h3 { font-size: 11px; color: #0f355c; margin-bottom: 6px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.3px; }
+  .terms ol { padding-left: 20px; font-size: 9.5px; color: #000000; }
+  .terms ol li { margin-bottom: 3px; line-height: 1.5; }
+
+  .footer-bank { background: #0f355c; color: #ffffff; padding: 12px 16px; border-radius: 5px; font-size: 10px; text-align: center; }
+  .footer-bank p { margin-bottom: 3px; color: #ffffff; }
 </style></head><body>
 
 <div class="header">
-  <img src="${logoCSC}" class="logo" />
-  <div class="company-info">
-    <h1>COMPUSISTEMAS DE CHIAPAS SA de CV</h1>
-    <p>6a Avenida Sur No. 12, Colonia Centro 30700, Tapachula, Chiapas</p>
-    <p>🌐 www.compuchiapas.com.mx</p>
-    <p><strong>Asesor comercial:</strong> ${asesorName}</p>
-    <p><strong>Cliente:</strong> ${clientName}</p>
+  <div class="header-left">
+    <img src="${logoCSC}" class="logo" />
+    <div class="company-info">
+      <h1>COMPUSISTEMAS DE CHIAPAS SA de CV</h1>
+      <p>6a Avenida Sur No. 12, Colonia Centro 30700, Tapachula, Chiapas</p>
+      <p>🌐 www.compuchiapas.com.mx</p>
+      <p><strong>Asesor comercial:</strong> ${asesorName}</p>
+      <p><strong>Cliente:</strong> ${clientName}</p>
+    </div>
   </div>
-</div>
-
-<div class="meta-row">
   <div class="meta-box">
-    <strong>Fecha:</strong> ${fechaStr}<br/>
-    <strong>Folio:</strong> ${folio}<br/>
-    <strong>Vigencia:</strong> ${vigencia} (3 días)
+    <p><strong>Fecha:</strong> ${fechaStr}</p>
+    <p><strong>Folio:</strong> ${folio}</p>
+    <p><strong>Vigencia:</strong> ${vigencia} (3 días)</p>
   </div>
 </div>
 
