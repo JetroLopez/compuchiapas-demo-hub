@@ -593,19 +593,31 @@ const ProductSync: React.FC<ProductSyncProps> = ({ userRole }) => {
         // Filter out products whose clave (normalized) already has stock via another product entry
         const filteredZeroStock = zeroStockProducts.filter(p => !clavesWithStockNormalized.has(normalizeClave(p.clave)));
         
-        if (filteredZeroStock.length > 0) {
-          const filteredIds = filteredZeroStock.map(p => p.id);
+        // Deduplicate by normalized clave: only keep one entry per normalized clave
+        // This prevents inserting both "013803330991" and "13803330991" as separate por_surtir entries
+        const seenNormalizedClaves = new Set<string>();
+        const dedupedZeroStock = filteredZeroStock.filter(p => {
+          const norm = normalizeClave(p.clave);
+          if (seenNormalizedClaves.has(norm)) return false;
+          seenNormalizedClaves.add(norm);
+          return true;
+        });
+        
+        if (dedupedZeroStock.length > 0) {
+          const filteredIds = dedupedZeroStock.map(p => p.id);
           
           // Check for existing entries for this specific warehouse to avoid duplicates
+          // Also check by normalized clave variants
           const { data: existingPorSurtir } = await supabase
             .from('products_por_surtir')
-            .select('product_id')
-            .in('product_id', filteredIds)
+            .select('product_id, clave')
             .eq('warehouse_id', warehouseId);
           
           const existingProductIds2 = new Set((existingPorSurtir || []).map((e: any) => e.product_id));
-          const newPorSurtir = filteredZeroStock
-            .filter((p) => !existingProductIds2.has(p.id))
+          const existingNormalizedClaves = new Set((existingPorSurtir || []).map((e: any) => normalizeClave(e.clave)));
+          
+          const newPorSurtir = dedupedZeroStock
+            .filter((p) => !existingProductIds2.has(p.id) && !existingNormalizedClaves.has(normalizeClave(p.clave)))
             .map((p) => ({
               product_id: p.id,
               clave: p.clave,
